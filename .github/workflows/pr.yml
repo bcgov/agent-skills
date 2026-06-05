@@ -23,14 +23,6 @@ name: PR
 
 on:
   pull_request:
-    paths:
-      - "skills/**"
-      - ".github/skills/**"
-      - "scripts/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - ".github/workflows/pr.yml"
-      - ".github/scripts/**"
 
 # Least privilege: every job here only reads the repo.
 permissions:
