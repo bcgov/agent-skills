@@ -18,9 +18,12 @@ test:
 format:
 	uv run ruff format .
 
-# Lint all Python: style, imports, docstrings, and bug-prone patterns.
+# Lint all Python: style, imports, docstrings, and bug-prone patterns. Also
+# lints the GitHub Actions workflow YAML (2-space indent enforced; see
+# .yamllint at the repo root).
 lint:
 	uv run ruff check .
+	uv run yamllint .github/workflows
 
 # Dry-run the npm package for every publishable skill (CI does the real publish
 # on merge). Only the root skills/ tree publishes; the .github/skills/ meta-skills
