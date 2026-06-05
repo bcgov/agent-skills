@@ -161,18 +161,71 @@ A few things worth knowing:
 Skills install like any other npm dependency, so your existing
 `npm` / `npx` / `npm update` flow manages them — upgrades included.
 
-**1. One-time setup.** Point the `@bcgov` scope at GitHub Packages by adding an
-`.npmrc` next to your agent's `package.json`:
+**1. Point the `@bcgov` scope at GitHub Packages** by adding an `.npmrc` next to
+your agent's `package.json`:
 
 ```ini
 @bcgov:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-Your `GITHUB_TOKEN` needs the `read:packages` scope. (If the catalogue ever moves
-to the public npm registry, this step goes away.)
+`${NODE_AUTH_TOKEN}` is read from the environment at install time, so the token
+itself never lands on disk or in version control.
 
-**2. Install** — pin a version for reproducible pulls:
+**2. Provide the token.** GitHub Packages requires authentication even for
+public packages, so `NODE_AUTH_TOKEN` needs to be set with a credential that has
+the `read:packages` scope. Pick whichever fits where the install runs:
+
+- **Local development — use the [GitHub CLI](https://cli.github.com/).** No PAT
+  to create, store, or rotate; the CLI already manages a token for you.
+
+  *Prerequisite:* install and sign in to the GitHub CLI once
+  ([install guide](https://github.com/cli/cli#installation)). On Windows:
+  `winget install --id GitHub.cli`. On macOS: `brew install gh`. Then
+  `gh auth login` to sign in. Verify with `gh auth status`.
+
+  One-time, add the `read:packages` scope to the CLI's token:
+
+  ```bash
+  gh auth refresh -h github.com -s read:packages
+  ```
+
+  Then, in each shell session you install from:
+
+  ```powershell
+  # PowerShell
+  $env:NODE_AUTH_TOKEN = gh auth token
+  ```
+
+  ```bash
+  # bash / zsh
+  export NODE_AUTH_TOKEN=$(gh auth token)
+  ```
+
+  `gh auth logout` revokes npm access at the same time — credential management
+  stays in one place.
+
+- **GitHub Actions (consuming workflow) — use the built-in `GITHUB_TOKEN`.** No
+  secret to configure:
+
+  ```yaml
+  jobs:
+    install-skills:
+      runs-on: ubuntu-24.04
+      permissions:
+        contents: read
+        packages: read
+      steps:
+        - uses: actions/checkout@v6
+        - uses: actions/setup-node@v6
+          with:
+            node-version: "24"
+        - run: npm ci
+          env:
+            NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  ```
+
+**3. Install** — pin a version for reproducible pulls:
 
 ```bash
 npm install @bcgov/skill-<name>@0.1.0
@@ -183,7 +236,7 @@ else the skill ships, exactly as it lives in this repo. Point your agent's skill
 loader at that directory — the on-disk layout is preserved, so there's no extra
 wiring.
 
-**3. Upgrade** — because skills are plain npm packages:
+**4. Upgrade** — because skills are plain npm packages:
 
 ```bash
 npm outdated @bcgov/skill-<name>        # see what's newer
