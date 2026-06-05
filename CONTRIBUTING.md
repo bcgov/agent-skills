@@ -4,32 +4,24 @@ Thanks for helping build BC Gov's shared library of agent skill profiles. This
 repository is community-maintained — new skills and improvements to existing
 ones are all welcome.
 
-## Before you start: access requirements
+## Before you start
 
-This repository is open to **BC Gov GitHub organization members only**.
-Contributions from forks outside the organization are not accepted — the PR
-workflow has a dedicated `fork-gate` job that fails any pull request opened
-from a fork, and branch protection requires that job to pass before merge. A
-fork PR therefore cannot go green and cannot merge.
+Contributions are made through pull requests from a branch **in this
+repository**, not from a fork. The PR workflow
+([.github/workflows/pr.yml](.github/workflows/pr.yml)) has a `fork-gate` job
+that fails any pull request opened from a fork; that failure cascades to the
+`results` aggregator, which is the gate on merge. If you can't push a branch to
+this repository, you don't have the access you need — sort that out before
+opening a PR.
 
-To contribute:
-
-1. **Join the `bcgov` GitHub organization.** If you're not already a member,
-   request membership through your team or the BC Gov DevOps onboarding process.
-2. **Request write access to this repository.** Maintainers grant write access
-   so you can push feature branches and open pull requests directly against this
-   repo. You do **not** fork — you branch.
-
-If you can't push a branch to this repository, you don't yet have the access you
-need; sort that out before opening a PR.
+**Commits must be signed.** The `main` branch ruleset requires signed commits,
+so the merge will be blocked otherwise. Set up SSH or GPG commit signing once
+per machine — see [GitHub's docs](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification).
 
 ## How contributions work
 
-All changes are made through pull requests from a branch **in this repository**.
-Direct pushes to `main` are not permitted, and PRs from forks are not run.
-
-1. **Branch** — with your granted write access, create a feature branch in this
-   repo for your change. (Forks are not supported.)
+1. **Branch** — create a feature branch in this repo for your change. (Forks
+   are not supported by the PR workflow.)
 2. **Add or update a skill** — for a new skill, first confirm no [upstream
    catalog](#before-adding-a-new-skill-check-upstream-catalogs-first) already
    covers it. Then follow [spec/SKILL_SPEC.md](spec/SKILL_SPEC.md) and start
@@ -40,9 +32,13 @@ Direct pushes to `main` are not permitted, and PRs from forks are not run.
    `0.1.0`.
 4. **Validate locally** — `uv run python scripts/validate_skill.py skills/<name>/SKILL.md`.
 5. **Open a pull request** — describe what the skill does and why it's useful.
-6. **Pass the checks** — the PR check validates every changed skill.
-7. **Review & merge** — a maintainer reviews; once approved and green, it merges
-   and the publish workflow ships the bumped version as an npm package.
+6. **Pass the checks** — the PR workflow validates the skills your branch
+   changed (diffed against the base branch).
+7. **Merge** — once the `results` check is green and your branch is up to date
+   with `main`, the PR can be merged (squash or merge commit; rebase is
+   disabled). The publish workflow then ships any bumped versions as npm
+   packages. Review is encouraged but not gated by the ruleset — see
+   [Review expectations](#review-expectations).
 
 ## Before adding a new skill: check upstream catalogs first
 
@@ -54,16 +50,14 @@ makes it ambiguous which one consumers should install.
 Check these first:
 
 1. **[Microsoft Agent Skills catalog](https://microsoft.github.io/skills/#agents)**
-   — ~170 skills covering Azure SDKs (Python, .NET, Java, TypeScript, Rust),
-   Microsoft Foundry, M365, Entra, Azure Resource Manager, plus cross-cutting
-   workflows such as `azure-prepare`, `azure-deploy`, `azure-validate`,
-   `azure-cost`, `microsoft-docs`, `kql`, `mcp-builder`, and
-   `cloud-solution-architect`. Installable via `npx skills add microsoft/skills`.
+   — a large catalog of skills covering Azure SDKs, Microsoft Foundry, M365,
+   Entra, Azure Resource Manager, plus cross-cutting workflows (`azure-prepare`,
+   `azure-deploy`, `azure-validate`, `azure-cost`, `microsoft-docs`, `kql`,
+   `mcp-builder`, `cloud-solution-architect`, and others).
 2. **[Anthropic's `anthropics/skills`](https://github.com/anthropics/skills)** —
-   the canonical upstream that hosts the Agent Skills specification (see also
-   [agentskills.io](https://agentskills.io)) plus reference skills for document
-   work (`pdf`, `docx`, `xlsx`, `pptx`) and creative, development, and
-   enterprise patterns. The `SKILL.md` format this repo uses originates here.
+   reference skills for document work (`pdf`, `docx`, `xlsx`, `pptx`) and other
+   patterns, plus material on the SKILL.md format this repo follows (see also
+   [agentskills.io](https://agentskills.io)).
 3. **[awesome-copilot](https://github.com/github/awesome-copilot)** — the
    community-curated index of skills, prompts, custom agents, and hooks; it
    also distributes vendor plugin catalogs (M365 Agents Toolkit, Power BI,
@@ -133,78 +127,87 @@ on demand by `uv run`. Common commands:
 
 ```bash
 make format     # auto-format Python (2-space indent, double quotes)
-make lint       # lint Python: style, imports, docstrings, bug patterns
+make lint       # lint Python with ruff + workflow YAML with yamllint
 make test       # run the validator unit tests
 make validate   # validate every skill
+make pack       # dry-run each publishable skill's npm package
 ```
 
 Python is formatted and linted with [ruff](https://docs.astral.sh/ruff/),
 configured in `pyproject.toml` (2-space indentation, double quotes, and
-docstrings required on every function). Run `make format` before pushing.
+docstrings required on every function). Workflow YAML under
+`.github/workflows/` is linted with [yamllint](https://yamllint.readthedocs.io/),
+configured in `.yamllint` at the repo root. Run `make format` before pushing.
 
 ## PR checks
 
-Pull requests **opened from a branch in this repository** run two real jobs
-after a hard fork-gate, plus a final aggregator. PRs opened from a fork fail at
-the gate (see access requirements above).
+The PR workflow ([.github/workflows/pr.yml](.github/workflows/pr.yml)) runs four
+jobs in three phases:
 
-0. **fork-gate** — runs first and fails immediately if the PR's head repo is
-   not this repo. This is a real failed status check, not a neutral skip, so
-   branch protection can require it.
-1. **Codebase** — runs next, because broken tooling makes validating skill
-   output meaningless. It checks the code that produces skills:
-   - `ruff format --check` — Python is correctly formatted,
-   - `ruff check` — lint, import order, and docstring coverage pass,
-   - `pytest` — the validator's unit tests pass.
-2. **Skills** — runs only after the codebase job passes. It runs
-   `scripts/validate_skill.py` against the skills your PR changed and confirms:
+0. **fork-gate** — runs first and fails if the PR's head repo is not this repo.
+   The failure cascades to `results`, so fork PRs cannot merge.
+1. **lint-tests** — runs after `fork-gate`, because broken tooling makes
+   validating skill output meaningless. It checks the code that produces skills:
+   - `uv run ruff format --check .` — Python is correctly formatted,
+   - `uv run ruff check .` — lint, import order, and docstring coverage pass,
+   - `uv run pytest -q` — the validator's unit tests pass.
+2. **skills** — runs only after `lint-tests` passes. It runs
+   `scripts/validate_skill.py` against the skills your PR changed (diffed
+   against the base branch) and confirms:
    - the frontmatter block exists, is closed, and parses as a mapping,
    - `name` and `description` are present and non-empty,
    - `name` is kebab-case (≤64 chars) and matches the skill's directory name,
    - `description` is ≤1024 chars with no angle brackets,
-   - no unexpected frontmatter keys are present,
+   - no unexpected frontmatter keys are present (only `name`, `description`,
+     `owner`, `tags`, `license`, `allowed-tools`, `compatibility`, `metadata`),
    - the body has an H1 title,
    - all seven required sections are present and non-empty,
    - the manifest is at most 500 lines,
    - any bundled `scripts/`, `references/`, or `assets/` directory is flat,
    - a `package.json` sits beside the manifest with a valid `name` and a semver
      `version`, and no `files` whitelist (the whole skill folder bundles
-     automatically).
+     automatically). `package.json` is required for publishable skills under
+     `skills/`; for meta-skills under `.github/skills/` it is optional, and
+     only validated when present.
+3. **results** — always runs, depends on the other three, and fails if any of
+   them failed or was cancelled. It is designed to be the single required
+   status check on `main` so adding or renaming jobs in `pr.yml` doesn't
+   require touching branch protection.
 
-A PR cannot merge until both jobs pass. Failure output names the exact issue so
-you can fix and re-push.
+Failure output names the exact issue so you can fix and re-push.
 
-There is also a fourth job, **results**, that always runs, depends on the
-three above, and fails if any of them failed or was cancelled. It exists so
-branch protection only has to require **one** status check (see below) —
-adding or renaming jobs in the workflow never requires updating branch
-protection.
+## Branch protection on `main`
 
-## Maintainer setup
+GitHub branch-protection lives in repo settings, not in the workflow files. The
+active configuration for `main` is the ["main" repository ruleset](https://github.com/bcgov/agent-skills/settings/rules/17296594)
+(`gh api /repos/bcgov/agent-skills/rulesets/17296594`). At time of writing it
+enforces:
 
-The contribution model above relies on a few one-time settings on the `main`
-branch. If you are setting this repository up (or auditing it), confirm all of
-these under **Settings → Branches → Branch protection rules → `main`**:
+- **Pull request required** before merging. Approvals are not required by the
+  ruleset (review is by convention), code-owner review is not required, and
+  allowed merge methods are squash and merge commit (rebase is disabled).
+- **Required status check: `results`** (strict — branch must be up to date with
+  `main`). `results` aggregates `fork-gate`, `lint-tests`, and `skills` from
+  [.github/workflows/pr.yml](.github/workflows/pr.yml), so requiring just this
+  one check means new jobs added to `pr.yml` are picked up automatically with
+  no ruleset edit.
+- **Signed commits required** on every commit that lands on `main`.
+- **CodeQL** code scanning required at the high-or-higher severity threshold.
+- **Force-push blocked** (`non_fast_forward`) and **branch deletion blocked**.
+- **No bypass** — `bypass_actors` is empty and `current_user_can_bypass` is
+  `never`, so even admins land changes through PRs.
 
-- **Require a pull request before merging.** Direct pushes to `main` are
-  blocked; every change goes through a reviewed PR.
-- **Require approvals** — at least one maintainer review (use the
-  `@bcgov/agent-skills-maintainers` team via [.github/CODEOWNERS](.github/CODEOWNERS)).
-- **Require status checks to pass before merging**, and mark exactly one check
-  as required:
-  - `results` — the aggregator that fails if `fork-gate`, `lint-tests`, or
-    `skills` failed or was cancelled. Requiring only this check means new
-    jobs added to `pr.yml` are picked up automatically, with no branch-
-    protection edit.
-- **Require branches to be up to date before merging** — keeps the validator
-  run honest by re-running against the latest `main`.
-- **Restrict who can push to matching branches** — empty list (everyone goes
-  through PRs, including maintainers).
-- **Do not allow bypassing the above settings** — even admins land changes
-  through PRs.
+If you want CODEOWNERS-based review on top of that, add ownership rules to
+[.github/CODEOWNERS](.github/CODEOWNERS) (it currently has no rules) and turn
+on "Require review from Code Owners" in the ruleset.
 
-Dependabot PRs run through the same gates, which is exactly what we want: a
-supply-chain bump that breaks the validator stays red until a human fixes it.
+Dependabot is configured in [.github/dependabot.yml](.github/dependabot.yml)
+to open weekly PRs for GitHub Actions and Python dependencies. Those PRs run
+through the same PR workflow as any other change, and
+[.github/workflows/dependabot-auto-merge.yml](.github/workflows/dependabot-auto-merge.yml)
+approves and enables auto-merge for them — so a green Dependabot PR merges
+itself once `results` passes, and a Dependabot bump that breaks the validator
+stays red until a human fixes it.
 
 ## Review expectations
 
