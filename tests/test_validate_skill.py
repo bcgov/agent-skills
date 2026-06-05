@@ -1,0 +1,560 @@
+"""Unit tests for the SKILL.md validator.
+
+Run with: python -m pytest tests/ -q
+
+There is one test (or a focused cluster of tests) for every function in
+``scripts/validate_skill.py`` — the frontmatter parsers, the body and package
+checks, the filesystem/git discovery helpers, and the CLI entry point.
+"""
+
+import json
+import os
+import sys
+import tempfile
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+
+import validate_skill as v  # noqa: E402
+
+VALID = """---
+name: demo
+description: A demo skill.
+---
+
+# Demo
+One sentence summary.
+
+## Use When
+- something
+
+## Don't Use When
+- other → other-skill
+
+## Workflow
+1. do a thing
+
+## Rules
+- Always be careful
+
+## Examples
+- "do it" → does it
+
+## Edge Cases
+- If empty → fall back
+
+## References
+See [references/REFERENCE.md](references/REFERENCE.md)
+"""
+
+VALID_PKG = {
+  "name": "@bcgov/skill-demo",
+  "version": "0.1.0",
+}
+
+
+# --- Test helpers -----------------------------------------------------------
+
+
+def _errors(text):
+  """Run the full body + frontmatter validation pass over a SKILL.md string.
+
+  Args:
+    text: The complete contents of a SKILL.md file to validate.
+
+  Returns:
+    The combined list of frontmatter and body error strings (empty when the
+    document is spec-compliant).
+  """
+  data, body, errs = v.parse_frontmatter(text)
+  return errs + v.validate_frontmatter(data) + v.validate_body(body)
+
+
+def _make_skill(root, name="demo"):
+  """Write a valid SKILL.md + package.json pair into a fresh skill directory.
+
+  Args:
+    root: Directory in which to create the skill subdirectory.
+    name: Name of the skill subdirectory to create.
+
+  Returns:
+    The path to the created skill directory.
+  """
+  skill_dir = os.path.join(root, name)
+  os.makedirs(skill_dir, exist_ok=True)
+  with open(os.path.join(skill_dir, "SKILL.md"), "w", encoding="utf-8") as f:
+    f.write(VALID)
+  with open(os.path.join(skill_dir, "package.json"), "w", encoding="utf-8") as f:
+    json.dump(dict(VALID_PKG), f)
+  return skill_dir
+
+
+# --- parse_frontmatter ------------------------------------------------------
+
+
+def test_parse_frontmatter_missing():
+  """Text without an opening fence is reported as missing frontmatter."""
+  data, _, errs = v.parse_frontmatter("# no frontmatter")
+  assert data is None
+  assert any("frontmatter" in e for e in errs)
+
+
+def test_parse_frontmatter_unclosed():
+  """An opening fence with no closing fence is reported as not closed."""
+  data, _, errs = v.parse_frontmatter("---\nname: x\n# body never closes")
+  assert data is None
+  assert any("not closed" in e for e in errs)
+
+
+def test_parse_frontmatter_valid():
+  """A well-formed document yields the mapping and the body after the fence."""
+  data, body, errs = v.parse_frontmatter(VALID)
+  assert errs == []
+  assert data["name"] == "demo"
+  assert body.lstrip().startswith("# Demo")
+
+
+def test_parse_frontmatter_invalid_yaml():
+  """A frontmatter block that is not valid YAML is reported."""
+  data, _, errs = v.parse_frontmatter("---\nname: : :\n---\nbody")
+  assert data is None
+  assert any("YAML" in e for e in errs)
+
+
+def test_parse_frontmatter_non_mapping():
+  """A frontmatter block that is a list, not a mapping, is reported."""
+  data, _, errs = v.parse_frontmatter("---\n- a\n- b\n---\nbody")
+  assert data is None
+  assert any("mapping" in e for e in errs)
+
+
+# --- validate_frontmatter ---------------------------------------------------
+
+
+def test_validate_frontmatter_none_is_empty():
+  """A None mapping yields no errors (a parse error was already reported)."""
+  assert v.validate_frontmatter(None) == []
+
+
+def test_validate_frontmatter_missing_field():
+  """A mapping missing a required field is reported by field name."""
+  errs = v.validate_frontmatter({"name": "x"})
+  assert any("description" in e for e in errs)
+
+
+def test_validate_frontmatter_empty_value():
+  """A required field present but blank is treated as missing."""
+  errs = v.validate_frontmatter({"name": "   ", "description": "d"})
+  assert any("name" in e for e in errs)
+
+
+def test_validate_frontmatter_bad_name_format():
+  """A name with uppercase or consecutive hyphens is reported as not kebab-case."""
+  errs = v.validate_frontmatter({"name": "Bad--Name", "description": "d"})
+  assert any("kebab-case" in e for e in errs)
+
+
+def test_validate_frontmatter_name_too_long():
+  """A name longer than the 64-char limit is reported."""
+  errs = v.validate_frontmatter({"name": "a" * 65, "description": "d"})
+  assert any("64-char" in e for e in errs)
+
+
+def test_validate_frontmatter_description_too_long():
+  """A description longer than the 1024-char limit is reported."""
+  errs = v.validate_frontmatter({"name": "demo", "description": "x" * 1025})
+  assert any("1024-char" in e for e in errs)
+
+
+def test_validate_frontmatter_description_angle_brackets():
+  """A description containing angle brackets is reported."""
+  errs = v.validate_frontmatter({"name": "demo", "description": "use <here>"})
+  assert any("angle brackets" in e for e in errs)
+
+
+def test_validate_frontmatter_unexpected_key():
+  """A frontmatter key outside the allowlist is reported."""
+  errs = v.validate_frontmatter({"name": "demo", "description": "d", "bogus": 1})
+  assert any("unexpected key" in e and "bogus" in e for e in errs)
+
+
+def test_validate_frontmatter_allows_optional_keys():
+  """The optional standard + repo keys pass without error."""
+  errs = v.validate_frontmatter(
+    {
+      "name": "demo",
+      "description": "d",
+      "owner": "team",
+      "tags": ["a"],
+      "license": "Apache-2.0",
+      "allowed-tools": "Read",
+      "compatibility": "python3",
+      "metadata": {"k": "v"},
+    }
+  )
+  assert errs == []
+
+
+# --- validate_name_matches_dir ----------------------------------------------
+
+
+def test_name_matches_dir_ok():
+  """A name equal to the directory basename passes."""
+  assert v.validate_name_matches_dir({"name": "demo"}, "/x/skills/demo") == []
+
+
+def test_name_matches_dir_mismatch():
+  """A name that differs from the directory basename is reported."""
+  errs = v.validate_name_matches_dir({"name": "demo"}, "/x/skills/other")
+  assert any("must match the skill directory" in e for e in errs)
+
+
+# --- validate_resource_layout -----------------------------------------------
+
+
+def test_resource_layout_flat_ok():
+  """Flat files under references/ pass with no error."""
+  with tempfile.TemporaryDirectory() as d:
+    os.makedirs(os.path.join(d, "references"))
+    open(os.path.join(d, "references", "REFERENCE.md"), "w").close()
+    assert v.validate_resource_layout(d) == []
+
+
+def test_resource_layout_nested_reported():
+  """A nested subdirectory under scripts/ is reported."""
+  with tempfile.TemporaryDirectory() as d:
+    os.makedirs(os.path.join(d, "scripts", "nested"))
+    errs = v.validate_resource_layout(d)
+    assert any("one level deep" in e for e in errs)
+
+
+# --- _heading_positions -----------------------------------------------------
+
+
+def test_heading_positions_finds_all_headings():
+  """Every markdown heading offset is returned in document order."""
+  body = "# A\ntext\n## B\nmore\n### C\n"
+  pos = v._heading_positions(body)
+  assert len(pos) == 3
+  assert pos == sorted(pos)
+
+
+# --- _content_after ---------------------------------------------------------
+
+
+def test_content_after_returns_section_text():
+  """The text between a heading and the next heading is returned, stripped."""
+  body = "## A\nalpha\n## B\nbeta\n"
+  heads = v._heading_positions(body)
+  assert v._content_after(body, heads[0], heads) == "alpha"
+
+
+def test_content_after_empty_section():
+  """A heading immediately followed by another heading yields empty text."""
+  body = "## A\n## B\nbeta\n"
+  heads = v._heading_positions(body)
+  assert v._content_after(body, heads[0], heads) == ""
+
+
+# --- validate_body ----------------------------------------------------------
+
+
+def test_validate_body_valid():
+  """The body of a compliant document produces no errors."""
+  _, body, _ = v.parse_frontmatter(VALID)
+  assert v.validate_body(body) == []
+
+
+def test_validate_body_empty():
+  """An empty body is reported as missing the required sections."""
+  assert any("empty" in e for e in v.validate_body("   "))
+
+
+def test_validate_body_missing_h1():
+  """A body with no H1 title line is reported."""
+  errs = v.validate_body("## Use When\n- x\n")
+  assert any("H1" in e for e in errs)
+
+
+def test_valid_module_has_no_errors():
+  """A fully spec-compliant SKILL.md produces no validation errors."""
+  assert _errors(VALID) == []
+
+
+# --- validate_length --------------------------------------------------------
+
+
+def test_validate_length_within_limit():
+  """A SKILL.md at or under the line cap produces no error."""
+  text = "\n".join(["x"] * v.MAX_SKILL_LINES)
+  assert v.validate_length(text) == []
+
+
+def test_validate_length_over_limit():
+  """A SKILL.md past the line cap is reported, pointing at references/."""
+  text = "\n".join(["x"] * (v.MAX_SKILL_LINES + 1))
+  errs = v.validate_length(text)
+  assert any("exceeds" in e and "references/" in e for e in errs)
+
+
+def test_missing_required_section():
+  """Omitting a required ## section is reported by section name."""
+  text = VALID.replace("## Edge Cases\n- If empty → fall back\n\n", "")
+  errs = _errors(text)
+  assert any("Edge Cases" in e for e in errs)
+
+
+def test_empty_required_section():
+  """A required ## section with no content is reported as empty."""
+  text = VALID.replace("## Rules\n- Always be careful", "## Rules\n")
+  errs = _errors(text)
+  assert any("Rules" in e and "empty" in e for e in errs)
+
+
+def test_h1_without_summary_is_valid():
+  """An H1 title with no summary line beneath it is accepted (summary dropped)."""
+  text = VALID.replace("# Demo\nOne sentence summary.", "# Demo")
+  assert _errors(text) == []
+
+
+def test_missing_name_and_description():
+  """Both required frontmatter fields are reported when each is absent."""
+  # Keep the frontmatter block closed (swap the keys out) so we exercise the
+  # per-field check rather than the "block not closed" path.
+  text = VALID.replace("name: demo", "version: 0.1.0").replace(
+    "description: A demo skill.", "owner: someone"
+  )
+  errs = _errors(text)
+  assert any("name" in e for e in errs)
+  assert any("description" in e for e in errs)
+
+
+# --- _check_package_dict ----------------------------------------------------
+
+
+def test_valid_package_has_no_errors():
+  """A package.json with a valid name and semver version passes cleanly."""
+  assert v._check_package_dict(dict(VALID_PKG)) == []
+
+
+def test_check_package_dict_rejects_non_dict():
+  """A non-object package payload is rejected."""
+  assert any("object" in e for e in v._check_package_dict(["not", "a", "dict"]))
+
+
+def test_package_missing_name():
+  """A package.json without a name field is reported."""
+  pkg = dict(VALID_PKG)
+  del pkg["name"]
+  assert any("name" in e for e in v._check_package_dict(pkg))
+
+
+def test_package_missing_version():
+  """A package.json without a version field is reported."""
+  pkg = dict(VALID_PKG)
+  del pkg["version"]
+  assert any("version" in e for e in v._check_package_dict(pkg))
+
+
+def test_package_bad_semver():
+  """A version string that is not valid semver is reported."""
+  pkg = dict(VALID_PKG)
+  pkg["version"] = "v1"
+  assert any("semver" in e for e in v._check_package_dict(pkg))
+
+
+def test_package_rejects_files_field():
+  """A 'files' whitelist is rejected because it breaks directory bundling."""
+  # A 'files' whitelist defeats whole-directory bundling, so it's forbidden.
+  pkg = dict(VALID_PKG)
+  pkg["files"] = ["SKILL.md"]
+  assert any("files" in e for e in v._check_package_dict(pkg))
+
+
+# --- _skill_md_excluded_by_npmignore ----------------------------------------
+
+
+def test_npmignore_absent_returns_false():
+  """With no .npmignore present, SKILL.md is not excluded."""
+  with tempfile.TemporaryDirectory() as d:
+    assert v._skill_md_excluded_by_npmignore(d) is False
+
+
+def test_npmignore_excludes_skill_md():
+  """An .npmignore that lists SKILL.md excludes it from the package."""
+  with tempfile.TemporaryDirectory() as d:
+    with open(os.path.join(d, ".npmignore"), "w", encoding="utf-8") as f:
+      f.write("SKILL.md\n")
+    assert v._skill_md_excluded_by_npmignore(d) is True
+
+
+def test_npmignore_negation_reincludes_skill_md():
+  """A later '!' negation re-includes a previously excluded SKILL.md."""
+  with tempfile.TemporaryDirectory() as d:
+    with open(os.path.join(d, ".npmignore"), "w", encoding="utf-8") as f:
+      f.write("*.md\n!SKILL.md\n")
+    assert v._skill_md_excluded_by_npmignore(d) is False
+
+
+# --- validate_package -------------------------------------------------------
+
+
+def test_validate_package_missing():
+  """A directory with no package.json is reported for a publishable skill."""
+  with tempfile.TemporaryDirectory() as d:
+    assert any("package.json" in e for e in v.validate_package(d))
+
+
+def test_validate_package_optional_for_meta_skill():
+  """A meta-skill under .github/skills/ with no package.json passes (not published)."""
+  with tempfile.TemporaryDirectory() as root:
+    meta = os.path.join(root, ".github", "skills", "skill-author")
+    os.makedirs(meta)
+    assert v.validate_package(meta) == []
+
+
+def test_validate_package_validated_when_present_for_meta_skill():
+  """A meta-skill that ships a package.json is still validated when present."""
+  with tempfile.TemporaryDirectory() as root:
+    meta = os.path.join(root, ".github", "skills", "skill-author")
+    os.makedirs(meta)
+    with open(os.path.join(meta, "package.json"), "w", encoding="utf-8") as f:
+      f.write("{ not json")
+    assert any("JSON" in e for e in v.validate_package(meta))
+
+
+def test_validate_package_invalid_json():
+  """A package.json that is not valid JSON is reported."""
+  with tempfile.TemporaryDirectory() as d:
+    with open(os.path.join(d, "package.json"), "w", encoding="utf-8") as f:
+      f.write("{ not json")
+    assert any("JSON" in e for e in v.validate_package(d))
+
+
+def test_validate_package_valid():
+  """A directory with a valid package.json passes with no errors."""
+  with tempfile.TemporaryDirectory() as d:
+    with open(os.path.join(d, "package.json"), "w", encoding="utf-8") as f:
+      json.dump(dict(VALID_PKG), f)
+    assert v.validate_package(d) == []
+
+
+def test_validate_package_npmignore_excludes_skill_md():
+  """A valid package.json with an excluding .npmignore is still reported."""
+  with tempfile.TemporaryDirectory() as d:
+    with open(os.path.join(d, "package.json"), "w", encoding="utf-8") as f:
+      json.dump(dict(VALID_PKG), f)
+    with open(os.path.join(d, ".npmignore"), "w", encoding="utf-8") as f:
+      f.write("SKILL.md\n")
+    assert any("npmignore" in e for e in v.validate_package(d))
+
+
+# --- validate_file ----------------------------------------------------------
+
+
+def test_validate_file_not_found():
+  """A path that does not exist is reported as not found."""
+  assert any("not found" in e for e in v.validate_file("/no/such/SKILL.md"))
+
+
+def test_validate_file_valid_skill():
+  """A complete skill directory validates with no errors end to end."""
+  with tempfile.TemporaryDirectory() as root:
+    skill_dir = _make_skill(root)
+    assert v.validate_file(os.path.join(skill_dir, "SKILL.md")) == []
+
+
+# --- discover_all -----------------------------------------------------------
+
+
+def test_discover_all_finds_manifests_under_both_roots():
+  """SKILL.md files under both skills/ and .github/skills/ are discovered."""
+  with tempfile.TemporaryDirectory() as root:
+    os.makedirs(os.path.join(root, "skills", "demo"))
+    open(os.path.join(root, "skills", "demo", "SKILL.md"), "w").close()
+    os.makedirs(os.path.join(root, ".github", "skills", "meta"))
+    open(os.path.join(root, ".github", "skills", "meta", "SKILL.md"), "w").close()
+    cwd = os.getcwd()
+    try:
+      os.chdir(root)
+      found = v.discover_all()
+    finally:
+      os.chdir(cwd)
+    # Paths are normalized to forward slashes on every platform.
+    assert found == [
+      ".github/skills/meta/SKILL.md",
+      "skills/demo/SKILL.md",
+    ]
+
+
+# --- changed_modules --------------------------------------------------------
+
+
+def test_changed_modules_maps_changed_files_to_manifests():
+  """Changed files under either root map to their manifest; others are ignored."""
+
+  class _FakeProc:
+    returncode = 0
+    stdout = (
+      "skills/demo/SKILL.md\n"
+      ".github/skills/meta/package.json\n"
+      "README.md\n"
+      "scripts/validate_skill.py\n"
+    )
+
+  with tempfile.TemporaryDirectory() as root:
+    os.makedirs(os.path.join(root, "skills", "demo"))
+    open(os.path.join(root, "skills", "demo", "SKILL.md"), "w").close()
+    os.makedirs(os.path.join(root, ".github", "skills", "meta"))
+    open(os.path.join(root, ".github", "skills", "meta", "SKILL.md"), "w").close()
+    orig_run = v.subprocess.run
+    cwd = os.getcwd()
+    try:
+      v.subprocess.run = lambda *a, **k: _FakeProc()
+      os.chdir(root)
+      mods = v.changed_modules("origin/main")
+    finally:
+      os.chdir(cwd)
+      v.subprocess.run = orig_run
+    # Manifest paths use forward slashes on every platform.
+    assert mods == [
+      ".github/skills/meta/SKILL.md",
+      "skills/demo/SKILL.md",
+    ]
+
+
+def test_changed_modules_returns_empty_when_git_missing():
+  """A host without git produces a clean empty result instead of a stack trace."""
+
+  def _raise(*_a, **_k):
+    raise FileNotFoundError("git")
+
+  orig_run = v.subprocess.run
+  try:
+    v.subprocess.run = _raise
+    assert v.changed_modules("origin/main") == []
+  finally:
+    v.subprocess.run = orig_run
+
+
+# --- main -------------------------------------------------------------------
+
+
+def test_main_no_targets_returns_zero():
+  """With no skills selected, the CLI is a no-op that succeeds."""
+  assert v.main([]) == 0
+
+
+def test_main_valid_path_returns_zero():
+  """A valid skill passed by path makes the CLI exit 0."""
+  with tempfile.TemporaryDirectory() as root:
+    skill_dir = _make_skill(root)
+    assert v.main([os.path.join(skill_dir, "SKILL.md")]) == 0
+
+
+def test_main_invalid_path_returns_one():
+  """A non-compliant skill makes the CLI exit 1."""
+  with tempfile.TemporaryDirectory() as root:
+    path = os.path.join(root, "SKILL.md")
+    with open(path, "w", encoding="utf-8") as f:
+      f.write("no frontmatter at all")
+    assert v.main([path]) == 1

@@ -1,0 +1,96 @@
+name: PR
+
+# Runs on every pull request. Three jobs run in order:
+#   1. fork-gate — always runs. Fails fast on PRs opened from a fork so we never
+#      spend CI minutes on (or grant any token to) untrusted code. Marking this
+#      job a REQUIRED status check on `main` is what actually blocks fork PRs
+#      from merging; the `if:` skip pattern produces a neutral status that
+#      branch protection happily merges over.
+#   2. lint-tests — formats, lints, and unit-tests the tooling that produces
+#      skills (scripts/, tests/, pyproject.toml). Runs after fork-gate: if the
+#      generator is broken, validating skill output is meaningless.
+#   3. skills     — validates the SKILL.md profiles the PR changed. Gated on
+#      lint-tests passing.
+#
+# Action pinning policy:
+#   * First-party actions owned by GitHub (actions/*) are pinned to a major
+#     version tag — GitHub guarantees those tags forward-only. Easier to read,
+#     Dependabot still bumps majors.
+#   * Third-party actions are pinned to an immutable commit SHA with the
+#     human-readable version in a trailing comment, so a tag hijack cannot
+#     silently swap the action's code under us. Dependabot bumps these too.
+
+on:
+  pull_request:
+    paths:
+      - "skills/**"
+      - ".github/skills/**"
+      - "scripts/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/pr.yml"
+      - ".github/scripts/**"
+
+# Least privilege: every job here only reads the repo.
+permissions:
+  contents: read
+
+jobs:
+  # 0. Hard gate: fail loudly on PRs opened from a fork. This produces a real
+  #    failed status check (not a neutral "skipped") so branch protection can
+  #    require it before merge. Maintainers re-land fork PRs from an in-repo
+  #    branch after review.
+  fork-gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject PRs from forks
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "PR opened from fork ($HEAD_REPO); maintainers must re-land it from a branch in $BASE_REPO."
+            exit 1
+          fi
+
+  # 1. Validate the codebase that produces skills — runs before skill validation.
+  lint-tests:
+    needs: fork-gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history so we can diff against the base branch
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.19"
+          enable-cache: true
+
+      - name: Check Python formatting (2-space, double quotes)
+        run: uv run ruff format --check .
+
+      - name: Lint Python (style, imports, docstrings)
+        run: uv run ruff check .
+
+      - name: Run unit tests
+        run: uv run pytest -q
+
+  # 2. Validate the skill profiles the PR changed — only after codebase passes.
+  skills:
+    needs: lint-tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history so we can diff against the base branch
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.19"
+          enable-cache: true
+
+      - name: Validate changed skills
+        run: uv run python scripts/validate_skill.py --base "origin/${{ github.base_ref }}"

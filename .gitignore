@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# Node / npm (skill packaging)
+node_modules/
+*.tgz
+
+# OS / editor noise
+.DS_Store
+*.swp
+.copilot-memory

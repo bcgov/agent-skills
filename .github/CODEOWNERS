@@ -1,0 +1,6 @@
+# Code owners for agent-skills.
+#
+# A code owner is auto-requested as a reviewer on PRs touching the matching
+# paths. Combined with branch protection ("require review from code owners"),
+# this guarantees a maintainer eyeballs every change before merge.
+#
