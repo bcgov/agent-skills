@@ -1,0 +1,37 @@
+# yamllint config for this repo.
+#
+# Scope: today only `make lint` points yamllint at .github/workflows, so this
+# config is tuned for GitHub Actions workflow files. If we add more YAML to the
+# repo, revisit the rules below.
+#
+# Indent policy: 2 spaces, matching the rest of the codebase (ruff also runs at
+# indent-width = 2). Sequences ("- step") indent consistently under their key.
+extends: default
+
+rules:
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+    check-multi-line-strings: false
+
+  # GitHub Actions uses `on:` as a mapping key. YAML 1.1 treats on/off/yes/no
+  # as booleans, which would otherwise trigger truthy warnings. Whitelist `on`
+  # so the rest of the truthy rule (catching stray `yes`/`no` values) still
+  # protects us.
+  truthy:
+    allowed-values: ["true", "false", "on"]
+
+  # Workflow `if:` expressions and `run:` one-liners frequently exceed any
+  # sensible line-length cap.
+  line-length: disable
+
+  # Workflow files don't carry a `---` document marker.
+  document-start: disable
+
+  # Inline `# v1.2.3` comments after action SHAs are intentional pinning notes;
+  # don't require them to align with surrounding content.
+  comments-indentation: disable
+
+  comments:
+    require-starting-space: true
+    min-spaces-from-content: 1
