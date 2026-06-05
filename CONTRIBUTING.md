@@ -30,8 +30,10 @@ Direct pushes to `main` are not permitted, and PRs from forks are not run.
 
 1. **Branch** — with your granted write access, create a feature branch in this
    repo for your change. (Forks are not supported.)
-2. **Add or update a skill** — follow [spec/SKILL_SPEC.md](spec/SKILL_SPEC.md)
-   and start from [templates/SKILL.md](templates/SKILL.md) +
+2. **Add or update a skill** — for a new skill, first confirm no [upstream
+   catalog](#before-adding-a-new-skill-check-upstream-catalogs-first) already
+   covers it. Then follow [spec/SKILL_SPEC.md](spec/SKILL_SPEC.md) and start
+   from [templates/SKILL.md](templates/SKILL.md) +
    [templates/package.json](templates/package.json).
 3. **Bump the version** — if you're changing an existing skill, raise its
    `version` in that skill's `package.json` (see below). New skills start at
@@ -41,6 +43,47 @@ Direct pushes to `main` are not permitted, and PRs from forks are not run.
 6. **Pass the checks** — the PR check validates every changed skill.
 7. **Review & merge** — a maintainer reviews; once approved and green, it merges
    and the publish workflow ships the bumped version as an npm package.
+
+## Before adding a new skill: check upstream catalogs first
+
+This repository is for **BC Gov–specific** skills. Before adding a new skill,
+confirm it isn't already published in an upstream catalog. Duplicating an
+upstream skill fragments the ecosystem, doubles the maintenance burden, and
+makes it ambiguous which one consumers should install.
+
+Check these first:
+
+1. **[Microsoft Agent Skills catalog](https://microsoft.github.io/skills/#agents)**
+   — ~170 skills covering Azure SDKs (Python, .NET, Java, TypeScript, Rust),
+   Microsoft Foundry, M365, Entra, Azure Resource Manager, plus cross-cutting
+   workflows such as `azure-prepare`, `azure-deploy`, `azure-validate`,
+   `azure-cost`, `microsoft-docs`, `kql`, `mcp-builder`, and
+   `cloud-solution-architect`. Installable via `npx skills add microsoft/skills`.
+2. **[Anthropic's `anthropics/skills`](https://github.com/anthropics/skills)** —
+   the canonical upstream that hosts the Agent Skills specification (see also
+   [agentskills.io](https://agentskills.io)) plus reference skills for document
+   work (`pdf`, `docx`, `xlsx`, `pptx`) and creative, development, and
+   enterprise patterns. The `SKILL.md` format this repo uses originates here.
+3. **[awesome-copilot](https://github.com/github/awesome-copilot)** — the
+   community-curated index of skills, prompts, custom agents, and hooks; it
+   also distributes vendor plugin catalogs (M365 Agents Toolkit, Power BI,
+   Oracle-to-PostgreSQL, Spark, WorkIQ, and others) so one check covers them.
+
+If a skill that covers your use case already exists upstream:
+
+- **Don't re-publish it here.** Point consumers at the upstream skill instead.
+- **If it's close but not quite right**, prefer opening an issue or PR against
+  the upstream skill so the fix benefits the largest audience. Forking it here
+  should be a last resort.
+- **Only add a new skill in this repo if** it is genuinely BC Gov–specific —
+  e.g., it encodes BC Gov policies, conventions, internal services, regulatory
+  requirements, or organization-specific workflows that have no place in a
+  generic upstream catalog.
+
+Include the result of this check in your PR description — either "no upstream
+skill covers this" with a one-line justification, or a link to the upstream
+skill plus the BC Gov–specific gap that justifies a separate skill. Reviewers
+will ask for it otherwise.
 
 ## Skill structure
 
