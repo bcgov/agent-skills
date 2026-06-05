@@ -102,8 +102,8 @@ docstrings required on every function). Run `make format` before pushing.
 ## PR checks
 
 Pull requests **opened from a branch in this repository** run two real jobs
-after a hard fork-gate. PRs opened from a fork fail at the gate (see access
-requirements above).
+after a hard fork-gate, plus a final aggregator. PRs opened from a fork fail at
+the gate (see access requirements above).
 
 0. **fork-gate** — runs first and fails immediately if the PR's head repo is
    not this repo. This is a real failed status check, not a neutral skip, so
@@ -131,6 +131,12 @@ requirements above).
 A PR cannot merge until both jobs pass. Failure output names the exact issue so
 you can fix and re-push.
 
+There is also a fourth job, **results**, that always runs, depends on the
+three above, and fails if any of them failed or was cancelled. It exists so
+branch protection only has to require **one** status check (see below) —
+adding or renaming jobs in the workflow never requires updating branch
+protection.
+
 ## Maintainer setup
 
 The contribution model above relies on a few one-time settings on the `main`
@@ -141,11 +147,12 @@ these under **Settings → Branches → Branch protection rules → `main`**:
   blocked; every change goes through a reviewed PR.
 - **Require approvals** — at least one maintainer review (use the
   `@bcgov/agent-skills-maintainers` team via [.github/CODEOWNERS](.github/CODEOWNERS)).
-- **Require status checks to pass before merging**, and mark these three as
-  required so a fork PR or broken build cannot merge:
-  - `fork-gate`
-  - `lint-tests`
-  - `skills`
+- **Require status checks to pass before merging**, and mark exactly one check
+  as required:
+  - `results` — the aggregator that fails if `fork-gate`, `lint-tests`, or
+    `skills` failed or was cancelled. Requiring only this check means new
+    jobs added to `pr.yml` are picked up automatically, with no branch-
+    protection edit.
 - **Require branches to be up to date before merging** — keeps the validator
   run honest by re-running against the latest `main`.
 - **Restrict who can push to matching branches** — empty list (everyone goes
