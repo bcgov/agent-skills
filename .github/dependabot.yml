@@ -1,0 +1,26 @@
+# Dependabot keeps third-party action SHAs and Python deps current. The PR
+# workflow runs against every Dependabot PR, so if a bump breaks something we
+# learn about it in CI rather than in production.
+version: 2
+updates:
+  # GitHub Actions used by the workflows in .github/workflows. We pin
+  # third-party actions to a commit SHA with the version in a comment;
+  # Dependabot understands that pattern and will keep bumping the SHA.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+
+  # Python tooling (validator + tests). Declared in pyproject.toml; uv resolves
+  # them at runtime, but Dependabot watches the manifest for security and
+  # version updates.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"

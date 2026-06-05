@@ -1,0 +1,120 @@
+name: PR
+
+# Runs on every pull request. Four jobs, three phases:
+#   1. fork-gate  — always runs. Fails fast on PRs opened from a fork so we
+#      never spend CI minutes on (or grant any token to) untrusted code.
+#   2. lint-tests — formats, lints, and unit-tests the tooling that produces
+#      skills (scripts/, tests/, pyproject.toml). Runs after fork-gate: if the
+#      generator is broken, validating skill output is meaningless.
+#   3. skills     — validates the SKILL.md profiles the PR changed. Gated on
+#      lint-tests passing.
+#   4. results    — always runs (`if: always()`), needs every other job, and
+#      fails if any of them failed or was cancelled. This is the SINGLE
+#      required status check on `main`, so we can add or rename jobs in this
+#      file without touching branch protection.
+#
+# Action pinning policy:
+#   * First-party actions owned by GitHub (actions/*) are pinned to a major
+#     version tag — GitHub guarantees those tags forward-only. Easier to read,
+#     Dependabot still bumps majors.
+#   * Third-party actions are pinned to an immutable commit SHA with the
+#     human-readable version in a trailing comment, so a tag hijack cannot
+#     silently swap the action's code under us. Dependabot bumps these too.
+
+on:
+  pull_request:
+    paths:
+      - "skills/**"
+      - ".github/skills/**"
+      - "scripts/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/pr.yml"
+      - ".github/scripts/**"
+
+# Least privilege: every job here only reads the repo.
+permissions:
+  contents: read
+
+jobs:
+  # 0. Hard gate: fail loudly on PRs opened from a fork. This produces a real
+  #    failed status check (not a neutral "skipped") so branch protection can
+  #    require it before merge. Maintainers re-land fork PRs from an in-repo
+  #    branch after review.
+  fork-gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject PRs from forks
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: |
+          if [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "PR opened from fork ($HEAD_REPO); maintainers must re-land it from a branch in $BASE_REPO."
+            exit 1
+          fi
+
+  # 1. Validate the codebase that produces skills — runs before skill validation.
+  lint-tests:
+    needs: fork-gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history so we can diff against the base branch
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.19"
+          enable-cache: true
+
+      - name: Check Python formatting (2-space, double quotes)
+        run: uv run ruff format --check .
+
+      - name: Lint Python (style, imports, docstrings)
+        run: uv run ruff check .
+
+      - name: Run unit tests
+        run: uv run pytest -q
+
+  # 2. Validate the skill profiles the PR changed — only after codebase passes.
+  skills:
+    needs: lint-tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history so we can diff against the base branch
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.19"
+          enable-cache: true
+
+      - name: Validate changed skills
+        run: uv run python scripts/validate_skill.py --base "origin/${{ github.base_ref }}"
+
+  # 3. Aggregator. Always runs (even if upstream jobs failed or were cancelled)
+  #    and fails if any required job failed or was cancelled. Branch protection
+  #    only needs to require THIS one check — adding or renaming jobs above
+  #    never requires updating branch protection again.
+  #
+  #    Note: a `skipped` result is treated as a pass on purpose, so jobs we add
+  #    later with an `if:` filter (e.g. "only on changes to X") don't false-fail
+  #    the gate when they intentionally don't run.
+  results:
+    if: always()
+    needs: [fork-gate, lint-tests, skills]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if any required job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "At least one required job failed or was cancelled."
+          echo '${{ toJSON(needs) }}'
+          exit 1
+
+      - name: All required jobs passed
+        run: echo "All required jobs passed (or were intentionally skipped)."
