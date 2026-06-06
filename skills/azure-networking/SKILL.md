@@ -22,6 +22,8 @@ tags: [azure, networking, terraform, bicep, subnets, private-endpoints, nsg]
 - Provisioning AKS networking (CNI Overlay, private API server) — use upstream `azure-kubernetes`.
 - General azd-style app prep that happens to need a subnet — use upstream `azure-prepare`.
 
+*The upstream Microsoft `azure-*` skills referenced above live in the Microsoft `agent-skills` catalogue — install separately if not already in your agent environment.*
+
 ## Workflow
 1. **Anchor to the BC Gov Azure Landing Zone networking rules first — critical, must be followed.** Source of truth: [BC Gov Azure Landing Zone — Networking](https://raw.githubusercontent.com/bcgov/public-cloud-techdocs/refs/heads/main/docs/azure/design-build-deploy/networking.md). These platform constraints **override anything below if they conflict**:
    - **Platform-protected, do not create or modify** — VNets, VNet address space, VNet DNS settings, VNet peerings, ExpressRoute / VPN / NAT / Local Gateways, **Route Tables**, and the `setbypolicy` diagnostic setting. Request changes via the [Public Cloud Service Request](https://citz-do.atlassian.net/servicedesk/customer/portal/3).
@@ -50,7 +52,7 @@ tags: [azure, networking, terraform, bicep, subnets, private-endpoints, nsg]
 - Always set `privateEndpointNetworkPolicies = "Disabled"` on PE subnets. (Why: NSG enforcement on PE NICs requires the subnet flag to be off; otherwise PE traffic is silently dropped.)
 - Always size PE subnets for the **worst-case** service that will land on them. (Why: Cosmos DB PE consumes 2 IPs — one global + one regional endpoint; Azure AI Services "AIServices" kind exposes up to 3 sub-resources = 3 IPs per PE. A `/27` fills surprisingly fast.)
 - Always expose subnet IDs as outputs (Terraform `output`, Bicep `output`) even if no downstream stack reads them yet. (Why: adding outputs later is cheap, but a downstream stack that needs the ID can't read state it isn't exposed to.)
-- Never change vnet address space or create private DNS Zone as it is controlled by the platform team centrally.
+- Never modify VNet address space or create a Private DNS Zone — both are managed centrally by the platform team (see Step 1's platform-protected list; raise a [Public Cloud Service Request](https://citz-do.atlassian.net/servicedesk/customer/portal/3) instead).
 
 ## Examples
 - "Add a Container Apps Environment subnet" → declare the subnet with a `Microsoft.App/environments` delegation (Terraform `azapi_resource` body, Bicep `delegations` array on the subnet, or `az network vnet subnet create --delegations Microsoft.App/environments`); attach an NSG that allows outbound 443 to AzureContainerRegistry, AzureMonitor, AzureActiveDirectory, and VirtualNetwork; serialize against every other subnet in the VNet.
@@ -69,7 +71,7 @@ tags: [azure, networking, terraform, bicep, subnets, private-endpoints, nsg]
 
 See [references/REFERENCE.md](./references/REFERENCE.md) for the atomic subnet+NSG body shape in Terraform, Bicep, and az CLI; full NSG rule tables per subnet type; sibling-subnet serialization examples; App Gateway route-table requirements; PE subnet capacity math; and a failure playbook keyed by Azure error code.
 
-For broader Azure topics, prefer these upstream Microsoft skills instead of duplicating their guidance here:
+For broader Azure topics, prefer these upstream Microsoft skills (in the Microsoft `agent-skills` catalogue — install separately if not already in your agent environment) instead of duplicating their guidance here:
 - VNet, hub-spoke, and landing-zone design → `azure-enterprise-infra-planner`
 - Workload preparation (Bicep/Terraform scaffolding, azd) → `azure-prepare`
 - AKS-specific networking → `azure-kubernetes`

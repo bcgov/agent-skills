@@ -243,7 +243,8 @@ Port 80 is intentionally not allowed — let App Gateway terminate HTTPS and ski
 ## App Gateway Route Table (Asymmetric Routing Fix)
 
 App Gateway is one of the few subnets that often needs an explicit route table — typically a `0.0.0.0/0 → Internet` route to override a UDR that a hub-spoke topology applies at the VNet level, plus any internal corp ranges that must NOT egress through ExpressRoute / VWAN.
-- create a ticket with Azure Landing Zone platform team for creating the UDRs
+
+**BC Gov Landing Zone**: Route Tables are platform-protected (see SKILL.md Step 1 and the final Rule) — do **not** attach your own. Raise a [Public Cloud Service Request](https://citz-do.atlassian.net/servicedesk/customer/portal/3) describing the required UDRs (destination prefix, next-hop type, next-hop IP); the Azure Landing Zone platform team owns the create / update.
 
 ---
 
