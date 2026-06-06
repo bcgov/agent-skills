@@ -1,0 +1,369 @@
+<!-- TITLE: Your Page Title -->
+<!-- NAV: yourpagename -->
+<!--
+================================================================================
+DOCUMENTATION PAGE TEMPLATE
+================================================================================
+Copy this file to create a new documentation page.
+
+Steps:
+1. Copy this file: cp _template.html my-new-page.html
+2. Update TITLE comment above (appears in browser tab)
+3. Update NAV comment above (must match navigation link ID)
+4. Add NAV variable to build.sh: header="${header//\{\{NAV_YOURPAGENAME\}\}/}"
+5. Add link to _partials/header.html navigation
+6. Replace content below with your documentation
+7. Run: ./build.sh
+
+Available CSS classes are documented below with examples.
+================================================================================
+-->
+
+<h1>Page Title</h1>
+
+<p>Introductory paragraph explaining what this page covers. Keep it to 1-2 sentences.</p>
+
+<!-- ============================================================================
+     ALERTS / CALLOUTS
+     Use these to highlight important information
+     ============================================================================ -->
+
+<h2>Alerts</h2>
+
+<!-- Info Alert - Blue - For helpful tips and information -->
+<div class="alert alert-info">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
+    <div>
+        <strong>Info Alert</strong><br>
+        Use for helpful tips, notes, and general information.
+    </div>
+</div>
+
+<!-- Warning Alert - Yellow - For cautions and things to watch out for -->
+<div class="alert alert-warning">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+        <strong>Warning Alert</strong><br>
+        Use for cautions, deprecation notices, and things to watch out for.
+    </div>
+</div>
+
+<!-- Success Alert - Green - For confirmations and positive outcomes -->
+<div class="alert alert-success">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <div>
+        <strong>Success Alert</strong><br>
+        Use for confirmations, completed steps, and positive outcomes.
+    </div>
+</div>
+
+<!-- ============================================================================
+     CARDS
+     Use for grouping related content
+     ============================================================================ -->
+
+<h2>Cards</h2>
+
+<!-- Basic Card - Blue border -->
+<div class="card">
+    <h3>Basic Card</h3>
+    <p>Cards group related content with a subtle border and shadow. The default border color is BC Blue.</p>
+</div>
+
+<!-- Gold Card - Gold border -->
+<div class="card card-gold">
+    <h3>Gold Card</h3>
+    <p>Use the <code>card-gold</code> class for highlighted or featured content.</p>
+</div>
+
+<!-- Card with custom border color -->
+<div class="card" style="border-left-color: #22c55e;">
+    <h3>Custom Border Color</h3>
+    <p>Add inline style to customize: <code>style="border-left-color: #22c55e;"</code></p>
+</div>
+
+<!-- ============================================================================
+     CLICKABLE CARDS (for navigation)
+     Wrap card in anchor with card-link class
+     ============================================================================ -->
+
+<h2>Clickable Cards</h2>
+
+<div class="grid grid-2">
+    <a href="#" class="card-link">
+        <div class="card" style="border-left-color: #8b5cf6;">
+            <div class="feature-icon purple">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </div>
+            <h3 style="margin-top: 0;">Clickable Card</h3>
+            <p>Wrap card in <code>&lt;a class="card-link"&gt;</code> to make it clickable.</p>
+            <div class="card-arrow">Learn More →</div>
+        </div>
+    </a>
+    <a href="#" class="card-link">
+        <div class="card" style="border-left-color: #0ea5e9;">
+            <div class="feature-icon blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h3 style="margin-top: 0;">Another Link</h3>
+            <p>The arrow animates on hover for visual feedback.</p>
+            <div class="card-arrow">View Details →</div>
+        </div>
+    </a>
+</div>
+
+<!-- ============================================================================
+     FEATURE ICONS
+     Colored icon containers for visual hierarchy
+     ============================================================================ -->
+
+<h2>Feature Icons</h2>
+
+<div class="grid grid-4">
+    <div class="card" style="text-align: center;">
+        <div class="feature-icon gold" style="margin: 0 auto;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <p style="margin-top: 0.5rem;"><code>.feature-icon.gold</code></p>
+    </div>
+    <div class="card" style="text-align: center;">
+        <div class="feature-icon blue" style="margin: 0 auto;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a3.5 3.5 0 0 0 0-7h-1.5a7 7 0 1 0-11.76 5.14"/></svg>
+        </div>
+        <p style="margin-top: 0.5rem;"><code>.feature-icon.blue</code></p>
+    </div>
+    <div class="card" style="text-align: center;">
+        <div class="feature-icon green" style="margin: 0 auto;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <p style="margin-top: 0.5rem;"><code>.feature-icon.green</code></p>
+    </div>
+    <div class="card" style="text-align: center;">
+        <div class="feature-icon purple" style="margin: 0 auto;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        </div>
+        <p style="margin-top: 0.5rem;"><code>.feature-icon.purple</code></p>
+    </div>
+</div>
+
+<!-- ============================================================================
+     GRIDS
+     Responsive column layouts
+     ============================================================================ -->
+
+<h2>Grid Layouts</h2>
+
+<h3>Two Columns (grid-2)</h3>
+<div class="grid grid-2">
+    <div class="card">Column 1</div>
+    <div class="card">Column 2</div>
+</div>
+
+<h3>Three Columns (grid-3)</h3>
+<div class="grid grid-3">
+    <div class="card">Column 1</div>
+    <div class="card">Column 2</div>
+    <div class="card">Column 3</div>
+</div>
+
+<h3>Four Columns (grid-4)</h3>
+<div class="grid grid-4">
+    <div class="card">Col 1</div>
+    <div class="card">Col 2</div>
+    <div class="card">Col 3</div>
+    <div class="card">Col 4</div>
+</div>
+
+<!-- ============================================================================
+     CODE BLOCKS
+     ============================================================================ -->
+
+<h2>Code Blocks</h2>
+
+<p>Inline code: Use <code>&lt;code&gt;</code> tags for <code>inline code</code> like commands or file names.</p>
+
+<p>Code block:</p>
+<pre># This is a code block
+./some-command.sh --flag value
+
+# Multi-line code is automatically formatted
+export VARIABLE="value"
+echo $VARIABLE</pre>
+
+<!-- ============================================================================
+     TABLES
+     ============================================================================ -->
+
+<h2>Tables</h2>
+
+<table>
+    <tr>
+        <th>Header 1</th>
+        <th>Header 2</th>
+        <th>Header 3</th>
+    </tr>
+    <tr>
+        <td><code>value1</code></td>
+        <td>Description of value 1</td>
+        <td>Additional info</td>
+    </tr>
+    <tr>
+        <td><code>value2</code></td>
+        <td>Description of value 2</td>
+        <td>Additional info</td>
+    </tr>
+    <tr>
+        <td><code>value3</code></td>
+        <td>Description of value 3</td>
+        <td>Additional info</td>
+    </tr>
+</table>
+
+<!-- ============================================================================
+     LISTS
+     ============================================================================ -->
+
+<h2>Lists</h2>
+
+<h3>Unordered List</h3>
+<ul>
+    <li>First item</li>
+    <li>Second item</li>
+    <li>Third item with <code>inline code</code></li>
+</ul>
+
+<h3>Ordered List</h3>
+<ol>
+    <li>Step one</li>
+    <li>Step two</li>
+    <li>Step three</li>
+</ol>
+
+<!-- ============================================================================
+     BADGES
+     Small labels/tags
+     ============================================================================ -->
+
+<h2>Badges</h2>
+
+<p>
+    <span class="badge badge-gold">Gold Badge</span>
+    <span class="badge badge-blue">Blue Badge</span>
+</p>
+
+<!-- ============================================================================
+     HERO SECTION
+     Full-width gradient banner (typically used at top of page)
+     ============================================================================ -->
+
+<h2>Hero Section</h2>
+
+<div class="hero">
+    <span class="badge badge-gold">Featured</span>
+    <h1>Hero Title</h1>
+    <p>Hero sections are great for landing pages and important announcements.</p>
+</div>
+
+<!-- ============================================================================
+     STATS / NUMBERS
+     Large numbers for metrics
+     ============================================================================ -->
+
+<h2>Stats Display</h2>
+
+<div class="grid grid-4">
+    <div class="card" style="text-align: center; border-left: none; border-top: 4px solid var(--bc-gold);">
+        <div class="stat-number">42</div>
+        <div class="stat-label">Total Items</div>
+    </div>
+    <div class="card" style="text-align: center; border-left: none; border-top: 4px solid var(--bc-blue);">
+        <div class="stat-number">99%</div>
+        <div class="stat-label">Success Rate</div>
+    </div>
+    <div class="card" style="text-align: center; border-left: none; border-top: 4px solid #22c55e;">
+        <div class="stat-number">0</div>
+        <div class="stat-label">Errors</div>
+    </div>
+    <div class="card" style="text-align: center; border-left: none; border-top: 4px solid #8b5cf6;">
+        <div class="stat-number">24/7</div>
+        <div class="stat-label">Availability</div>
+    </div>
+</div>
+
+<!-- ============================================================================
+     COLLAPSIBLE SECTIONS
+     Use HTML details/summary for expandable content
+     ============================================================================ -->
+
+<h2>Collapsible Sections</h2>
+
+<div class="card">
+    <details>
+        <summary style="cursor: pointer; color: var(--bc-blue-light); font-weight: 600;">Click to expand</summary>
+        <div style="margin-top: 1rem;">
+            <p>This content is hidden by default and expands when clicked.</p>
+            <p>Useful for optional details, FAQs, or advanced configuration.</p>
+        </div>
+    </details>
+</div>
+
+<!-- ============================================================================
+     IMAGES
+     ============================================================================ -->
+
+<h2>Images</h2>
+
+<div class="img-container">
+    <img src="assets/azure-oidc-complete-guide.svg" alt="Example diagram" style="max-height: 300px;">
+    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.5rem;">Caption text below image</p>
+</div>
+
+<!-- ============================================================================
+     COMBINING COMPONENTS
+     Real-world example of components used together
+     ============================================================================ -->
+
+<h2>Real-World Example</h2>
+
+<div class="alert alert-info">
+    <span class="alert-icon">📋</span>
+    <div>
+        <strong>Prerequisites</strong><br>
+        Before proceeding, ensure you have completed the <a href="oidc-setup.html">OIDC Setup</a>.
+    </div>
+</div>
+
+<div class="card card-gold">
+    <h3 style="margin-top: 0;">Step-by-Step Guide</h3>
+    <ol>
+        <li>Run the initialization script:
+            <pre>./initial-setup/initial-azure-setup.sh -g "my-rg" -n "my-app"</pre>
+        </li>
+        <li>Verify the output shows success</li>
+        <li>Check Azure portal for created resources</li>
+    </ol>
+</div>
+
+<div class="grid grid-2">
+    <div class="card" style="border-left-color: #22c55e;">
+        <h3 style="margin-top: 0;">Expected Output</h3>
+        <pre style="margin-bottom: 0;">✓ Resource group created
+✓ Managed identity created
+✓ Federated credentials configured
+✓ Storage account ready</pre>
+    </div>
+    <div class="card" style="border-left-color: #ef4444;">
+        <h3 style="margin-top: 0;">Common Errors</h3>
+        <ul style="margin-bottom: 0;">
+            <li><code>AuthorizationFailed</code> - Check permissions</li>
+            <li><code>ResourceNotFound</code> - Verify resource group</li>
+            <li><code>InvalidTemplate</code> - Check variable syntax</li>
+        </ul>
+    </div>
+</div>

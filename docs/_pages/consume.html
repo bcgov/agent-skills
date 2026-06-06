@@ -1,0 +1,162 @@
+<!-- TITLE: Consume a Skill -->
+<!-- NAV: consume -->
+
+<h1>Consume a Skill</h1>
+
+<p>Skills are published as npm packages to GitHub Packages under the <code>@bcgov</code> scope. Installing one is four steps: configure the registry, authenticate, install, and (later) upgrade.</p>
+
+<div class="alert alert-info">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
+    <div>
+        <strong>GitHub Packages always requires authentication</strong>, even for public packages on the npm registry — this is a GitHub Packages behaviour, not a permission setting on this repo. The flow below uses the GitHub CLI to mint a short-lived token, so you don't need to manage a personal access token.
+    </div>
+</div>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<div class="card">
+    <h3 style="margin-top:0;">Install the GitHub CLI once per machine</h3>
+    <p>The local-dev flow uses <code>gh</code> to mint a short-lived <code>NODE_AUTH_TOKEN</code> for npm. See the <a href="https://github.com/cli/cli#installation" target="_blank" rel="noopener">official install guide</a>.</p>
+<pre><code># Windows (PowerShell)
+winget install --id GitHub.cli
+
+# macOS
+brew install gh
+
+# Linux — see the install guide for your distro</code></pre>
+    <p>Then sign in:</p>
+<pre><code>gh auth login
+gh auth status</code></pre>
+    <p style="margin-bottom:0;">You also need Node.js installed (any LTS works; the publish pipeline uses Node 24).</p>
+</div>
+
+<h2 id="step-1-npmrc">Step 1 — Point npm at GitHub Packages</h2>
+
+<p>Create a project-local <code>.npmrc</code> beside the <code>package.json</code> where you want to consume the skill. The same file works in local dev and GitHub Actions — the only thing that changes is where <code>NODE_AUTH_TOKEN</code> comes from.</p>
+
+<pre><code class="language-ini">@bcgov:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+always-auth=true</code></pre>
+
+<p><code>${NODE_AUTH_TOKEN}</code> is expanded by npm at install time from the environment variable; the literal string lives in the file, so it's safe to commit.</p>
+
+<h2 id="step-2-authenticate">Step 2 — Get a token into <code>NODE_AUTH_TOKEN</code></h2>
+
+<p>Choose the path that matches where you're running <code>npm install</code>.</p>
+
+<h3 id="local-dev">Local development (GitHub CLI)</h3>
+
+<div class="card">
+    <p>First time only — grant your CLI token the <code>read:packages</code> scope:</p>
+<pre><code>gh auth refresh -h github.com -s read:packages</code></pre>
+    <p>When prompted "Authenticate Git with your GitHub credentials?", answer <strong>No</strong> if you already have Git auth working (especially SSH commit signing) — the prompt is unrelated to npm and answering yes can overwrite Git settings.</p>
+
+    <p style="margin-top: 1.5rem;">Every shell session, export the CLI's current token as <code>NODE_AUTH_TOKEN</code>:</p>
+<pre><code># PowerShell
+$env:NODE_AUTH_TOKEN = gh auth token
+
+# bash / zsh
+export NODE_AUTH_TOKEN=$(gh auth token)</code></pre>
+    <p style="margin-bottom: 0;">Want to revoke npm access later? <code>gh auth logout</code> ends both your <code>gh</code> session and any <code>NODE_AUTH_TOKEN</code> that came from it — credential management stays in one place.</p>
+</div>
+
+<h3 id="github-actions">GitHub Actions (built-in <code>GITHUB_TOKEN</code>)</h3>
+
+<p>No personal token or repo secret to configure. The workflow's automatic <code>GITHUB_TOKEN</code> can read packages as long as the job declares <code>packages: read</code>:</p>
+
+<pre><code class="language-yaml">jobs:
+  install-skills:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></pre>
+
+<h2 id="step-3-install">Step 3 — Install</h2>
+
+<p>Pin a version for reproducible pulls:</p>
+
+<pre><code>npm install @bcgov/skill-azure-networking@0.1.0</code></pre>
+
+<p>The package lands at <code>node_modules/@bcgov/skill-azure-networking/</code> with its <code>SKILL.md</code> plus any <code>references/</code>, <code>scripts/</code>, or <code>assets/</code> the skill ships — the on-disk layout matches the source repo exactly, so your agent's skills loader can point at the directory with no extra wiring.</p>
+
+<div class="alert alert-success">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <div>
+        <strong>Validated end-to-end.</strong> The README documents the same flow and the install was tested against a clean temp directory: <code>npm install @bcgov/skill-azure-networking@0.1.0</code> exits 0 and pulls the package, <code>SKILL.md</code>, and <code>references/REFERENCE.md</code>.
+    </div>
+</div>
+
+<h2 id="step-4-upgrade">Step 4 — Upgrade</h2>
+
+<p>Skills are plain npm packages, so use the npm commands you already know:</p>
+
+<pre><code>npm outdated @bcgov/skill-azure-networking        # see what's newer
+npm update   @bcgov/skill-azure-networking        # move within your semver range
+npm install  @bcgov/skill-azure-networking@0.2.0  # jump to an exact version</code></pre>
+
+<p>Use a semver range (e.g. <code>"^0.1.0"</code>) in <code>package.json</code> to pick up compatible updates on <code>npm update</code>, or pin an exact version to freeze it. Your lockfile keeps installs reproducible across the team.</p>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<div class="accordion-group">
+    <details>
+        <summary><code>npm error 401 Unauthorized</code></summary>
+        <div class="accordion-content">
+            <p><code>NODE_AUTH_TOKEN</code> is empty or the token doesn't have <code>read:packages</code>.</p>
+            <ul>
+                <li>Re-run <code>gh auth refresh -h github.com -s read:packages</code>.</li>
+                <li>Re-export the token in the current shell: <code>$env:NODE_AUTH_TOKEN = gh auth token</code> (PowerShell) or <code>export NODE_AUTH_TOKEN=$(gh auth token)</code> (bash).</li>
+                <li>Confirm <code>echo $env:NODE_AUTH_TOKEN</code> / <code>echo "$NODE_AUTH_TOKEN"</code> prints a non-empty value.</li>
+            </ul>
+        </div>
+    </details>
+
+    <details>
+        <summary><code>npm error 404 Not Found</code></summary>
+        <div class="accordion-content">
+            <p>The version doesn't exist, or the registry is wrong. Check:</p>
+            <ul>
+                <li><a href="catalog.html">The catalog</a> for the published version.</li>
+                <li>Your <code>.npmrc</code> has <code>@bcgov:registry=https://npm.pkg.github.com</code>.</li>
+                <li>You're running <code>npm install</code> from the directory containing that <code>.npmrc</code>.</li>
+            </ul>
+        </div>
+    </details>
+
+    <details>
+        <summary>npm picks the wrong registry / falls back to npmjs.org</summary>
+        <div class="accordion-content">
+            <p>Make sure the scope and the auth line both point at GitHub Packages — they must both be present in <code>.npmrc</code>:</p>
+<pre><code>@bcgov:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+always-auth=true</code></pre>
+            <p>If you also have a global <code>~/.npmrc</code> with a different <code>registry=</code>, the scoped registry line wins — but the auth line must match the URL of whatever registry actually serves the install.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>GitHub Actions: <code>403 Forbidden</code> when reading the package</summary>
+        <div class="accordion-content">
+            <p>Your workflow job is missing <code>permissions: packages: read</code>. The default <code>GITHUB_TOKEN</code> permission profile in many orgs only grants <code>contents: read</code>, so npm gets denied. Add the block in the snippet above to the job (not the workflow root — job-scoped permissions override).</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>Can I use a personal access token (PAT) instead of <code>gh auth token</code>?</summary>
+        <div class="accordion-content">
+            <p>Yes — a classic PAT with <code>read:packages</code> works in place of the CLI-issued token. The CLI flow is just lower friction (no separate token to generate, rotate, or revoke), and <code>gh auth logout</code> cleans up both your CLI session and any token sourced from it.</p>
+        </div>
+    </details>
+</div>

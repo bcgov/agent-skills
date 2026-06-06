@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKILL.md Spec | BC Gov Agent Skills</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <style>
+        :root {
+            --bc-blue: #003366;
+            --bc-gold: #fcba19;
+            --bc-blue-dark: #002244;
+            --bc-blue-light: #1a5a96;
+            --text-primary: #313132;
+            --text-secondary: #606060;
+            --bg-light: #f2f2f2;
+            --white: #ffffff;
+            --gradient-hero: linear-gradient(135deg, #003366 0%, #1a5a96 50%, #003366 100%);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.16);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Offset anchor scroll so the sticky header never covers the target */
+        html {
+            scroll-padding-top: 80px;
+        }
+
+        body {
+            font-family: 'BC Sans', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .bc-header {
+            background: var(--gradient-hero);
+            border-bottom: 4px solid var(--bc-gold);
+            padding: 0.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
+        .bc-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+        }
+
+        .bc-header-logo {
+            height: 36px;
+            width: auto;
+            border-radius: 4px;
+        }
+
+        .bc-header-title {
+            color: var(--white);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .bc-header-subtitle {
+            color: var(--bc-gold);
+            font-size: 0.875rem;
+        }
+
+        /* Navigation with Dropdowns */
+        .bc-nav {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .bc-nav > a,
+        .nav-dropdown > .nav-trigger {
+            color: var(--white);
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+        }
+
+        .bc-nav > a:hover,
+        .nav-dropdown:hover > .nav-trigger {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .bc-nav > a.active {
+            background: var(--bc-gold);
+            color: var(--bc-blue);
+            font-weight: 600;
+        }
+
+        /* Dropdown */
+        .nav-dropdown {
+            position: relative;
+        }
+
+        .nav-trigger::after {
+            content: '';
+            border: solid currentColor;
+            border-width: 0 2px 2px 0;
+            display: inline-block;
+            padding: 3px;
+            transform: rotate(45deg);
+            margin-top: -3px;
+            transition: transform 0.2s;
+        }
+
+        .nav-dropdown:hover .nav-trigger::after {
+            transform: rotate(-135deg);
+            margin-top: 3px;
+        }
+
+        .nav-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: var(--transition);
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-dropdown-menu a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-dropdown-menu a:hover {
+            background: var(--bg-light);
+            border-left-color: var(--bc-gold);
+            color: var(--bc-blue);
+        }
+
+        .nav-dropdown-menu a.active {
+            background: #fef9e7;
+            border-left-color: var(--bc-gold);
+            border-left-width: 4px;
+            color: var(--bc-blue);
+            font-weight: 600;
+        }
+
+        .nav-dropdown-menu a small {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 0.2rem;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: var(--gradient-hero);
+            color: var(--white);
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero h1 {
+            color: var(--white);
+            border: none;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Typography */
+        h1 {
+            color: var(--bc-blue);
+            font-size: 2.25rem;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid var(--bc-gold);
+            padding-bottom: 0.5rem;
+        }
+
+        h2 {
+            color: var(--bc-blue);
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h2::before {
+            content: '';
+            width: 4px;
+            height: 1.5rem;
+            background: var(--bc-gold);
+            border-radius: 2px;
+        }
+
+        h3 {
+            color: var(--bc-blue-light);
+            font-size: 1.25rem;
+            margin: 1.5rem 0 0.75rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        /* Cards - Enhanced */
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--bc-blue);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .card-gold {
+            border-left-color: var(--bc-gold);
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        /* Clickable Cards */
+        a.card-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        a.card-link .card {
+            cursor: pointer;
+        }
+
+        a.card-link .card:hover {
+            border-left-width: 6px;
+        }
+
+        .card-arrow {
+            color: var(--bc-blue-light);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            transition: var(--transition);
+        }
+
+        a.card-link:hover .card-arrow {
+            gap: 0.75rem;
+            color: var(--bc-blue);
+        }
+
+        /* Feature Cards */
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-icon.gold { background: rgba(252, 186, 25, 0.15); }
+        .feature-icon.blue { background: rgba(0, 51, 102, 0.1); }
+        .feature-icon.green { background: rgba(34, 197, 94, 0.1); }
+        .feature-icon.purple { background: rgba(139, 92, 246, 0.1); }
+
+        /* Stats */
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--bc-gold);
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--bc-blue-dark);
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.875rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        code {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            background: #e2e8f0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        th {
+            background: var(--bc-blue);
+            color: var(--white);
+            padding: 0.875rem 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Links */
+        a {
+            color: var(--bc-blue-light);
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: var(--bc-blue);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .alert > * {
+            min-width: 0;
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid var(--bc-gold);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-left: 4px solid #22c55e;
+        }
+
+        /* Image containers */
+        .img-container {
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .img-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-gold {
+            background: var(--bc-gold);
+            color: var(--bc-blue);
+        }
+
+        .badge-blue {
+            background: var(--bc-blue);
+            color: var(--white);
+        }
+
+        /* Accordion / Collapsible */
+        details {
+            background: var(--white);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--bc-blue);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        details:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        details[open] {
+            border-left-color: var(--bc-gold);
+        }
+
+        summary {
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--bc-blue);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            list-style: none;
+            user-select: none;
+            transition: var(--transition);
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: '';
+            border: solid var(--bc-blue-light);
+            border-width: 0 2px 2px 0;
+            display: inline-block;
+            padding: 4px;
+            transform: rotate(-45deg);
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        details[open] summary::after {
+            transform: rotate(45deg);
+        }
+
+        summary:hover {
+            background: var(--bg-light);
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid #e2e8f0;
+            background: var(--bg-light);
+        }
+
+        .accordion-content {
+            padding: 1rem 1.25rem;
+        }
+
+        .accordion-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Accordion with badge */
+        summary .badge {
+            margin-left: auto;
+            margin-right: 1rem;
+        }
+
+        /* Accordion group */
+        .accordion-group {
+            margin: 1rem 0;
+        }
+
+        .accordion-group details:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Footer */
+        .site-footer {
+            background: var(--bc-blue);
+            color: var(--white);
+            padding: 3rem 2rem;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-brand h4,
+        .footer-links h4 {
+            color: var(--bc-gold);
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .footer-brand p {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--bc-gold);
+        }
+
+        .footer-copyright {
+            text-align: right;
+        }
+
+        .footer-copyright p {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin: 0;
+        }
+
+        .footer-meta {
+            margin-top: 0.5rem !important;
+            opacity: 0.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .bc-header {
+                flex-direction: column;
+                text-align: center;
+                padding: 1rem;
+            }
+
+            .bc-nav {
+                justify-content: center;
+            }
+
+            .nav-dropdown-menu {
+                position: fixed;
+                left: 1rem;
+                right: 1rem;
+                width: auto;
+            }
+
+            main {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .hero {
+                padding: 2rem 1rem;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            .footer-content {
+                text-align: center;
+            }
+
+            .footer-copyright {
+                text-align: center;
+            }
+        }
+
+        /* =====================================================================
+           SEARCH – button, modal, results, breadcrumb, highlight
+           ===================================================================== */
+
+        /* Search button in header nav */
+        .search-btn {
+            color: var(--white);
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            padding: 0.45rem 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            background: rgba(255,255,255,0.28);
+        }
+
+        .search-btn svg { flex-shrink: 0; }
+
+        .search-btn-kbd {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.72rem;
+            line-height: 1.5;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Modal overlay */
+        .search-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 20, 50, 0.65);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            align-items: flex-start;
+            justify-content: center;
+            padding: 6vh 1rem 1rem;
+        }
+
+        .search-modal--active {
+            display: flex;
+        }
+
+        /* Modal box */
+        .search-box {
+            background: var(--white);
+            border-radius: 14px;
+            box-shadow: 0 24px 72px rgba(0,0,0,0.35);
+            width: 100%;
+            max-width: 680px;
+            max-height: 82vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: search-appear 0.18s ease;
+        }
+
+        @keyframes search-appear {
+            from { opacity: 0; transform: translateY(-14px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0)  scale(1); }
+        }
+
+        /* Input row */
+        .search-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.9rem 1.1rem;
+            border-bottom: 1px solid #e5e9f0;
+            flex-shrink: 0;
+        }
+
+        .search-input-row svg { color: var(--text-secondary); flex-shrink: 0; }
+
+        #search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1.05rem;
+            color: var(--text-primary);
+            background: transparent;
+            font-family: inherit;
+            min-width: 0;
+        }
+
+        #search-input::placeholder { color: #a0aec0; }
+
+        .search-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            line-height: 1;
+            padding: 0.2rem 0.45rem;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .search-modal-close:hover {
+            background: var(--bg-light);
+            color: var(--text-primary);
+        }
+
+        /* Results list */
+        .search-results {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .search-count {
+            padding: 0.5rem 1.1rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #f0f3f8;
+            background: #fafbfd;
+        }
+
+        .search-result-item {
+            display: block;
+            padding: 0.9rem 1.1rem;
+            border-bottom: 1px solid #f0f3f8;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.12s;
+            outline: none;
+        }
+
+        .search-result-item:hover,
+        .search-result-item:focus {
+            background: #f4f7fc;
+        }
+
+        .search-result-meta {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #996600;
+            margin-bottom: 0.2rem;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            color: var(--bc-blue);
+            margin-bottom: 0.3rem;
+            font-size: 0.97rem;
+        }
+
+        .search-result-excerpt {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .search-result-item mark {
+            background: rgba(252, 186, 25, 0.45);
+            color: inherit;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        .search-no-results {
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .search-no-results svg {
+            display: block;
+            margin: 0 auto 0.75rem;
+            opacity: 0.4;
+        }
+
+        .search-no-results p { margin: 0; font-size: 0.95rem; }
+
+        .search-loading {
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Modal footer hints */
+        .search-hints {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.55rem 1.1rem;
+            border-top: 1px solid #e5e9f0;
+            background: #fafbfd;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .search-hints kbd {
+            display: inline-block;
+            background: var(--white);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: inherit;
+            font-size: 0.72rem;
+            line-height: 1.6;
+        }
+
+        /* ── Breadcrumb bar ───────────────────────────────────────────────── */
+        #search-breadcrumb {
+            display: none;
+            background: var(--white);
+            border: 1px solid #dde3ed;
+            border-radius: 8px;
+            padding: 0.65rem 1.1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .breadcrumb-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .breadcrumb-nav a {
+            color: var(--bc-blue-light);
+            text-decoration: none;
+        }
+
+        .breadcrumb-nav a:hover {
+            text-decoration: underline;
+            color: var(--bc-blue);
+        }
+
+        .breadcrumb-current {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .breadcrumb-sep { color: #94a3b8; }
+
+        /* ── Section highlight flash ──────────────────────────────────────── */
+        @keyframes section-flash {
+            0%   { background-color: rgba(252, 186, 25, 0.45); box-shadow: 0 0 0 4px rgba(252,186,25,0.25); }
+            60%  { background-color: rgba(252, 186, 25, 0.15); }
+            100% { background-color: transparent; box-shadow: none; }
+        }
+
+        .search-highlight {
+            animation: section-flash 2.2s ease-out forwards;
+            border-radius: 4px;
+        }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/flexsearch@0.7.31/dist/flexsearch.bundle.js" defer></script>
+    <script src="assets/search.js" defer id="search-script"></script>
+</head>
+<body>
+    <header class="bc-header">
+        <a href="index.html" class="bc-header-brand">
+            <img src="assets/bc_citz_logo.jpg" alt="BC Government" class="bc-header-logo">
+            <div>
+                <div class="bc-header-title">BC Gov Agent Skills</div>
+                <div class="bc-header-subtitle">A shared catalogue of agent skill profiles</div>
+            </div>
+        </a>
+        <nav class="bc-nav">
+            <a href="index.html" class="">Home</a>
+            <a href="catalog.html" class="">Catalog</a>
+            <a href="consume.html" class="">Consume</a>
+            <a href="contribute.html" class="">Contribute</a>
+            <a href="spec.html" class="active">Spec</a>
+            <a href="architecture.html" class="">Pipeline</a>
+            <a href="faq.html" class="">FAQ</a>
+            <a href="https://github.com/bcgov/agent-skills" target="_blank" rel="noopener" class="">GitHub ↗</a>
+
+            <!-- Search button -->
+            <button class="search-btn" id="search-btn" type="button" aria-label="Search documentation">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Search
+                <span class="search-btn-kbd" aria-label="keyboard shortcut">⌘K</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- ── Search modal ──────────────────────────────────────────────────── -->
+    <div class="search-modal" id="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+        <div class="search-box">
+            <div class="search-input-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input
+                    type="search"
+                    id="search-input"
+                    placeholder="Search documentation…"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Search query"
+                />
+                <button class="search-modal-close" id="search-modal-close" type="button" aria-label="Close search">✕</button>
+            </div>
+            <div class="search-results" id="search-results" role="listbox" aria-label="Search results"></div>
+            <div class="search-hints" aria-hidden="true">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> open</span>
+                <span><kbd>Esc</kbd> close</span>
+                <span style="margin-left:auto"><kbd>⌘K</kbd> or <kbd>Ctrl+K</kbd></span>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <!-- Breadcrumb: injected by search.js when arriving from a search result -->
+        <div id="search-breadcrumb" aria-label="Search breadcrumb"></div>
+<!-- TITLE: SKILL.md Spec -->
+<!-- NAV: spec -->
+
+<h1 id="skillmd-spec">SKILL.md Spec</h1>
+
+<p>Every skill in this repo is described by a <code>SKILL.md</code> manifest and (for published skills) a <code>package.json</code>. Both are validated by the PR check. This page summarises what the validator enforces. The authoritative document lives at <a href="https://github.com/bcgov/agent-skills/blob/main/spec/SKILL_SPEC.md" target="_blank" rel="noopener"><code>spec/SKILL_SPEC.md</code></a>.</p>
+
+<div class="alert alert-info">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
+    <div>
+        The PR check runs <code>scripts/validate_skill.py</code> against every <strong>changed</strong> skill. Run the same checks locally with <code>uv run python scripts/validate_skill.py --all</code> (or just one skill: <code>uv run python scripts/validate_skill.py skills/&lt;name&gt;/SKILL.md</code>).
+    </div>
+</div>
+
+<h2 id="layout">Directory layout</h2>
+
+<p>A skill lives in its own directory under one of two roots. Both are validated against this spec; only <code>skills/</code> is published.</p>
+
+<pre><code>skills/&lt;skill-name&gt;/            # contributed skills (published)
+.github/skills/&lt;skill-name&gt;/    # the repo's own meta-skills (not published)
+├── SKILL.md        # required: the manifest
+├── package.json    # required for skills/, optional for .github/skills/
+├── scripts/        # optional, flat — one level deep
+├── references/     # optional, flat
+└── assets/         # optional, flat</code></pre>
+
+<h2 id="frontmatter">1. Frontmatter (required)</h2>
+
+<p>The <code>SKILL.md</code> MUST begin with a YAML frontmatter block. Two fields are mandatory:</p>
+
+<table>
+    <thead>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>name</code></td><td>string</td><td>Unique, kebab-case identifier. Must match the skill's directory name.</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td>What the skill does and when it should trigger. The only metadata an agent sees when routing — keep it specific.</td></tr>
+    </tbody>
+</table>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 id="name-rules" style="margin-top:0;"><code>name</code> rules</h3>
+        <ul>
+            <li>Kebab-case: <code>^[a-z0-9]+(-[a-z0-9]+)*$</code> — lowercase letters and digits in hyphen-separated groups, no leading/trailing/consecutive hyphens.</li>
+            <li>At most <strong>64 characters</strong>.</li>
+            <li>Must <strong>exactly match the skill's directory name</strong>, so manifest, folder, and npm package all line up.</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3 id="description-rules" style="margin-top:0;"><code>description</code> rules</h3>
+        <ul>
+            <li>At most <strong>1024 characters</strong>.</li>
+            <li><strong>No angle brackets</strong> (<code>&lt;</code> or <code>&gt;</code>) — they get misread as markup where the manifest is injected.</li>
+            <li>Routing depends on it — be specific about <em>when</em> the skill fires.</li>
+        </ul>
+    </div>
+</div>
+
+<h3 id="allowed-keys" style="margin-top: 1.5rem;">Allowed frontmatter keys</h3>
+
+<p>Only these keys are accepted — any other key is rejected by the validator: <code>name</code>, <code>description</code>, <code>owner</code>, <code>tags</code>, <code>license</code>, <code>allowed-tools</code>, <code>compatibility</code>, <code>metadata</code>. Of the optional ones, <code>owner</code> and <code>tags</code> are recommended.</p>
+
+<div class="alert alert-warning">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+        The published <strong>version is not in the frontmatter</strong> — it lives in <code>package.json</code> (see <a href="#package-json">§3</a>) as the single source of truth. Don't add a <code>version</code> field to <code>SKILL.md</code>.
+    </div>
+</div>
+
+<h3 id="example" style="margin-top: 1.5rem;">Example</h3>
+
+<pre><code class="language-yaml">---
+name: example-skill
+description: One line on what this does and when it fires.
+owner: your-team
+tags: [example]
+---</code></pre>
+
+<h2 id="body">2. Body (required)</h2>
+
+<p>After the frontmatter, the body MUST contain — <strong>in this order</strong> — an H1 title followed by all seven <code>##</code> sections. Each section must have at least one line of content.</p>
+
+<pre><code class="language-markdown"># &lt;Skill Name&gt;
+
+## Use When
+- &lt;specific situation&gt;
+
+## Don't Use When
+- &lt;adjacent case&gt; → &lt;other skill&gt;
+
+## Workflow
+1. &lt;step + tool&gt;
+2. ...
+
+## Rules
+- Always &lt;X&gt;
+- Never &lt;Y&gt;  (Why: &lt;non-obvious reason&gt;)
+
+## Examples
+- "&lt;user phrasing&gt;" → &lt;action&gt;
+
+## Edge Cases
+- If &lt;lookup empty&gt; → &lt;fallback&gt;
+
+## References
+See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;</code></pre>
+
+<h3 id="length-limit" style="margin-top: 1.5rem;">Keep it short — 500 lines max</h3>
+
+<p>A <code>SKILL.md</code> is loaded into the agent's context up front, so it must stay skimmable. The manifest is capped at <strong>500 lines</strong> (the whole file, frontmatter included). When a skill needs deeper material — long procedures, lookup tables, worked examples, API detail — put it in a <code>references/</code> file the agent pulls on demand, and link it from the <code>## References</code> section.</p>
+
+<h3 id="flat-resources">Keep bundled resources flat — one level deep</h3>
+
+<p>Skills may ship <code>scripts/</code>, <code>references/</code>, and <code>assets/</code> directories beside the <code>SKILL.md</code>. These must stay <strong>exactly one level deep</strong> — flat files only, no nested subdirectories. Use <code>references/REFERENCE.md</code>, not <code>references/api/v1/REFERENCE.md</code>. A flat layout keeps on-demand resources predictable for the agent to locate.</p>
+
+<h2 id="package-json">3. <code>package.json</code> (required for published skills)</h2>
+
+<p>A contributed skill under <code>skills/</code> ships as a versioned npm package, so it MUST include a <code>package.json</code> beside its <code>SKILL.md</code>. Meta-skills under <code>.github/skills/</code> are never published, so a <code>package.json</code> is <strong>optional</strong> there — and validated only when one is present.</p>
+
+<table>
+    <thead>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>name</code></td><td>string</td><td>Scoped package name — <code>@bcgov/skill-&lt;skill-name&gt;</code>.</td></tr>
+        <tr><td><code>version</code></td><td>string</td><td>Semver (<code>MAJOR.MINOR.PATCH</code>). The source of truth for releases.</td></tr>
+    </tbody>
+</table>
+
+<pre><code class="language-json">{
+  "name": "@bcgov/skill-example-skill",
+  "version": "0.1.0",
+  "publishConfig": { "registry": "https://npm.pkg.github.com" }
+}</code></pre>
+
+<div class="alert alert-warning">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+        <strong>The entire skill directory is bundled automatically.</strong> Do <strong>not</strong> add a <code>files</code> field — that turns npm into a whitelist and would silently drop directories. To exclude scratch files, add a <code>.npmignore</code> inside the skill folder (it must not exclude <code>SKILL.md</code>).
+    </div>
+</div>
+
+<p>The publish workflow reads <code>name</code> + <code>version</code> from this file and skips any version already published — bumping <code>version</code> is what ships a new release. See <a href="contribute.html#versioning">Contribute → Versioning</a> for the <code>npm version</code> flow.</p>
+
+<h2 id="validator-checks">4. What the PR check enforces</h2>
+
+<p>For each <strong>changed</strong> skill, the validator confirms all of the following. If you see a failure on a PR, this list maps directly to the checks.</p>
+
+<div class="card">
+    <ol>
+        <li>The <code>SKILL.md</code> starts with a closed YAML frontmatter block that parses as a mapping.</li>
+        <li><code>name</code> and <code>description</code> are present and non-empty.</li>
+        <li><code>name</code> is kebab-case, at most 64 characters, and <strong>matches the skill's directory name</strong>.</li>
+        <li><code>description</code> is at most 1024 characters and contains no angle brackets.</li>
+        <li>No unexpected frontmatter keys are present (only <code>name</code>, <code>description</code>, <code>owner</code>, <code>tags</code>, <code>license</code>, <code>allowed-tools</code>, <code>compatibility</code>, <code>metadata</code>).</li>
+        <li>The body has an H1 title.</li>
+        <li>All seven required sections are present: <strong>Use When</strong>, <strong>Don't Use When</strong>, <strong>Workflow</strong>, <strong>Rules</strong>, <strong>Examples</strong>, <strong>Edge Cases</strong>, <strong>References</strong>.</li>
+        <li>None of those required sections is empty.</li>
+        <li>The whole <code>SKILL.md</code> is at most 500 lines.</li>
+        <li>Any bundled <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory is flat — no nested subdirectories.</li>
+        <li>For a published skill under <code>skills/</code>, a <code>package.json</code> sits beside the manifest with a valid <code>name</code> and a semver <code>version</code>, and does <strong>not</strong> pin a <code>files</code> whitelist. For a meta-skill under <code>.github/skills/</code>, a missing <code>package.json</code> is allowed; if one is present it is held to the same rules.</li>
+    </ol>
+</div>
+
+<h3 id="run-it-locally" style="margin-top: 1.5rem;">Run it locally</h3>
+
+<pre><code>uv run python scripts/validate_skill.py skills/&lt;your-skill&gt;/SKILL.md
+
+# or validate every skill
+uv run python scripts/validate_skill.py --all
+
+# or via the Makefile
+make validate</code></pre>
+    </main>
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h4>BC Gov Agent Skills</h4>
+                <p>A shared catalogue of agent skill profiles, validated in CI and published to GitHub Packages.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Repository</h4>
+                <ul>
+                    <li><a href="https://github.com/bcgov/agent-skills" target="_blank" rel="noopener">GitHub Repository</a></li>
+                    <li><a href="https://github.com/bcgov/agent-skills/blob/main/spec/SKILL_SPEC.md" target="_blank" rel="noopener">SKILL.md Spec (source)</a></li>
+                    <li><a href="https://github.com/bcgov/agent-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a></li>
+                    <li><a href="https://github.com/orgs/bcgov/packages?repo_name=agent-skills" target="_blank" rel="noopener">Published Packages</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="catalog.html">Skill Catalog</a></li>
+                    <li><a href="consume.html">Consume a Skill</a></li>
+                    <li><a href="contribute.html">Contribute a Skill</a></li>
+                    <li><a href="spec.html">SKILL.md Spec</a></li>
+                    <li><a href="architecture.html">Pipeline &amp; Governance</a></li>
+                    <li><a href="faq.html">FAQ</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>BC Government</h4>
+                <ul>
+                    <li><a href="https://www2.gov.bc.ca" target="_blank" rel="noopener">gov.bc.ca</a></li>
+                    <li><a href="https://digital.gov.bc.ca" target="_blank" rel="noopener">Digital Office</a></li>
+                    <li><a href="https://github.com/bcgov" target="_blank" rel="noopener">bcgov on GitHub</a></li>
+                </ul>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2026 Province of British Columbia</p>
+                <p class="footer-meta">Built with zero dependencies</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            function scrollToWithHeaderOffset(el) {
+                if (!el) return;
+                const header = document.querySelector('.bc-header');
+                const offset = (header ? header.getBoundingClientRect().height : 0) + 16;
+
+                const top = el.getBoundingClientRect().top + window.scrollY - offset;
+                window.scrollTo({ top: Math.max(0, top) });
+            }
+
+            function openDetailsFromHash() {
+                const hash = window.location.hash;
+                if (!hash || hash.length < 2) return;
+
+                const id = hash.substring(1);
+                const el = document.getElementById(id);
+                if (el && el.tagName && el.tagName.toLowerCase() === 'details') {
+                    el.open = true;
+                    // Opening can change layout; adjust scroll after paint so the
+                    // sticky header doesn't cover the <summary> title.
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            scrollToWithHeaderOffset(el);
+                        });
+                    });
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                openDetailsFromHash();
+            });
+
+            window.addEventListener('hashchange', function () {
+                openDetailsFromHash();
+            });
+
+            // If user clicks the same #hash twice, hashchange won't fire.
+            // This ensures ADR links always expand.
+            document.addEventListener('click', function (e) {
+                const link = e.target.closest && e.target.closest('a[href^="#"]');
+                if (!link) return;
+
+                const href = link.getAttribute('href');
+                if (!href || href.length < 2) return;
+
+                const id = href.substring(1);
+                const el = document.getElementById(id);
+                if (el && el.tagName && el.tagName.toLowerCase() === 'details') {
+                    el.open = true;
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            scrollToWithHeaderOffset(el);
+                        });
+                    });
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

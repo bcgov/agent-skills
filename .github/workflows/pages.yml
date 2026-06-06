@@ -1,0 +1,66 @@
+name: Deploy GitHub Pages
+
+# Builds the docs/ static site and deploys it to GitHub Pages. Triggers on push
+# to main that touches docs/** (or this workflow file), plus a manual
+# workflow_dispatch button. The build is deterministic: it runs bash docs/build.sh
+# and uploads the resulting docs/ directory as the Pages artifact.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 0" # every Sunday at 7 AM UTC
+
+# Pages deploys need pages:write + id-token:write (for the OIDC-signed
+# environment URL). Both jobs only read repo contents.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one Pages deployment at a time. Don't cancel in-flight runs —
+# letting them finish keeps the deployment history honest.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Build documentation
+        run: |
+          cd docs
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,134 @@
+<!-- TITLE: Pipeline & Governance -->
+<!-- NAV: architecture -->
+
+<h1>Pipeline &amp; Governance</h1>
+
+<p>How a change moves from a pull request to a published npm package, and the controls that keep that path safe.</p>
+
+<h2 id="overview">Lifecycle at a glance</h2>
+
+<div class="card">
+    <pre><code>open PR  →  fork-gate  →  lint-tests  →  skills  →  results  →  ✅ mergeable
+                                                          │
+                                            merge to main │
+                                                          ▼
+                                                   publish workflow
+                                                          │
+                                                          ▼
+                                            @bcgov/skill-&lt;name&gt;@x.y.z
+                                            on GitHub Packages</code></pre>
+</div>
+
+<h2 id="pr-workflow">PR workflow — <code>.github/workflows/pr.yml</code></h2>
+
+<p>Runs on every pull request with least-privilege permissions (<code>contents: read</code>). Four jobs, three phases — the fourth job aggregates the result.</p>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 style="margin-top:0;">1. <code>fork-gate</code></h3>
+        <p>Always runs. Fails the PR if it was opened from a fork — we never spend CI minutes on (or grant any token to) untrusted code. Maintainers re-land fork PRs from an in-repo branch after review. Produces a real failure (not a neutral "skipped") so branch protection can require it.</p>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">2. <code>lint-tests</code></h3>
+        <p>Needs <code>fork-gate</code>. Validates the codebase that produces skills: <code>ruff format --check</code>, <code>ruff check</code>, <code>pytest -q</code>. If the generator/validator itself is broken, validating the skill output is meaningless — so this runs first.</p>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">3. <code>skills</code></h3>
+        <p>Needs <code>lint-tests</code>. Runs the validator against only the skills the PR touched, diffed against the base branch: <code>uv run python scripts/validate_skill.py --base "origin/${{ github.base_ref }}"</code>. This is what enforces the <a href="spec.html">SKILL.md spec</a>.</p>
+    </div>
+    <div class="card card-gold">
+        <h3 style="margin-top:0;">4. <code>results</code> <span class="badge badge-gold">required</span></h3>
+        <p>Always runs (<code>if: always()</code>), needs every other job, and fails if any of them failed or was cancelled. <strong>This is the single required status check on <code>main</code></strong>, so jobs can be added or renamed in the workflow file without touching branch protection. <code>skipped</code> counts as a pass on purpose, so future <code>if:</code>-filtered jobs don't false-fail the gate.</p>
+    </div>
+</div>
+
+<h2 id="publish-workflow">Publish workflow — <code>.github/workflows/publish.yml</code></h2>
+
+<p>Triggered on push to <code>main</code> with the path filter <code>skills/**</code>, so docs-only or workflow-only merges don't run it. The workflow grants <code>packages: write</code> only to this job and uses the built-in <code>GITHUB_TOKEN</code> — no PAT, no org secret.</p>
+
+<div class="card">
+    <ol>
+        <li><code>actions/checkout@v6</code> with <code>fetch-depth: 0</code> for the full history.</li>
+        <li>Install <code>uv</code> (SHA-pinned <code>astral-sh/setup-uv</code>).</li>
+        <li><strong>Re-validate every skill</strong> with <code>uv run python scripts/validate_skill.py --all</code> — last line of defence before bytes leave the repo.</li>
+        <li><code>actions/setup-node@v6</code> targeting Node 24, with <code>registry-url: https://npm.pkg.github.com</code> and <code>scope: @bcgov</code>.</li>
+        <li>Run <a href="https://github.com/bcgov/agent-skills/blob/main/.github/scripts/publish-changed-skills.sh" target="_blank" rel="noopener"><code>.github/scripts/publish-changed-skills.sh</code></a>, which diffs <code>BEFORE_SHA</code> against <code>HEAD_SHA</code>, walks each changed skill, and runs <code>npm publish</code> with <code>NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code>.</li>
+    </ol>
+</div>
+
+<div class="alert alert-info">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
+    <div>
+        <strong>Already-published versions are skipped.</strong> A merge that doesn't bump a skill's <code>package.json</code> <code>version</code> is a no-op for that skill — re-publishing is impossible by design. Bumping the version is what ships a release. See <a href="contribute.html#versioning">Versioning</a>.
+    </div>
+</div>
+
+<h2 id="dependabot">Dependabot auto-merge — <code>.github/workflows/dependabot-auto-merge.yml</code></h2>
+
+<p>Dependabot opens upgrade PRs for the actions and Python deps; this workflow approves them and enables auto-merge. The actual merge still has to wait for the same <code>results</code> check to go green, so a broken upgrade can't slip through.</p>
+
+<div class="card">
+    <ul>
+        <li>Trigger: <code>pull_request_target</code> for <code>opened</code> / <code>reopened</code> / <code>synchronize</code>.</li>
+        <li>Guard: <code>if: github.event.pull_request.user.login == 'dependabot[bot]'</code> — only Dependabot's PRs.</li>
+        <li>Concurrency: per-PR group, cancel-in-progress.</li>
+        <li>Steps: <code>gh pr review --approve</code>, then <code>gh pr merge --auto</code>.</li>
+    </ul>
+</div>
+
+<h2 id="branch-protection">Branch protection — <code>main</code> ruleset 17296594</h2>
+
+<p>The rules that keep <code>main</code> safe:</p>
+
+<table>
+    <thead><tr><th>Control</th><th>Setting</th></tr></thead>
+    <tbody>
+        <tr><td>Pull request required</td><td>Yes (0 approvals required — review by convention)</td></tr>
+        <tr><td>Required status check</td><td><code>results</code>, strict (branch must be up to date with <code>main</code>)</td></tr>
+        <tr><td>Signed commits</td><td>Required</td></tr>
+        <tr><td>Code scanning</td><td>CodeQL — fail on <code>high</code> or above</td></tr>
+        <tr><td>Force-push to <code>main</code></td><td>Blocked</td></tr>
+        <tr><td>Delete <code>main</code></td><td>Blocked</td></tr>
+        <tr><td>Bypass actors</td><td>None</td></tr>
+    </tbody>
+</table>
+
+<p>Because the only required check is <code>results</code>, the PR workflow can add, rename, or restructure jobs over time without anyone having to update the protection ruleset.</p>
+
+<h2 id="action-pinning">Action pinning policy</h2>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 style="margin-top:0;">First-party (<code>actions/*</code>)</h3>
+        <p>Pinned to a major version tag — GitHub guarantees those tags forward-only. Easier to read, and Dependabot still bumps majors.</p>
+        <pre style="margin-bottom: 0;"><code>uses: actions/checkout@v6
+uses: actions/setup-node@v6</code></pre>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">Third-party</h3>
+        <p>Pinned to an <strong>immutable commit SHA</strong>, with the human-readable version in a trailing comment. Defends against tag-hijack / supply-chain attacks. Dependabot bumps these too.</p>
+        <pre style="margin-bottom: 0;"><code>uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0</code></pre>
+    </div>
+</div>
+
+<h2 id="permissions-model">Permissions model</h2>
+
+<div class="card">
+    <ul>
+        <li><strong>PR workflow:</strong> top-level <code>permissions: contents: read</code>. Every job is read-only — there is nothing here that needs to write back to the repo.</li>
+        <li><strong>Publish workflow:</strong> <code>contents: read</code> + <code>packages: write</code>. The write scope is granted only on the path that actually ships packages.</li>
+        <li><strong>Dependabot auto-merge:</strong> <code>contents: write</code> + <code>pull-requests: write</code>. Required to approve and auto-merge — but the merge itself still has to clear the <code>results</code> gate.</li>
+    </ul>
+</div>
+
+<h2 id="references">References in the repo</h2>
+
+<ul>
+    <li><a href="https://github.com/bcgov/agent-skills/blob/main/.github/workflows/pr.yml" target="_blank" rel="noopener"><code>.github/workflows/pr.yml</code></a></li>
+    <li><a href="https://github.com/bcgov/agent-skills/blob/main/.github/workflows/publish.yml" target="_blank" rel="noopener"><code>.github/workflows/publish.yml</code></a></li>
+    <li><a href="https://github.com/bcgov/agent-skills/blob/main/.github/workflows/dependabot-auto-merge.yml" target="_blank" rel="noopener"><code>.github/workflows/dependabot-auto-merge.yml</code></a></li>
+    <li><a href="https://github.com/bcgov/agent-skills/blob/main/.github/scripts/publish-changed-skills.sh" target="_blank" rel="noopener"><code>.github/scripts/publish-changed-skills.sh</code></a></li>
+    <li><a href="https://github.com/bcgov/agent-skills/blob/main/scripts/validate_skill.py" target="_blank" rel="noopener"><code>scripts/validate_skill.py</code></a></li>
+</ul>
