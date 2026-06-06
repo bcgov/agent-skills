@@ -1,0 +1,120 @@
+<!-- TITLE: Contribute a Skill -->
+<!-- NAV: contribute -->
+
+<h1>Contribute a Skill</h1>
+
+<p>This repository is community-maintained — new skills and improvements to existing ones are all welcome. The canonical guide lives in <a href="https://github.com/bcgov/agent-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>; this page summarises it for browsing.</p>
+
+<h2 id="prerequisites">Before you start</h2>
+
+<div class="card">
+    <p><strong>Branch in this repo, not a fork.</strong> The PR workflow has a <code>fork-gate</code> job that fails any pull request opened from a fork; that failure cascades to the <code>results</code> aggregator, which is the gate on merge. If you can't push a branch to <code>bcgov/agent-skills</code>, you don't have the access you need — sort that out first.</p>
+    <p style="margin-bottom: 0;"><strong>Commits must be signed.</strong> The <code>main</code> branch ruleset requires signed commits, so the merge will be blocked otherwise. Set up SSH or GPG commit signing once per machine — see <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification" target="_blank" rel="noopener">GitHub's docs</a>.</p>
+</div>
+
+<h2 id="upstream-catalogs">Check upstream catalogues first</h2>
+
+<p>This repository is for <strong>BC Gov–specific</strong> skills. Before adding a new skill, confirm it isn't already published in an upstream catalogue. Duplicating an upstream skill fragments the ecosystem, doubles the maintenance burden, and makes it ambiguous which one consumers should install.</p>
+
+<div class="grid grid-3">
+    <div class="card">
+        <h3 style="margin-top:0;">Microsoft Agent Skills</h3>
+        <p style="font-size: 0.9rem;">A large catalogue covering Azure SDKs, Microsoft Foundry, M365, Entra, Azure Resource Manager, plus cross-cutting workflows like <code>azure-prepare</code>, <code>azure-deploy</code>, <code>azure-validate</code>, <code>azure-cost</code>, <code>microsoft-docs</code>, <code>kql</code>, <code>mcp-builder</code>, <code>cloud-solution-architect</code>.</p>
+        <p style="margin-bottom: 0;"><a href="https://microsoft.github.io/skills/#agents" target="_blank" rel="noopener">microsoft.github.io/skills →</a></p>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">Anthropic <code>anthropics/skills</code></h3>
+        <p style="font-size: 0.9rem;">Reference skills for document work (<code>pdf</code>, <code>docx</code>, <code>xlsx</code>, <code>pptx</code>) and other patterns, plus material on the SKILL.md format this repo follows. See also <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a>.</p>
+        <p style="margin-bottom: 0;"><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">github.com/anthropics/skills →</a></p>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">awesome-copilot</h3>
+        <p style="font-size: 0.9rem;">Community-curated index of skills, prompts, custom agents, and hooks. Also distributes vendor plugin catalogues (M365 Agents Toolkit, Power BI, Oracle-to-PostgreSQL, Spark, WorkIQ, and others), so one check covers them.</p>
+        <p style="margin-bottom: 0;"><a href="https://github.com/github/awesome-copilot" target="_blank" rel="noopener">github.com/github/awesome-copilot →</a></p>
+    </div>
+</div>
+
+<div class="alert alert-warning">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+        <strong>If an upstream skill already covers your use case</strong>, don't re-publish it here. If it's close but not quite right, open an issue or PR upstream so the fix benefits the largest audience. Only add a new skill here if it is genuinely BC Gov–specific — e.g., it encodes BC Gov policies, conventions, internal services, regulatory requirements, or organization-specific workflows. <strong>Include the result of this check in your PR description.</strong>
+    </div>
+</div>
+
+<h2 id="how-contributions-work">How contributions work</h2>
+
+<div class="card">
+    <ol>
+        <li><strong>Branch</strong> — create a feature branch in this repo for your change.</li>
+        <li><strong>Add or update a skill</strong> — for a new skill, follow <a href="spec.html">the spec</a> and start from <a href="https://github.com/bcgov/agent-skills/tree/main/templates" target="_blank" rel="noopener"><code>templates/SKILL.md</code></a> + <a href="https://github.com/bcgov/agent-skills/blob/main/templates/package.json" target="_blank" rel="noopener"><code>templates/package.json</code></a>.</li>
+        <li><strong>Bump the version</strong> — if you're changing an existing skill, raise its <code>version</code> in that skill's <code>package.json</code> (see <a href="#versioning">Versioning</a>). New skills start at <code>0.1.0</code>.</li>
+        <li><strong>Validate locally</strong> — <code>uv run python scripts/validate_skill.py skills/&lt;name&gt;/SKILL.md</code>.</li>
+        <li><strong>Open a pull request</strong> — describe what the skill does and why it's useful.</li>
+        <li><strong>Pass the checks</strong> — the PR workflow validates the skills your branch changed (diffed against the base branch).</li>
+        <li><strong>Merge</strong> — once <code>results</code> is green and your branch is up to date with <code>main</code>, the PR can be merged. The publish workflow then ships any bumped versions as npm packages.</li>
+    </ol>
+</div>
+
+<h2 id="skill-structure">Skill structure</h2>
+
+<p>Each skill lives in its own directory. The whole directory is bundled into the published package, so put everything the skill needs alongside its manifest:</p>
+
+<pre><code>skills/&lt;skill-name&gt;/
+├── SKILL.md        # required: the manifest
+├── package.json    # required: published name + version
+├── scripts/        # optional: executable helpers
+├── references/     # optional: heavy detail
+└── assets/         # optional: templates &amp; resources</code></pre>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 style="margin-top:0;"><code>SKILL.md</code></h3>
+        <p>Mandatory <code>name</code> + <code>description</code> frontmatter, then a body with an H1 title and the seven required sections (<em>Use When</em>, <em>Don't Use When</em>, <em>Workflow</em>, <em>Rules</em>, <em>Examples</em>, <em>Edge Cases</em>, <em>References</em>).</p>
+        <p style="margin-bottom: 0;"><code>name</code> must be kebab-case (≤64 chars) and match the skill's directory name; <code>description</code> must be ≤1024 chars with no angle brackets. Keep the manifest under 500 lines; any <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory must be flat (one level deep).</p>
+    </div>
+    <div class="card card-gold">
+        <h3 style="margin-top:0;"><code>package.json</code></h3>
+        <p>Holds the published package <code>name</code> (<code>@bcgov/skill-&lt;name&gt;</code>) and the <code>version</code>. <strong>The version lives only here — not in <code>SKILL.md</code></strong> — so there's one source of truth and no drift.</p>
+        <p style="margin-bottom: 0;">For meta-skills under <code>.github/skills/</code>, a <code>package.json</code> is optional (they aren't published). For contributed skills under <code>skills/</code> it is required.</p>
+    </div>
+</div>
+
+<p>See <a href="spec.html">the spec</a> for the full definition of every required field and what the validator checks.</p>
+
+<h2 id="versioning">Versioning</h2>
+
+<p>Skills are published as npm packages, so use <a href="https://semver.org/" target="_blank" rel="noopener">semver</a> and bump the version with npm from inside the skill directory:</p>
+
+<pre><code>cd skills/&lt;your-skill&gt;
+npm version patch   # bug fix / wording tweak   → 0.1.0 → 0.1.1
+npm version minor   # new capability, compatible → 0.1.1 → 0.2.0
+npm version major   # breaking change            → 0.2.0 → 1.0.0</code></pre>
+
+<p>The publish workflow <strong>skips any version already published</strong>, so a merge only ships a release when the version has been bumped.</p>
+
+<h2 id="tooling">Tooling</h2>
+
+<p>This project uses <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener">uv</a> — there is no <code>requirements.txt</code>. Dependencies are declared in <code>pyproject.toml</code> and installed on demand by <code>uv run</code>. Common commands:</p>
+
+<pre><code>make format     # auto-format Python (2-space indent, double quotes)
+make lint       # lint Python with ruff + workflow YAML with yamllint
+make test       # run the validator unit tests
+make validate   # validate every skill
+make pack       # dry-run each publishable skill's npm package</code></pre>
+
+<p>Python is formatted and linted with <a href="https://docs.astral.sh/ruff/" target="_blank" rel="noopener">ruff</a> (2-space indentation, double quotes, docstrings required on every function). Workflow YAML under <code>.github/workflows/</code> is linted with <a href="https://yamllint.readthedocs.io/" target="_blank" rel="noopener">yamllint</a>. Run <code>make format</code> before pushing.</p>
+
+<h2 id="review-expectations">Review expectations</h2>
+
+<div class="card">
+    <ul>
+        <li>Keep skills focused — one clear purpose per skill.</li>
+        <li>Write descriptions that make it obvious <em>when</em> a skill should fire.</li>
+        <li>Prefer clarity over cleverness; these are shared across many teams.</li>
+        <li>Be responsive to review feedback — most PRs need a small iteration or two.</li>
+    </ul>
+</div>
+
+<p>Approvals are not required by the ruleset (review is by convention), but a green <code>results</code> check is. See <a href="architecture.html">Pipeline &amp; governance</a> for the full PR + publish + branch-protection picture.</p>

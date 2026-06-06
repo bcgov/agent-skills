@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consume a Skill | BC Gov Agent Skills</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <style>
+        :root {
+            --bc-blue: #003366;
+            --bc-gold: #fcba19;
+            --bc-blue-dark: #002244;
+            --bc-blue-light: #1a5a96;
+            --text-primary: #313132;
+            --text-secondary: #606060;
+            --bg-light: #f2f2f2;
+            --white: #ffffff;
+            --gradient-hero: linear-gradient(135deg, #003366 0%, #1a5a96 50%, #003366 100%);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.16);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Offset anchor scroll so the sticky header never covers the target */
+        html {
+            scroll-padding-top: 80px;
+        }
+
+        body {
+            font-family: 'BC Sans', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .bc-header {
+            background: var(--gradient-hero);
+            border-bottom: 4px solid var(--bc-gold);
+            padding: 0.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
+        .bc-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+        }
+
+        .bc-header-logo {
+            height: 36px;
+            width: auto;
+            border-radius: 4px;
+        }
+
+        .bc-header-title {
+            color: var(--white);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .bc-header-subtitle {
+            color: var(--bc-gold);
+            font-size: 0.875rem;
+        }
+
+        /* Navigation with Dropdowns */
+        .bc-nav {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .bc-nav > a,
+        .nav-dropdown > .nav-trigger {
+            color: var(--white);
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+        }
+
+        .bc-nav > a:hover,
+        .nav-dropdown:hover > .nav-trigger {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .bc-nav > a.active {
+            background: var(--bc-gold);
+            color: var(--bc-blue);
+            font-weight: 600;
+        }
+
+        /* Dropdown */
+        .nav-dropdown {
+            position: relative;
+        }
+
+        .nav-trigger::after {
+            content: '';
+            border: solid currentColor;
+            border-width: 0 2px 2px 0;
+            display: inline-block;
+            padding: 3px;
+            transform: rotate(45deg);
+            margin-top: -3px;
+            transition: transform 0.2s;
+        }
+
+        .nav-dropdown:hover .nav-trigger::after {
+            transform: rotate(-135deg);
+            margin-top: 3px;
+        }
+
+        .nav-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: var(--transition);
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-dropdown-menu a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-dropdown-menu a:hover {
+            background: var(--bg-light);
+            border-left-color: var(--bc-gold);
+            color: var(--bc-blue);
+        }
+
+        .nav-dropdown-menu a.active {
+            background: #fef9e7;
+            border-left-color: var(--bc-gold);
+            border-left-width: 4px;
+            color: var(--bc-blue);
+            font-weight: 600;
+        }
+
+        .nav-dropdown-menu a small {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 0.2rem;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: var(--gradient-hero);
+            color: var(--white);
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero h1 {
+            color: var(--white);
+            border: none;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Typography */
+        h1 {
+            color: var(--bc-blue);
+            font-size: 2.25rem;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid var(--bc-gold);
+            padding-bottom: 0.5rem;
+        }
+
+        h2 {
+            color: var(--bc-blue);
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h2::before {
+            content: '';
+            width: 4px;
+            height: 1.5rem;
+            background: var(--bc-gold);
+            border-radius: 2px;
+        }
+
+        h3 {
+            color: var(--bc-blue-light);
+            font-size: 1.25rem;
+            margin: 1.5rem 0 0.75rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        /* Cards - Enhanced */
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--bc-blue);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .card-gold {
+            border-left-color: var(--bc-gold);
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        /* Clickable Cards */
+        a.card-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        a.card-link .card {
+            cursor: pointer;
+        }
+
+        a.card-link .card:hover {
+            border-left-width: 6px;
+        }
+
+        .card-arrow {
+            color: var(--bc-blue-light);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            transition: var(--transition);
+        }
+
+        a.card-link:hover .card-arrow {
+            gap: 0.75rem;
+            color: var(--bc-blue);
+        }
+
+        /* Feature Cards */
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-icon.gold { background: rgba(252, 186, 25, 0.15); }
+        .feature-icon.blue { background: rgba(0, 51, 102, 0.1); }
+        .feature-icon.green { background: rgba(34, 197, 94, 0.1); }
+        .feature-icon.purple { background: rgba(139, 92, 246, 0.1); }
+
+        /* Stats */
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--bc-gold);
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--bc-blue-dark);
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.875rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        code {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            background: #e2e8f0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        th {
+            background: var(--bc-blue);
+            color: var(--white);
+            padding: 0.875rem 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Links */
+        a {
+            color: var(--bc-blue-light);
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: var(--bc-blue);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .alert > * {
+            min-width: 0;
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid var(--bc-gold);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-left: 4px solid #22c55e;
+        }
+
+        /* Image containers */
+        .img-container {
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .img-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-gold {
+            background: var(--bc-gold);
+            color: var(--bc-blue);
+        }
+
+        .badge-blue {
+            background: var(--bc-blue);
+            color: var(--white);
+        }
+
+        /* Accordion / Collapsible */
+        details {
+            background: var(--white);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--bc-blue);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        details:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        details[open] {
+            border-left-color: var(--bc-gold);
+        }
+
+        summary {
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--bc-blue);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            list-style: none;
+            user-select: none;
+            transition: var(--transition);
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: '';
+            border: solid var(--bc-blue-light);
+            border-width: 0 2px 2px 0;
+            display: inline-block;
+            padding: 4px;
+            transform: rotate(-45deg);
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        details[open] summary::after {
+            transform: rotate(45deg);
+        }
+
+        summary:hover {
+            background: var(--bg-light);
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid #e2e8f0;
+            background: var(--bg-light);
+        }
+
+        .accordion-content {
+            padding: 1rem 1.25rem;
+        }
+
+        .accordion-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Accordion with badge */
+        summary .badge {
+            margin-left: auto;
+            margin-right: 1rem;
+        }
+
+        /* Accordion group */
+        .accordion-group {
+            margin: 1rem 0;
+        }
+
+        .accordion-group details:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Footer */
+        .site-footer {
+            background: var(--bc-blue);
+            color: var(--white);
+            padding: 3rem 2rem;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-brand h4,
+        .footer-links h4 {
+            color: var(--bc-gold);
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .footer-brand p {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--bc-gold);
+        }
+
+        .footer-copyright {
+            text-align: right;
+        }
+
+        .footer-copyright p {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin: 0;
+        }
+
+        .footer-meta {
+            margin-top: 0.5rem !important;
+            opacity: 0.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .bc-header {
+                flex-direction: column;
+                text-align: center;
+                padding: 1rem;
+            }
+
+            .bc-nav {
+                justify-content: center;
+            }
+
+            .nav-dropdown-menu {
+                position: fixed;
+                left: 1rem;
+                right: 1rem;
+                width: auto;
+            }
+
+            main {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .hero {
+                padding: 2rem 1rem;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            .footer-content {
+                text-align: center;
+            }
+
+            .footer-copyright {
+                text-align: center;
+            }
+        }
+
+        /* =====================================================================
+           SEARCH – button, modal, results, breadcrumb, highlight
+           ===================================================================== */
+
+        /* Search button in header nav */
+        .search-btn {
+            color: var(--white);
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            padding: 0.45rem 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            background: rgba(255,255,255,0.28);
+        }
+
+        .search-btn svg { flex-shrink: 0; }
+
+        .search-btn-kbd {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.72rem;
+            line-height: 1.5;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Modal overlay */
+        .search-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 20, 50, 0.65);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            align-items: flex-start;
+            justify-content: center;
+            padding: 6vh 1rem 1rem;
+        }
+
+        .search-modal--active {
+            display: flex;
+        }
+
+        /* Modal box */
+        .search-box {
+            background: var(--white);
+            border-radius: 14px;
+            box-shadow: 0 24px 72px rgba(0,0,0,0.35);
+            width: 100%;
+            max-width: 680px;
+            max-height: 82vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: search-appear 0.18s ease;
+        }
+
+        @keyframes search-appear {
+            from { opacity: 0; transform: translateY(-14px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0)  scale(1); }
+        }
+
+        /* Input row */
+        .search-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.9rem 1.1rem;
+            border-bottom: 1px solid #e5e9f0;
+            flex-shrink: 0;
+        }
+
+        .search-input-row svg { color: var(--text-secondary); flex-shrink: 0; }
+
+        #search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1.05rem;
+            color: var(--text-primary);
+            background: transparent;
+            font-family: inherit;
+            min-width: 0;
+        }
+
+        #search-input::placeholder { color: #a0aec0; }
+
+        .search-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            line-height: 1;
+            padding: 0.2rem 0.45rem;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .search-modal-close:hover {
+            background: var(--bg-light);
+            color: var(--text-primary);
+        }
+
+        /* Results list */
+        .search-results {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .search-count {
+            padding: 0.5rem 1.1rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #f0f3f8;
+            background: #fafbfd;
+        }
+
+        .search-result-item {
+            display: block;
+            padding: 0.9rem 1.1rem;
+            border-bottom: 1px solid #f0f3f8;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.12s;
+            outline: none;
+        }
+
+        .search-result-item:hover,
+        .search-result-item:focus {
+            background: #f4f7fc;
+        }
+
+        .search-result-meta {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #996600;
+            margin-bottom: 0.2rem;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            color: var(--bc-blue);
+            margin-bottom: 0.3rem;
+            font-size: 0.97rem;
+        }
+
+        .search-result-excerpt {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .search-result-item mark {
+            background: rgba(252, 186, 25, 0.45);
+            color: inherit;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        .search-no-results {
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .search-no-results svg {
+            display: block;
+            margin: 0 auto 0.75rem;
+            opacity: 0.4;
+        }
+
+        .search-no-results p { margin: 0; font-size: 0.95rem; }
+
+        .search-loading {
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Modal footer hints */
+        .search-hints {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.55rem 1.1rem;
+            border-top: 1px solid #e5e9f0;
+            background: #fafbfd;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .search-hints kbd {
+            display: inline-block;
+            background: var(--white);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: inherit;
+            font-size: 0.72rem;
+            line-height: 1.6;
+        }
+
+        /* ── Breadcrumb bar ───────────────────────────────────────────────── */
+        #search-breadcrumb {
+            display: none;
+            background: var(--white);
+            border: 1px solid #dde3ed;
+            border-radius: 8px;
+            padding: 0.65rem 1.1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .breadcrumb-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .breadcrumb-nav a {
+            color: var(--bc-blue-light);
+            text-decoration: none;
+        }
+
+        .breadcrumb-nav a:hover {
+            text-decoration: underline;
+            color: var(--bc-blue);
+        }
+
+        .breadcrumb-current {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .breadcrumb-sep { color: #94a3b8; }
+
+        /* ── Section highlight flash ──────────────────────────────────────── */
+        @keyframes section-flash {
+            0%   { background-color: rgba(252, 186, 25, 0.45); box-shadow: 0 0 0 4px rgba(252,186,25,0.25); }
+            60%  { background-color: rgba(252, 186, 25, 0.15); }
+            100% { background-color: transparent; box-shadow: none; }
+        }
+
+        .search-highlight {
+            animation: section-flash 2.2s ease-out forwards;
+            border-radius: 4px;
+        }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/flexsearch@0.7.31/dist/flexsearch.bundle.js" defer></script>
+    <script src="assets/search.js" defer id="search-script"></script>
+</head>
+<body>
+    <header class="bc-header">
+        <a href="index.html" class="bc-header-brand">
+            <img src="assets/bc_citz_logo.jpg" alt="BC Government" class="bc-header-logo">
+            <div>
+                <div class="bc-header-title">BC Gov Agent Skills</div>
+                <div class="bc-header-subtitle">A shared catalogue of agent skill profiles</div>
+            </div>
+        </a>
+        <nav class="bc-nav">
+            <a href="index.html" class="">Home</a>
+            <a href="catalog.html" class="">Catalog</a>
+            <a href="consume.html" class="active">Consume</a>
+            <a href="contribute.html" class="">Contribute</a>
+            <a href="spec.html" class="">Spec</a>
+            <a href="architecture.html" class="">Pipeline</a>
+            <a href="faq.html" class="">FAQ</a>
+            <a href="https://github.com/bcgov/agent-skills" target="_blank" rel="noopener" class="">GitHub ↗</a>
+
+            <!-- Search button -->
+            <button class="search-btn" id="search-btn" type="button" aria-label="Search documentation">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Search
+                <span class="search-btn-kbd" aria-label="keyboard shortcut">⌘K</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- ── Search modal ──────────────────────────────────────────────────── -->
+    <div class="search-modal" id="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+        <div class="search-box">
+            <div class="search-input-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input
+                    type="search"
+                    id="search-input"
+                    placeholder="Search documentation…"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Search query"
+                />
+                <button class="search-modal-close" id="search-modal-close" type="button" aria-label="Close search">✕</button>
+            </div>
+            <div class="search-results" id="search-results" role="listbox" aria-label="Search results"></div>
+            <div class="search-hints" aria-hidden="true">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> open</span>
+                <span><kbd>Esc</kbd> close</span>
+                <span style="margin-left:auto"><kbd>⌘K</kbd> or <kbd>Ctrl+K</kbd></span>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <!-- Breadcrumb: injected by search.js when arriving from a search result -->
+        <div id="search-breadcrumb" aria-label="Search breadcrumb"></div>
+<!-- TITLE: Consume a Skill -->
+<!-- NAV: consume -->
+
+<h1 id="consume-a-skill">Consume a Skill</h1>
+
+<p>Skills are published as npm packages to GitHub Packages under the <code>@bcgov</code> scope. Installing one is four steps: configure the registry, authenticate, install, and (later) upgrade.</p>
+
+<div class="alert alert-info">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
+    <div>
+        <strong>GitHub Packages always requires authentication</strong>, even for public packages on the npm registry — this is a GitHub Packages behaviour, not a permission setting on this repo. The flow below uses the GitHub CLI to mint a short-lived token, so you don't need to manage a personal access token.
+    </div>
+</div>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<div class="card">
+    <h3 id="install-the-github-cli-once-per-machine" style="margin-top:0;">Install the GitHub CLI once per machine</h3>
+    <p>The local-dev flow uses <code>gh</code> to mint a short-lived <code>NODE_AUTH_TOKEN</code> for npm. See the <a href="https://github.com/cli/cli#installation" target="_blank" rel="noopener">official install guide</a>.</p>
+<pre><code># Windows (PowerShell)
+winget install --id GitHub.cli
+
+# macOS
+brew install gh
+
+# Linux — see the install guide for your distro</code></pre>
+    <p>Then sign in:</p>
+<pre><code>gh auth login
+gh auth status</code></pre>
+    <p style="margin-bottom:0;">You also need Node.js installed (any LTS works; the publish pipeline uses Node 24).</p>
+</div>
+
+<h2 id="step-1-npmrc">Step 1 — Point npm at GitHub Packages</h2>
+
+<p>Create a project-local <code>.npmrc</code> beside the <code>package.json</code> where you want to consume the skill. The same file works in local dev and GitHub Actions — the only thing that changes is where <code>NODE_AUTH_TOKEN</code> comes from.</p>
+
+<pre><code class="language-ini">@bcgov:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+always-auth=true</code></pre>
+
+<p><code>${NODE_AUTH_TOKEN}</code> is expanded by npm at install time from the environment variable; the literal string lives in the file, so it's safe to commit.</p>
+
+<h2 id="step-2-authenticate">Step 2 — Get a token into <code>NODE_AUTH_TOKEN</code></h2>
+
+<p>Choose the path that matches where you're running <code>npm install</code>.</p>
+
+<h3 id="local-dev">Local development (GitHub CLI)</h3>
+
+<div class="card">
+    <p>First time only — grant your CLI token the <code>read:packages</code> scope:</p>
+<pre><code>gh auth refresh -h github.com -s read:packages</code></pre>
+    <p>When prompted "Authenticate Git with your GitHub credentials?", answer <strong>No</strong> if you already have Git auth working (especially SSH commit signing) — the prompt is unrelated to npm and answering yes can overwrite Git settings.</p>
+
+    <p style="margin-top: 1.5rem;">Every shell session, export the CLI's current token as <code>NODE_AUTH_TOKEN</code>:</p>
+<pre><code># PowerShell
+$env:NODE_AUTH_TOKEN = gh auth token
+
+# bash / zsh
+export NODE_AUTH_TOKEN=$(gh auth token)</code></pre>
+    <p style="margin-bottom: 0;">Want to revoke npm access later? <code>gh auth logout</code> ends both your <code>gh</code> session and any <code>NODE_AUTH_TOKEN</code> that came from it — credential management stays in one place.</p>
+</div>
+
+<h3 id="github-actions">GitHub Actions (built-in <code>GITHUB_TOKEN</code>)</h3>
+
+<p>No personal token or repo secret to configure. The workflow's automatic <code>GITHUB_TOKEN</code> can read packages as long as the job declares <code>packages: read</code>:</p>
+
+<pre><code class="language-yaml">jobs:
+  install-skills:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></pre>
+
+<h2 id="step-3-install">Step 3 — Install</h2>
+
+<p>Pin a version for reproducible pulls:</p>
+
+<pre><code>npm install @bcgov/skill-azure-networking@0.1.0</code></pre>
+
+<p>The package lands at <code>node_modules/@bcgov/skill-azure-networking/</code> with its <code>SKILL.md</code> plus any <code>references/</code>, <code>scripts/</code>, or <code>assets/</code> the skill ships — the on-disk layout matches the source repo exactly, so your agent's skills loader can point at the directory with no extra wiring.</p>
+
+<div class="alert alert-success">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <div>
+        <strong>Validated end-to-end.</strong> The README documents the same flow and the install was tested against a clean temp directory: <code>npm install @bcgov/skill-azure-networking@0.1.0</code> exits 0 and pulls the package, <code>SKILL.md</code>, and <code>references/REFERENCE.md</code>.
+    </div>
+</div>
+
+<h2 id="step-4-upgrade">Step 4 — Upgrade</h2>
+
+<p>Skills are plain npm packages, so use the npm commands you already know:</p>
+
+<pre><code>npm outdated @bcgov/skill-azure-networking        # see what's newer
+npm update   @bcgov/skill-azure-networking        # move within your semver range
+npm install  @bcgov/skill-azure-networking@0.2.0  # jump to an exact version</code></pre>
+
+<p>Use a semver range (e.g. <code>"^0.1.0"</code>) in <code>package.json</code> to pick up compatible updates on <code>npm update</code>, or pin an exact version to freeze it. Your lockfile keeps installs reproducible across the team.</p>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<div class="accordion-group">
+    <details>
+        <summary><code>npm error 401 Unauthorized</code></summary>
+        <div class="accordion-content">
+            <p><code>NODE_AUTH_TOKEN</code> is empty or the token doesn't have <code>read:packages</code>.</p>
+            <ul>
+                <li>Re-run <code>gh auth refresh -h github.com -s read:packages</code>.</li>
+                <li>Re-export the token in the current shell: <code>$env:NODE_AUTH_TOKEN = gh auth token</code> (PowerShell) or <code>export NODE_AUTH_TOKEN=$(gh auth token)</code> (bash).</li>
+                <li>Confirm <code>echo $env:NODE_AUTH_TOKEN</code> / <code>echo "$NODE_AUTH_TOKEN"</code> prints a non-empty value.</li>
+            </ul>
+        </div>
+    </details>
+
+    <details>
+        <summary><code>npm error 404 Not Found</code></summary>
+        <div class="accordion-content">
+            <p>The version doesn't exist, or the registry is wrong. Check:</p>
+            <ul>
+                <li><a href="catalog.html">The catalog</a> for the published version.</li>
+                <li>Your <code>.npmrc</code> has <code>@bcgov:registry=https://npm.pkg.github.com</code>.</li>
+                <li>You're running <code>npm install</code> from the directory containing that <code>.npmrc</code>.</li>
+            </ul>
+        </div>
+    </details>
+
+    <details>
+        <summary>npm picks the wrong registry / falls back to npmjs.org</summary>
+        <div class="accordion-content">
+            <p>Make sure the scope and the auth line both point at GitHub Packages — they must both be present in <code>.npmrc</code>:</p>
+<pre><code>@bcgov:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+always-auth=true</code></pre>
+            <p>If you also have a global <code>~/.npmrc</code> with a different <code>registry=</code>, the scoped registry line wins — but the auth line must match the URL of whatever registry actually serves the install.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>GitHub Actions: <code>403 Forbidden</code> when reading the package</summary>
+        <div class="accordion-content">
+            <p>Your workflow job is missing <code>permissions: packages: read</code>. The default <code>GITHUB_TOKEN</code> permission profile in many orgs only grants <code>contents: read</code>, so npm gets denied. Add the block in the snippet above to the job (not the workflow root — job-scoped permissions override).</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>Can I use a personal access token (PAT) instead of <code>gh auth token</code>?</summary>
+        <div class="accordion-content">
+            <p>Yes — a classic PAT with <code>read:packages</code> works in place of the CLI-issued token. The CLI flow is just lower friction (no separate token to generate, rotate, or revoke), and <code>gh auth logout</code> cleans up both your CLI session and any token sourced from it.</p>
+        </div>
+    </details>
+</div>
+    </main>
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h4>BC Gov Agent Skills</h4>
+                <p>A shared catalogue of agent skill profiles, validated in CI and published to GitHub Packages.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Repository</h4>
+                <ul>
+                    <li><a href="https://github.com/bcgov/agent-skills" target="_blank" rel="noopener">GitHub Repository</a></li>
+                    <li><a href="https://github.com/bcgov/agent-skills/blob/main/spec/SKILL_SPEC.md" target="_blank" rel="noopener">SKILL.md Spec (source)</a></li>
+                    <li><a href="https://github.com/bcgov/agent-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a></li>
+                    <li><a href="https://github.com/orgs/bcgov/packages?repo_name=agent-skills" target="_blank" rel="noopener">Published Packages</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="catalog.html">Skill Catalog</a></li>
+                    <li><a href="consume.html">Consume a Skill</a></li>
+                    <li><a href="contribute.html">Contribute a Skill</a></li>
+                    <li><a href="spec.html">SKILL.md Spec</a></li>
+                    <li><a href="architecture.html">Pipeline &amp; Governance</a></li>
+                    <li><a href="faq.html">FAQ</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>BC Government</h4>
+                <ul>
+                    <li><a href="https://www2.gov.bc.ca" target="_blank" rel="noopener">gov.bc.ca</a></li>
+                    <li><a href="https://digital.gov.bc.ca" target="_blank" rel="noopener">Digital Office</a></li>
+                    <li><a href="https://github.com/bcgov" target="_blank" rel="noopener">bcgov on GitHub</a></li>
+                </ul>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2026 Province of British Columbia</p>
+                <p class="footer-meta">Built with zero dependencies</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            function scrollToWithHeaderOffset(el) {
+                if (!el) return;
+                const header = document.querySelector('.bc-header');
+                const offset = (header ? header.getBoundingClientRect().height : 0) + 16;
+
+                const top = el.getBoundingClientRect().top + window.scrollY - offset;
+                window.scrollTo({ top: Math.max(0, top) });
+            }
+
+            function openDetailsFromHash() {
+                const hash = window.location.hash;
+                if (!hash || hash.length < 2) return;
+
+                const id = hash.substring(1);
+                const el = document.getElementById(id);
+                if (el && el.tagName && el.tagName.toLowerCase() === 'details') {
+                    el.open = true;
+                    // Opening can change layout; adjust scroll after paint so the
+                    // sticky header doesn't cover the <summary> title.
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            scrollToWithHeaderOffset(el);
+                        });
+                    });
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                openDetailsFromHash();
+            });
+
+            window.addEventListener('hashchange', function () {
+                openDetailsFromHash();
+            });
+
+            // If user clicks the same #hash twice, hashchange won't fire.
+            // This ensures ADR links always expand.
+            document.addEventListener('click', function (e) {
+                const link = e.target.closest && e.target.closest('a[href^="#"]');
+                if (!link) return;
+
+                const href = link.getAttribute('href');
+                if (!href || href.length < 2) return;
+
+                const id = href.substring(1);
+                const el = document.getElementById(id);
+                if (el && el.tagName && el.tagName.toLowerCase() === 'details') {
+                    el.open = true;
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            scrollToWithHeaderOffset(el);
+                        });
+                    });
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

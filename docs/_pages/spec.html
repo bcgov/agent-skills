@@ -1,0 +1,180 @@
+<!-- TITLE: SKILL.md Spec -->
+<!-- NAV: spec -->
+
+<h1>SKILL.md Spec</h1>
+
+<p>Every skill in this repo is described by a <code>SKILL.md</code> manifest and (for published skills) a <code>package.json</code>. Both are validated by the PR check. This page summarises what the validator enforces. The authoritative document lives at <a href="https://github.com/bcgov/agent-skills/blob/main/spec/SKILL_SPEC.md" target="_blank" rel="noopener"><code>spec/SKILL_SPEC.md</code></a>.</p>
+
+<div class="alert alert-info">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
+    <div>
+        The PR check runs <code>scripts/validate_skill.py</code> against every <strong>changed</strong> skill. Run the same checks locally with <code>uv run python scripts/validate_skill.py --all</code> (or just one skill: <code>uv run python scripts/validate_skill.py skills/&lt;name&gt;/SKILL.md</code>).
+    </div>
+</div>
+
+<h2 id="layout">Directory layout</h2>
+
+<p>A skill lives in its own directory under one of two roots. Both are validated against this spec; only <code>skills/</code> is published.</p>
+
+<pre><code>skills/&lt;skill-name&gt;/            # contributed skills (published)
+.github/skills/&lt;skill-name&gt;/    # the repo's own meta-skills (not published)
+├── SKILL.md        # required: the manifest
+├── package.json    # required for skills/, optional for .github/skills/
+├── scripts/        # optional, flat — one level deep
+├── references/     # optional, flat
+└── assets/         # optional, flat</code></pre>
+
+<h2 id="frontmatter">1. Frontmatter (required)</h2>
+
+<p>The <code>SKILL.md</code> MUST begin with a YAML frontmatter block. Two fields are mandatory:</p>
+
+<table>
+    <thead>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>name</code></td><td>string</td><td>Unique, kebab-case identifier. Must match the skill's directory name.</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td>What the skill does and when it should trigger. The only metadata an agent sees when routing — keep it specific.</td></tr>
+    </tbody>
+</table>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 style="margin-top:0;"><code>name</code> rules</h3>
+        <ul>
+            <li>Kebab-case: <code>^[a-z0-9]+(-[a-z0-9]+)*$</code> — lowercase letters and digits in hyphen-separated groups, no leading/trailing/consecutive hyphens.</li>
+            <li>At most <strong>64 characters</strong>.</li>
+            <li>Must <strong>exactly match the skill's directory name</strong>, so manifest, folder, and npm package all line up.</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;"><code>description</code> rules</h3>
+        <ul>
+            <li>At most <strong>1024 characters</strong>.</li>
+            <li><strong>No angle brackets</strong> (<code>&lt;</code> or <code>&gt;</code>) — they get misread as markup where the manifest is injected.</li>
+            <li>Routing depends on it — be specific about <em>when</em> the skill fires.</li>
+        </ul>
+    </div>
+</div>
+
+<h3 id="allowed-keys" style="margin-top: 1.5rem;">Allowed frontmatter keys</h3>
+
+<p>Only these keys are accepted — any other key is rejected by the validator: <code>name</code>, <code>description</code>, <code>owner</code>, <code>tags</code>, <code>license</code>, <code>allowed-tools</code>, <code>compatibility</code>, <code>metadata</code>. Of the optional ones, <code>owner</code> and <code>tags</code> are recommended.</p>
+
+<div class="alert alert-warning">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+        The published <strong>version is not in the frontmatter</strong> — it lives in <code>package.json</code> (see <a href="#package-json">§3</a>) as the single source of truth. Don't add a <code>version</code> field to <code>SKILL.md</code>.
+    </div>
+</div>
+
+<h3 style="margin-top: 1.5rem;">Example</h3>
+
+<pre><code class="language-yaml">---
+name: example-skill
+description: One line on what this does and when it fires.
+owner: your-team
+tags: [example]
+---</code></pre>
+
+<h2 id="body">2. Body (required)</h2>
+
+<p>After the frontmatter, the body MUST contain — <strong>in this order</strong> — an H1 title followed by all seven <code>##</code> sections. Each section must have at least one line of content.</p>
+
+<pre><code class="language-markdown"># &lt;Skill Name&gt;
+
+## Use When
+- &lt;specific situation&gt;
+
+## Don't Use When
+- &lt;adjacent case&gt; → &lt;other skill&gt;
+
+## Workflow
+1. &lt;step + tool&gt;
+2. ...
+
+## Rules
+- Always &lt;X&gt;
+- Never &lt;Y&gt;  (Why: &lt;non-obvious reason&gt;)
+
+## Examples
+- "&lt;user phrasing&gt;" → &lt;action&gt;
+
+## Edge Cases
+- If &lt;lookup empty&gt; → &lt;fallback&gt;
+
+## References
+See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;</code></pre>
+
+<h3 id="length-limit" style="margin-top: 1.5rem;">Keep it short — 500 lines max</h3>
+
+<p>A <code>SKILL.md</code> is loaded into the agent's context up front, so it must stay skimmable. The manifest is capped at <strong>500 lines</strong> (the whole file, frontmatter included). When a skill needs deeper material — long procedures, lookup tables, worked examples, API detail — put it in a <code>references/</code> file the agent pulls on demand, and link it from the <code>## References</code> section.</p>
+
+<h3 id="flat-resources">Keep bundled resources flat — one level deep</h3>
+
+<p>Skills may ship <code>scripts/</code>, <code>references/</code>, and <code>assets/</code> directories beside the <code>SKILL.md</code>. These must stay <strong>exactly one level deep</strong> — flat files only, no nested subdirectories. Use <code>references/REFERENCE.md</code>, not <code>references/api/v1/REFERENCE.md</code>. A flat layout keeps on-demand resources predictable for the agent to locate.</p>
+
+<h2 id="package-json">3. <code>package.json</code> (required for published skills)</h2>
+
+<p>A contributed skill under <code>skills/</code> ships as a versioned npm package, so it MUST include a <code>package.json</code> beside its <code>SKILL.md</code>. Meta-skills under <code>.github/skills/</code> are never published, so a <code>package.json</code> is <strong>optional</strong> there — and validated only when one is present.</p>
+
+<table>
+    <thead>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>name</code></td><td>string</td><td>Scoped package name — <code>@bcgov/skill-&lt;skill-name&gt;</code>.</td></tr>
+        <tr><td><code>version</code></td><td>string</td><td>Semver (<code>MAJOR.MINOR.PATCH</code>). The source of truth for releases.</td></tr>
+    </tbody>
+</table>
+
+<pre><code class="language-json">{
+  "name": "@bcgov/skill-example-skill",
+  "version": "0.1.0",
+  "publishConfig": { "registry": "https://npm.pkg.github.com" }
+}</code></pre>
+
+<div class="alert alert-warning">
+    <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+        <strong>The entire skill directory is bundled automatically.</strong> Do <strong>not</strong> add a <code>files</code> field — that turns npm into a whitelist and would silently drop directories. To exclude scratch files, add a <code>.npmignore</code> inside the skill folder (it must not exclude <code>SKILL.md</code>).
+    </div>
+</div>
+
+<p>The publish workflow reads <code>name</code> + <code>version</code> from this file and skips any version already published — bumping <code>version</code> is what ships a new release. See <a href="contribute.html#versioning">Contribute → Versioning</a> for the <code>npm version</code> flow.</p>
+
+<h2 id="validator-checks">4. What the PR check enforces</h2>
+
+<p>For each <strong>changed</strong> skill, the validator confirms all of the following. If you see a failure on a PR, this list maps directly to the checks.</p>
+
+<div class="card">
+    <ol>
+        <li>The <code>SKILL.md</code> starts with a closed YAML frontmatter block that parses as a mapping.</li>
+        <li><code>name</code> and <code>description</code> are present and non-empty.</li>
+        <li><code>name</code> is kebab-case, at most 64 characters, and <strong>matches the skill's directory name</strong>.</li>
+        <li><code>description</code> is at most 1024 characters and contains no angle brackets.</li>
+        <li>No unexpected frontmatter keys are present (only <code>name</code>, <code>description</code>, <code>owner</code>, <code>tags</code>, <code>license</code>, <code>allowed-tools</code>, <code>compatibility</code>, <code>metadata</code>).</li>
+        <li>The body has an H1 title.</li>
+        <li>All seven required sections are present: <strong>Use When</strong>, <strong>Don't Use When</strong>, <strong>Workflow</strong>, <strong>Rules</strong>, <strong>Examples</strong>, <strong>Edge Cases</strong>, <strong>References</strong>.</li>
+        <li>None of those required sections is empty.</li>
+        <li>The whole <code>SKILL.md</code> is at most 500 lines.</li>
+        <li>Any bundled <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory is flat — no nested subdirectories.</li>
+        <li>For a published skill under <code>skills/</code>, a <code>package.json</code> sits beside the manifest with a valid <code>name</code> and a semver <code>version</code>, and does <strong>not</strong> pin a <code>files</code> whitelist. For a meta-skill under <code>.github/skills/</code>, a missing <code>package.json</code> is allowed; if one is present it is held to the same rules.</li>
+    </ol>
+</div>
+
+<h3 style="margin-top: 1.5rem;">Run it locally</h3>
+
+<pre><code>uv run python scripts/validate_skill.py skills/&lt;your-skill&gt;/SKILL.md
+
+# or validate every skill
+uv run python scripts/validate_skill.py --all
+
+# or via the Makefile
+make validate</code></pre>

@@ -7,6 +7,9 @@ Each skill is validated against a common spec on every pull request and — once
 merged — published as a versioned **npm package** you install and upgrade with
 tooling you already use.
 
+Browse the catalogue and full documentation at
+**<https://bcgov.github.io/agent-skills/>**.
+
 ---
 
 ## Jump to what you need
