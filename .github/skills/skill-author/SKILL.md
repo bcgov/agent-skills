@@ -27,6 +27,7 @@ description: Scaffolds a new skill profile in this repo and fills in the require
 - Always set the new skill's starting `version` to `0.1.0` in `package.json`, never in the `SKILL.md` frontmatter. (Why: version lives only in package.json to avoid drift between two sources of truth.)
 - Always keep the package `name` scoped as `@bcgov/skill-<skill-name>` matching the folder. (Why: the publish workflow derives the npm package identity from this and consumers install by it.)
 - Never invent a new section order or rename a section. (Why: the validator matches the seven section titles exactly and the PR check will fail.)
+- Always keep `## Use When` as situational triggers (when to reach for this skill at all) and `## Workflow` as the numbered procedure (how to do the work). Never let a Use When bullet paraphrase a Workflow step — if a bullet starts with "Always ship…", "Set X to Y", or restates a procedural detail, it belongs in Workflow, not Use When. (Why: the two sections serve different reader intents — routing vs. execution — and duplicating content between them bloats the agent's context, makes routing fuzzier, and drifts out of sync on every edit.)
 
 ## Examples
 - "I want to add a skill for looking up land parcels" → scaffold `skills/parcel-lookup/`, fill the template, validate.

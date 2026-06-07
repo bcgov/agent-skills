@@ -8,18 +8,12 @@ tags: [openshift, kubernetes, bcgov, deployment, statefulset, cronjob, hpa, pdb]
 # OpenShift Deployment — BC Gov Private Cloud Workloads
 
 ## Use When
-- Authoring a `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, or `CronJob` (raw, Helm chart, or Kustomize base) bound for a license-plate `-dev` / `-test` / `-prod` namespace on Silver, Gold, GoldDR, or Emerald.
-- Picking which controller type fits the workload (stateless API → Deployment; ordered identity + per-pod PVC → StatefulSet; one pod per node → DaemonSet; one-shot/parallel work → Job; scheduled → CronJob).
-- Setting container `resources.requests` and `resources.limits` and deliberately choosing a QoS class (`Guaranteed`, `Burstable`, `BestEffort`).
-- Sizing and shaping `livenessProbe`, `readinessProbe`, and `startupProbe`, especially when probe failures are masking a real bug or causing flapping.
-- Setting `terminationGracePeriodSeconds` and ensuring the app traps and acts on `SIGTERM` (closes listeners, drains in-flight work, flushes buffers).
-- Choosing PID 1 for an image so zombie children get reaped (`tini`, `dumb-init`, or `s6-overlay` as the container `ENTRYPOINT`).
-- Writing a `PodDisruptionBudget` for a multi-replica workload that must stay available across voluntary disruptions (node drains).
-- Adding the mandatory `HorizontalPodAutoscaler` (CPU or memory utilization) for any long-running workload — including its `behavior.scaleUp` (rampup) and `behavior.scaleDown` (rampdown) windows.
-- Spreading replicas across nodes and zones with pod anti-affinity (and `nodeAffinity` / `topologySpreadConstraints` where a workload must land on, or away from, a specific node pool or zone).
-- Adding vertical-rightsizing recommendations via `VerticalPodAutoscaler` (recommend-only mode) on workloads with unstable resource footprints.
-- Scheduling work with `CronJob` or one-off `Job`, and getting past Kyverno admission (cadence ≥ 5 min; ≥ 1 h if a PVC is mounted; never `CRON_TZ=` in `schedule` — use `spec.timeZone`).
-- Diagnosing `CrashLoopBackOff`, `OOMKilled`, `Evicted`, or `terminationGracePeriod exceeded` on a workload you own.
+- Authoring or reviewing a new workload manifest (`Deployment`, `StatefulSet`, `DaemonSet`, `Job`, or `CronJob` — raw, Helm chart, or Kustomize base) bound for a license-plate `-dev` / `-test` / `-prod` namespace on Silver, Gold, GoldDR, or Emerald.
+- Picking which controller type fits a given workload (stateless API → Deployment; ordered identity + per-pod PVC → StatefulSet; one pod per node → DaemonSet; one-shot / parallel work → Job; scheduled → CronJob).
+- Hardening an existing workload to meet the BC Gov platform's mandatory pod hygiene — resource requests / QoS class, probes, SIGTERM and `terminationGracePeriodSeconds`, PID-1 reaping, PDB, HPA (with explicit rampup / rampdown), and pod anti-affinity / `nodeAffinity` / `topologySpreadConstraints`.
+- Adding `VerticalPodAutoscaler` recommendations (`updateMode: "Off"`) on a workload with a drifting resource footprint.
+- Getting past a Kyverno workload-admission rejection — `CronJob` cadence (≥ 5 min, ≥ 1 h with a PVC), `CRON_TZ=` in `schedule`, or the Emerald-only `DataClass` label rule.
+- Diagnosing pod-level failures on a workload you own — `CrashLoopBackOff`, `OOMKilled`, `Evicted`, `TerminationGracePeriodExceeded`, or a defunct-PIDs platform alert.
 
 ## Don't Use When
 - Writing or debugging `NetworkPolicy` objects (default-deny, allow-from-router, allow-from-same-namespace, SDN-vs-NSX-T egress) — use the **`openshift-networking`** skill.
