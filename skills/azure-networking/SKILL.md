@@ -25,7 +25,7 @@ tags: [azure, networking, terraform, bicep, subnets, private-endpoints, nsg]
 *The upstream Microsoft `azure-*` skills referenced above live in the Microsoft `agent-skills` catalogue — install separately if not already in your agent environment.*
 
 ## Workflow
-1. **Anchor to the BC Gov Azure Landing Zone networking rules first — critical, must be followed.** Source of truth: [BC Gov Azure Landing Zone — Networking](https://raw.githubusercontent.com/bcgov/public-cloud-techdocs/refs/heads/main/docs/azure/design-build-deploy/networking.md). These platform constraints **override anything below if they conflict**:
+1. **Anchor to the BC Gov Azure Landing Zone networking rules first; these rules take precedence.** Reference: [BC Gov Azure Landing Zone — Networking](https://raw.githubusercontent.com/bcgov/public-cloud-techdocs/refs/heads/main/docs/azure/design-build-deploy/networking.md). These platform constraints **override anything below if they conflict**:
    - **Platform-protected, do not create or modify** — VNets, VNet address space, VNet DNS settings, VNet peerings, ExpressRoute / VPN / NAT / Local Gateways, **Route Tables**, and the `setbypolicy` diagnostic setting. Request changes via the [Public Cloud Service Request](https://citz-do.atlassian.net/servicedesk/customer/portal/3).
    - **IP budget** — each Project Set gets ~251 usable IPs (a single `/24`); Microsoft reserves 5 IPs per subnet; raise a Service Request for more.
    - **NSG-at-creation is mandatory** — every subnet must carry an NSG from the moment it is created, and every subnet must be a [Private Subnet](https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access#utilize-the-private-subnet-parameter-public-preview) (`defaultOutboundAccess = false`, Zero Trust).
@@ -67,7 +67,7 @@ tags: [azure, networking, terraform, bicep, subnets, private-endpoints, nsg]
 - **Delegation needs to change on an existing subnet** — Azure returns `SubnetDelegationCannotBeChanged`. The only fix is to destroy and recreate the subnet (Terraform `terraform destroy -target` or `taint`; Bicep — remove from the template and redeploy, then add back; CLI — `az network vnet subnet delete` then re-create). Schedule the outage.
 
 ## References
-**Platform source of truth (BC Gov)**: [BC Gov Azure Landing Zone — Networking](https://raw.githubusercontent.com/bcgov/public-cloud-techdocs/refs/heads/main/docs/azure/design-build-deploy/networking.md). Read this first; its rules override any contradictory guidance below.
+**Platform reference (BC Gov)**: [BC Gov Azure Landing Zone — Networking](https://raw.githubusercontent.com/bcgov/public-cloud-techdocs/refs/heads/main/docs/azure/design-build-deploy/networking.md). Read this first; its rules override any contradictory guidance below.
 
 See [references/REFERENCE.md](./references/REFERENCE.md) for the atomic subnet+NSG body shape in Terraform, Bicep, and az CLI; full NSG rule tables per subnet type; sibling-subnet serialization examples; App Gateway route-table requirements; PE subnet capacity math; and a failure playbook keyed by Azure error code.
 

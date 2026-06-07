@@ -17,24 +17,14 @@ open index.html    # macOS — use xdg-open on Linux, start on Windows
 ```
 docs/
 ├── _partials/                 # Shared header + footer (injected into every page)
-│   ├── header.html
+│   ├── header.html            # Owns the nav block, brand, and bundled CSS
 │   └── footer.html
 │
 ├── _pages/                    # Source content — one file per page
-│   ├── _template.html         # Starter for new pages (skipped by build)
-│   ├── index.html             # Home
-│   ├── catalog.html           # Skill catalog
-│   ├── consume.html           # How to install a skill
-│   ├── contribute.html        # How to add a skill
-│   ├── spec.html              # SKILL.md spec summary
-│   ├── architecture.html      # Pipeline & governance
-│   └── faq.html               # FAQ
+│   ├── _template.html         # Starter + live cheat-sheet for components (build skips it)
+│   └── <page>.html            # Browse the directory for the current set
 │
-├── assets/                    # Static assets shipped as-is
-│   ├── bc_citz_logo.jpg
-│   ├── favicon.svg
-│   ├── search.js              # FlexSearch client wiring
-│   └── search-index.json      # Generated — full-text search index
+├── assets/                    # Static assets shipped as-is (favicon, logos, search wiring)
 │
 ├── build.sh                   # Template engine + search index trigger
 ├── generate-search-index.js   # Node — parses built HTML → search-index.json
@@ -42,6 +32,15 @@ docs/
 │
 └── *.html                     # Build output, served by GitHub Pages
 ```
+
+A couple of conventions baked into this layout:
+
+- **`_pages/` is the only place to write content.** Each file becomes one page
+  at the docs root; the build script never edits `_pages/` itself.
+- **`_partials/` is shared chrome.** A nav, brand, or styling change happens
+  once in `header.html` and lands on every page.
+- **The root `*.html` files are build output.** Don't edit them by hand;
+  they're overwritten on every `./build.sh`.
 
 ## How the template engine works
 
@@ -79,17 +78,17 @@ After all pages are written, the script invokes `generate-search-index.js`, whic
    <p>Use any HTML. The header bundles all CSS.</p>
    ```
 
-2. **Add a nav link** in `_partials/header.html`:
+   Crib from [`_pages/_template.html`](_pages/_template.html) for the
+   available components (cards, alerts, badges, grids, hero, etc.). It
+   doubles as a live cheat-sheet, so whatever's there is what you can use.
 
-   ```html
-   <a href="mynewpage.html" class="{{NAV_MYNEWPAGE}}">My New Page</a>
-   ```
+2. **Add a nav link** in the nav block of `_partials/header.html` (look for
+   the existing `<a href="..." class="{{NAV_<NAME>}}">` entries and add yours
+   next to them).
 
-3. **Add the clear-line** in `build.sh` so inactive instances render blank:
-
-   ```bash
-   header="${header//\{\{NAV_MYNEWPAGE\}\}/}"
-   ```
+3. **Register the clear-line** in `build.sh` next to the existing
+   `header="${header//\{\{NAV_<NAME>\}\}/}"` block, so inactive instances of
+   the new placeholder render blank instead of leaking through.
 
 4. **Build and check**:
 
@@ -98,25 +97,34 @@ After all pages are written, the script invokes `generate-search-index.js`, whic
    open mynewpage.html
    ```
 
-The build is fast enough (milliseconds) that there's no watch mode — just re-run `./build.sh`.
+The build is fast enough (milliseconds) that there's no watch mode; just
+re-run `./build.sh`.
 
-## Available CSS classes
+## Styling and components
 
-The header bundles a small in-house framework — no Tailwind, no external CSS. See `_pages/_template.html` for a live cheat-sheet covering:
-
-- **Layout** — `.grid` / `.grid-2` / `.grid-3` / `.grid-4`
-- **Components** — `.card`, `.card-gold`, `.alert .alert-info|alert-warning|alert-success`, `.badge .badge-gold|badge-blue`
-- **Interactive** — `.card-link`, `.card-arrow`, `.feature-icon`, `.hero`
-- **Typography** — `h1`–`h3` styled defaults, `code`, `pre`, `table`
+The header bundles a small in-house CSS framework. No Tailwind, no external
+stylesheet. The authoritative reference is
+[`_pages/_template.html`](_pages/_template.html), which renders every
+available component (layout grids, cards, alerts, badges, hero blocks,
+typography defaults) in one page. Open it in a browser after a build to see
+the full vocabulary; copy the markup from there into your page.
 
 ## Deployment
 
-GitHub Pages runs `./build.sh` on every push to `main` that touches `docs/**` and publishes the output. The workflow lives at `.github/workflows/pages.yml`.
+GitHub Pages runs `./build.sh` on every push to `main` that touches
+`docs/**`. The Pages workflow lives under
+[`.github/workflows/`](../.github/workflows/) and uploads the built `docs/`
+directory as the Pages artifact: no separate publish step, no custom build
+action beyond Bash + Node.
 
-## Why Bash instead of Jekyll/Hugo/etc?
+## Why a small Bash build instead of Jekyll/Hugo/etc?
 
-1. **Tiny footprint** — Bash + Node, no plugin ecosystem to keep alive.
-2. **Runs anywhere** — laptop, WSL, GitHub Actions runner.
-3. **Easy to read** — `build.sh` is ~100 lines of plain shell.
-4. **Fast** — full rebuild in milliseconds.
-5. **GitHub Pages native** — no custom build action required beyond `bash`.
+The footprint stays tiny: Bash plus a small Node script, and no plugin
+ecosystem to keep alive. The same command runs on a laptop, in WSL, and on the
+GitHub Actions runner, so there's nothing to install before contributing.
+`build.sh` is short enough to skim end-to-end in a sitting, and the full
+rebuild finishes in milliseconds, which is why there's no watch mode.
+
+It's a deliberately small surface. If the docs ever grow past what `build.sh`
+comfortably handles, switching to a real static site generator is a one-time
+port rather than a daily tax.

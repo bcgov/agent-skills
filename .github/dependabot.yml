@@ -21,19 +21,20 @@ updates:
         patterns:
           - "*"
 
-  # Python tooling (validator + tests). Declared in pyproject.toml; uv resolves
-  # them at runtime, but Dependabot watches the manifest for security and
-  # version updates.
-  - package-ecosystem: "pip"
+  # Python tooling (validator + tests). Declared in pyproject.toml and locked
+  # in uv.lock. Use the dedicated `uv` ecosystem (not `pip`) so Dependabot
+  # bumps both the manifest *and* the lockfile in the same PR — the `pip`
+  # ecosystem ignores uv.lock and would leave it drifting behind.
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 5
     commit-message:
-      # Conventional Commits: `deps(pip): bump foo from 1 to 2`.
-      prefix: "deps(pip)"
+      # Conventional Commits: `deps(uv): bump foo from 1 to 2`.
+      prefix: "deps(uv)"
     groups:
-      # Roll every pip bump into a single PR per run so the validator + test
+      # Roll every uv bump into a single PR per run so the validator + test
       # suite runs once for the batch instead of once per dependency.
       python:
         patterns:

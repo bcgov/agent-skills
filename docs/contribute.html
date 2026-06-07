@@ -990,7 +990,7 @@
         </a>
         <nav class="bc-nav">
             <a href="index.html" class="">Home</a>
-            <a href="catalog.html" class="">Catalog</a>
+            <a href="catalog.html" class="">Catalogue</a>
             <a href="consume.html" class="">Consume</a>
             <a href="contribute.html" class="active">Contribute</a>
             <a href="spec.html" class="">Spec</a>
@@ -1040,13 +1040,13 @@
 
 <h1 id="contribute-a-skill">Contribute a Skill</h1>
 
-<p>This repository is community-maintained — new skills and improvements to existing ones are all welcome. The canonical guide lives in <a href="https://github.com/bcgov/agent-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>; this page summarises it for browsing.</p>
+<p>This repository is community-maintained, and new skills and improvements to existing ones are all welcome. The canonical guide lives in <a href="https://github.com/bcgov/agent-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>; this page summarises it for browsing.</p>
 
 <h2 id="prerequisites">Before you start</h2>
 
 <div class="card">
-    <p><strong>Branch in this repo, not a fork.</strong> The PR workflow has a <code>fork-gate</code> job that fails any pull request opened from a fork; that failure cascades to the <code>results</code> aggregator, which is the gate on merge. If you can't push a branch to <code>bcgov/agent-skills</code>, you don't have the access you need — sort that out first.</p>
-    <p style="margin-bottom: 0;"><strong>Commits must be signed.</strong> The <code>main</code> branch ruleset requires signed commits, so the merge will be blocked otherwise. Set up SSH or GPG commit signing once per machine — see <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification" target="_blank" rel="noopener">GitHub's docs</a>.</p>
+    <p><strong>Branch in this repo, not a fork.</strong> The PR workflow has a <code>fork-gate</code> job that fails any pull request opened from a fork; that failure cascades to the <code>results</code> aggregator, which is the gate on merge. If you can't push a branch to <code>bcgov/agent-skills</code>, you don't have the access you need. Sort that out first.</p>
+    <p style="margin-bottom: 0;"><strong>Commits must be signed.</strong> The <code>main</code> branch ruleset requires signed commits, so the merge will be blocked otherwise. Set up SSH or GPG commit signing once per machine; see <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification" target="_blank" rel="noopener">GitHub's docs</a>.</p>
 </div>
 
 <h2 id="upstream-catalogs">Check upstream catalogues first</h2>
@@ -1076,7 +1076,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </div>
     <div>
-        <strong>If an upstream skill already covers your use case</strong>, don't re-publish it here. If it's close but not quite right, open an issue or PR upstream so the fix benefits the largest audience. Only add a new skill here if it is genuinely BC Gov–specific — e.g., it encodes BC Gov policies, conventions, internal services, regulatory requirements, or organization-specific workflows. <strong>Include the result of this check in your PR description.</strong>
+        <strong>If an upstream skill already covers your use case</strong>, don't re-publish it here. If it's close but not quite right, open an issue or PR upstream so the fix benefits the widest audience. Only add a new skill here if it is genuinely BC Gov–specific; for instance, it encodes BC Gov policies, conventions, internal services, regulatory requirements, or organisation-specific workflows. <strong>Include the result of this check in your PR description.</strong>
     </div>
 </div>
 
@@ -1084,13 +1084,13 @@
 
 <div class="card">
     <ol>
-        <li><strong>Branch</strong> — create a feature branch in this repo for your change.</li>
-        <li><strong>Add or update a skill</strong> — for a new skill, follow <a href="spec.html">the spec</a> and start from <a href="https://github.com/bcgov/agent-skills/tree/main/templates" target="_blank" rel="noopener"><code>templates/SKILL.md</code></a> + <a href="https://github.com/bcgov/agent-skills/blob/main/templates/package.json" target="_blank" rel="noopener"><code>templates/package.json</code></a>.</li>
-        <li><strong>Bump the version</strong> — if you're changing an existing skill, raise its <code>version</code> in that skill's <code>package.json</code> (see <a href="#versioning">Versioning</a>). New skills start at <code>0.1.0</code>.</li>
-        <li><strong>Validate locally</strong> — <code>uv run python scripts/validate_skill.py skills/&lt;name&gt;/SKILL.md</code>.</li>
-        <li><strong>Open a pull request</strong> — describe what the skill does and why it's useful.</li>
-        <li><strong>Pass the checks</strong> — the PR workflow validates the skills your branch changed (diffed against the base branch).</li>
-        <li><strong>Merge</strong> — once <code>results</code> is green and your branch is up to date with <code>main</code>, the PR can be merged. The publish workflow then ships any bumped versions as npm packages.</li>
+        <li><strong>Branch.</strong> Create a feature branch in this repo for your change.</li>
+        <li><strong>Add or update a skill.</strong> For a new skill, follow <a href="spec.html">the spec</a> and start from <a href="https://github.com/bcgov/agent-skills/tree/main/templates" target="_blank" rel="noopener"><code>templates/SKILL.md</code></a> + <a href="https://github.com/bcgov/agent-skills/blob/main/templates/package.json" target="_blank" rel="noopener"><code>templates/package.json</code></a>.</li>
+        <li><strong>Bump the version.</strong> If you're changing an existing skill, raise its <code>version</code> in that skill's <code>package.json</code> (see <a href="#versioning">Versioning</a>). New skills start at <code>0.1.0</code>.</li>
+        <li><strong>Validate locally:</strong> <code>uv run python scripts/validate_skill.py skills/&lt;name&gt;/SKILL.md</code>.</li>
+        <li><strong>Open a pull request.</strong> Describe what the skill does and why it's useful.</li>
+        <li><strong>Pass the checks.</strong> The PR workflow validates the skills your branch changed (diffed against the base branch).</li>
+        <li><strong>Merge.</strong> Once <code>results</code> is green and your branch is up to date with <code>main</code>, the PR can be merged. The publish workflow then ships any bumped versions as npm packages.</li>
     </ol>
 </div>
 
@@ -1113,7 +1113,7 @@
     </div>
     <div class="card card-gold">
         <h3 id="packagejson" style="margin-top:0;"><code>package.json</code></h3>
-        <p>Holds the published package <code>name</code> (<code>@bcgov/skill-&lt;name&gt;</code>) and the <code>version</code>. <strong>The version lives only here — not in <code>SKILL.md</code></strong> — so there's one source of truth and no drift.</p>
+        <p>Holds the published package <code>name</code> (<code>@bcgov/skill-&lt;name&gt;</code>) and the <code>version</code>. <strong>The version lives only here, not in <code>SKILL.md</code></strong>, so the two can't drift apart.</p>
         <p style="margin-bottom: 0;">For meta-skills under <code>.github/skills/</code>, a <code>package.json</code> is optional (they aren't published). For contributed skills under <code>skills/</code> it is required.</p>
     </div>
 </div>
@@ -1133,7 +1133,7 @@ npm version major   # breaking change            → 0.2.0 → 1.0.0</code></pre
 
 <h2 id="tooling">Tooling</h2>
 
-<p>This project uses <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener">uv</a> — there is no <code>requirements.txt</code>. Dependencies are declared in <code>pyproject.toml</code> and installed on demand by <code>uv run</code>. Common commands:</p>
+<p>This project uses <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener">uv</a>, so there is no <code>requirements.txt</code>. Dependencies are declared in <code>pyproject.toml</code> and installed on demand by <code>uv run</code>. Common commands:</p>
 
 <pre><code>make format     # auto-format Python (2-space indent, double quotes)
 make lint       # lint Python with ruff + workflow YAML with yamllint
@@ -1147,14 +1147,14 @@ make pack       # dry-run each publishable skill's npm package</code></pre>
 
 <div class="card">
     <ul>
-        <li>Keep skills focused — one clear purpose per skill.</li>
+        <li>Keep skills focused: one clear purpose per skill.</li>
         <li>Write descriptions that make it obvious <em>when</em> a skill should fire.</li>
         <li>Prefer clarity over cleverness; these are shared across many teams.</li>
-        <li>Be responsive to review feedback — most PRs need a small iteration or two.</li>
+        <li>Be responsive to review feedback; most PRs need a small iteration or two.</li>
     </ul>
 </div>
 
-<p>Approvals are not required by the ruleset (review is by convention), but a green <code>results</code> check is. See <a href="architecture.html">Pipeline &amp; governance</a> for the full PR + publish + branch-protection picture.</p>
+<p>The ruleset doesn't enforce an approval count, so reviewers weigh in by convention rather than by gate. A green <code>results</code> check, on the other hand, is mandatory. See <a href="architecture.html">Pipeline &amp; governance</a> for the full PR, publish, and branch-protection picture.</p>
     </main>
     <footer class="site-footer">
         <div class="footer-content">
@@ -1174,7 +1174,7 @@ make pack       # dry-run each publishable skill's npm package</code></pre>
             <div class="footer-links">
                 <h4>Documentation</h4>
                 <ul>
-                    <li><a href="catalog.html">Skill Catalog</a></li>
+                    <li><a href="catalog.html">Skill Catalogue</a></li>
                     <li><a href="consume.html">Consume a Skill</a></li>
                     <li><a href="contribute.html">Contribute a Skill</a></li>
                     <li><a href="spec.html">SKILL.md Spec</a></li>

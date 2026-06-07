@@ -3,7 +3,7 @@
 
 <h1>Frequently Asked Questions</h1>
 
-<p>If the answer you're looking for isn't here, the source-of-truth pages are: <a href="consume.html">Consume a Skill</a>, <a href="contribute.html">Contribute a Skill</a>, <a href="spec.html">the spec</a>, and <a href="architecture.html">Pipeline &amp; governance</a>.</p>
+<p>If the answer you're looking for isn't here, the four pages it likely lives on are: <a href="consume.html">Consume a Skill</a>, <a href="contribute.html">Contribute a Skill</a>, <a href="spec.html">the spec</a>, and <a href="architecture.html">Pipeline &amp; governance</a>.</p>
 
 <h2 id="what-is-a-skill">What exactly is a "skill"?</h2>
 
@@ -22,28 +22,28 @@
 <h2 id="why-github-packages">Why GitHub Packages and not public npm?</h2>
 
 <div class="card">
-    <p>Three reasons:</p>
+    <p>A few practical reasons line up:</p>
     <ul>
-        <li><strong>Scoped to the org.</strong> The <code>@bcgov</code> scope on GitHub Packages lives inside the same GitHub org that owns the repo — same access surface, same audit log, same identity. Public npm would introduce a second account, a second set of tokens to rotate, and a second place secrets can leak.</li>
-        <li><strong>Token-free CI.</strong> Workflows in this org can publish and consume with the built-in <code>GITHUB_TOKEN</code>. No bot account, no <code>NPM_TOKEN</code> secret to manage.</li>
-        <li><strong>Right audience.</strong> These skills encode BC Gov rules — they aren't designed for general public consumption. Hosting them on GitHub Packages signals "made for the org" without forcing the catalog to be private.</li>
+        <li><strong>Scoped to the org.</strong> The <code>@bcgov</code> scope on GitHub Packages lives inside the same GitHub org that owns the repo, which means the same access surface, audit log, and identity. Public npm would introduce a second account plus another set of tokens to rotate, and one more place where secrets can leak.</li>
+        <li><strong>Token-free CI.</strong> Workflows in this org can publish and consume with the built-in <code>GITHUB_TOKEN</code>: no bot account, no <code>NPM_TOKEN</code> secret to manage.</li>
+        <li><strong>Right audience.</strong> These skills encode BC Gov rules and aren't intended for general public consumption. GitHub Packages keeps the catalogue scoped to the people it was written for, without having to make it private.</li>
     </ul>
 </div>
 
 <h2 id="why-auth-for-public">Why does installing a "public" package still need authentication?</h2>
 
 <div class="card">
-    <p>This is a GitHub Packages behaviour, not a permission on this repo. The npm registry GitHub runs (<code>npm.pkg.github.com</code>) requires a token on every install — even for packages anyone can read. There is no anonymous read path.</p>
+    <p>This is a GitHub Packages behaviour, not a permission on this repo. The npm registry GitHub runs (<code>npm.pkg.github.com</code>) requires a token on every install, even for packages anyone can read. There is no anonymous read path.</p>
     <p style="margin-bottom: 0;">The good news is that the token doesn't have to be sensitive: any GitHub user can mint a short-lived one with <code>gh auth refresh -h github.com -s read:packages</code>, and CI gets one for free via <code>secrets.GITHUB_TOKEN</code>. See <a href="consume.html#step-2-authenticate">Consume → Step 2</a>.</p>
 </div>
 
 <h2 id="why-gh-cli">Why the GitHub CLI instead of a personal access token?</h2>
 
 <div class="card">
-    <p>Both work. The CLI flow is just lower friction:</p>
+    <p>Both work; the CLI flow is just lower friction for a few practical reasons:</p>
     <ul>
         <li>One credential to manage (your <code>gh auth login</code>), not two.</li>
-        <li>Short-lived tokens by default — rotation is automatic when you re-authenticate.</li>
+        <li>Short-lived tokens by default; rotation is automatic when you re-authenticate.</li>
         <li><code>gh auth logout</code> cleans up both your CLI session <em>and</em> any <code>NODE_AUTH_TOKEN</code> sourced from it.</li>
         <li>No "is this PAT still in use anywhere?" graveyard to maintain.</li>
     </ul>
@@ -53,7 +53,7 @@
 <h2 id="why-no-oidc">Why doesn't installation use OIDC?</h2>
 
 <div class="card">
-    <p>GitHub Packages doesn't accept OIDC for npm reads — only registry tokens. Inside GitHub Actions the built-in <code>GITHUB_TOKEN</code> is already the equivalent of a workflow-scoped, single-job credential, which is the value OIDC would otherwise provide. Outside Actions, the GitHub CLI fills the same role for humans.</p>
+    <p>GitHub Packages doesn't accept OIDC for npm reads, only registry tokens. Inside GitHub Actions the built-in <code>GITHUB_TOKEN</code> is already the equivalent of a workflow-scoped, single-job credential, which is the value OIDC would otherwise provide. Outside Actions, the GitHub CLI fills the same role for humans.</p>
     <p style="margin-bottom: 0;">If GitHub Packages ever exposes an OIDC-backed npm read flow, we'll switch the docs to it.</p>
 </div>
 
@@ -67,7 +67,7 @@
 <h2 id="why-signed-commits">Why are signed commits required?</h2>
 
 <div class="card">
-    <p>The <code>main</code> branch ruleset requires it. Signed commits give us a verifiable chain of who actually authored each change in the history — useful for audit, for catching compromised credentials, and for keeping the published packages traceable back to a real contributor.</p>
+    <p>The <code>main</code> branch ruleset requires it. Signed commits give us a verifiable chain of who actually authored each change in the history. That's useful for audit, for catching compromised credentials, and for keeping the published packages traceable back to a real contributor.</p>
     <p style="margin-bottom: 0;">SSH commit signing is the simplest path on a developer laptop. See <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification" target="_blank" rel="noopener">GitHub's signing docs</a>.</p>
 </div>
 
@@ -81,24 +81,24 @@
 <h2 id="why-no-version-in-skill-md">Why isn't there a <code>version</code> in <code>SKILL.md</code>?</h2>
 
 <div class="card">
-    <p>Single source of truth. The published version lives in <code>package.json</code> — that's the file npm reads when publishing, and it's the file the publish workflow checks before deciding whether to ship. Duplicating it in the manifest just creates a chance for the two to drift, and a question of which one "wins" when they do. So the spec disallows it entirely.</p>
+    <p>To keep one version, not two. The published version lives in <code>package.json</code>: that's the file npm reads when publishing, and the file the publish workflow checks before deciding whether to ship. Duplicating it in the manifest just creates a chance for the two to disagree (and a question of which one wins when they do), so the spec disallows it entirely.</p>
 </div>
 
 <h2 id="meta-skills">What are "meta-skills"?</h2>
 
 <div class="card">
-    <p>Skills that operate on this repository itself: scaffolding a new skill, validating the spec, releasing a version. They live under <code>.github/skills/</code> and are validated against the same <a href="spec.html">SKILL.md spec</a> as published skills, but <strong>they are not published</strong> — they ship with the repo so agents working in a checkout can use them.</p>
-    <p style="margin-bottom: 0;">Listed on the <a href="catalog.html#skill-author">catalog</a>.</p>
+    <p>Skills that operate on this repository itself: scaffolding a new skill, validating the spec, releasing a version. They live under <code>.github/skills/</code> and are validated against the same <a href="spec.html">SKILL.md spec</a> as published skills, but <strong>they are not published</strong>. They ship with the repo so agents working in a checkout can use them.</p>
+    <p style="margin-bottom: 0;">Listed on the <a href="catalog.html#meta-skills">catalogue</a>.</p>
 </div>
 
-<h2 id="when-not-here">My situation isn't BC Gov–specific — where should I look?</h2>
+<h2 id="when-not-here">My situation isn't BC Gov–specific. Where should I look?</h2>
 
 <div class="card">
-    <p>Start with the upstream catalogues — they cover most general agent workflows:</p>
+    <p>Start with the upstream catalogues; they cover most general agent workflows:</p>
     <ul>
-        <li><a href="https://microsoft.github.io/skills/#agents" target="_blank" rel="noopener">Microsoft Agent Skills</a> — Azure, Microsoft Foundry, M365, cross-cutting workflows.</li>
-        <li><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">anthropics/skills</a> — reference skills and the SKILL.md format.</li>
-        <li><a href="https://github.com/github/awesome-copilot" target="_blank" rel="noopener">awesome-copilot</a> — community-curated index of skills, prompts, and agents.</li>
+        <li><a href="https://microsoft.github.io/skills/#agents" target="_blank" rel="noopener">Microsoft Agent Skills</a>: Azure, Microsoft Foundry, M365, cross-cutting workflows.</li>
+        <li><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">anthropics/skills</a>: reference skills and the SKILL.md format.</li>
+        <li><a href="https://github.com/github/awesome-copilot" target="_blank" rel="noopener">awesome-copilot</a>: community-curated index of skills, prompts, and agents.</li>
     </ul>
-    <p style="margin-bottom: 0;">If something close exists but isn't quite right, an issue or PR upstream benefits the largest audience. See <a href="contribute.html#upstream-catalogs">Contribute → Upstream catalogues</a>.</p>
+    <p style="margin-bottom: 0;">If something close exists but isn't quite right, an issue or PR upstream benefits the widest audience. See <a href="contribute.html#upstream-catalogs">Contribute → Upstream catalogues</a>.</p>
 </div>

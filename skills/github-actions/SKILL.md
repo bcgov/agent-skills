@@ -20,8 +20,8 @@ tags: [github-actions, ci, cd, security, bcgov, devops]
 ## Don't Use When
 - Authoring generic GitHub Actions workflows with no BC Gov / security angle — prefer the upstream [GitHub Actions docs](https://docs.github.com/actions) or a general CI catalogue.
 - Authoring **reusable / callable workflows that deploy or validate into the BC Gov Azure Landing Zone** (e.g., platform-team-owned deploy templates, OpenShift or AKS deploy callers) — defer to the BC Gov `gha-workflows` skill (when installed in your agent environment); this skill covers only the workflow *chassis* (permissions, pinning, fork-gate, aggregator, ruleset) around such callers, not their deploy logic.
-- Designing the workflow's domain logic (Bicep what-if, Terraform plan, npm publish mechanics, Pages build) — those belong to the domain skill: sibling [`azure-networking`](../azure-networking/SKILL.md) in this catalogue, or upstream Microsoft `azure-prepare` / `azure-deploy` skills (in the Microsoft `agent-skills` catalogue) if installed in your agent environment. This skill covers only the *workflow chassis* around them.
-- Provisioning the Azure infrastructure the workflow deploys to — use the matching domain skill (upstream Microsoft `azure-*` skills, when installed in your agent environment).
+- Designing the workflow's domain logic (Bicep what-if, Terraform plan, npm publish mechanics, Pages build) — those belong to the domain skill: sibling [`azure-networking`](../azure-networking/SKILL.md) in this catalogue, or upstream Microsoft `azure-prepare` / `azure-deploy` skills (if installed). This skill covers only the *workflow chassis* around them.
+- Provisioning the Azure infrastructure the workflow deploys to — use the matching domain skill (upstream Microsoft `azure-*` skills, if installed).
 - Defining branch-protection rules in code via a Terraform provider — out of scope; this skill describes the *settings* a ruleset should carry, not the IaC to apply them.
 - Debugging self-hosted runner setup, ARC (Actions Runner Controller), or runner-image customization — out of scope.
 
@@ -84,6 +84,6 @@ For broader topics that live elsewhere, prefer these upstream skills / docs inst
 - Generic GitHub Actions CI/CD chassis (workflow structure, jobs, matrix, caching, deployment strategies) → [`github-actions-ci-cd-best-practices`](https://raw.githubusercontent.com/github/awesome-copilot/main/instructions/github-actions-ci-cd-best-practices.instructions.md) from `github/awesome-copilot`
 - Generic GitHub Actions syntax, triggers, expressions → [GitHub Actions docs](https://docs.github.com/actions)
 - Hardening guidance from GitHub itself → [Security hardening for GitHub Actions](https://docs.github.com/actions/security-guides/security-hardening-for-github-actions)
-- OIDC-to-Azure federation for keyless deploys → upstream Microsoft `azure-prepare` / `azure-deploy` skills (in the Microsoft `agent-skills` catalogue, when installed in your agent environment)
+- OIDC-to-Azure federation for keyless deploys → upstream Microsoft `azure-prepare` / `azure-deploy` skills (if installed)
 - Authoring the skill profile this workflow ships → `.github/skills/skill-author`
 - Bumping a skill's version before publish → `.github/skills/skill-release`

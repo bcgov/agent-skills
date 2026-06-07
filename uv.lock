@@ -24,7 +24,7 @@ requires-dist = [{ name = "pyyaml", specifier = ">=6.0.3" }]
 dev = [
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "ruff", specifier = ">=0.15.16" },
-    { name = "yamllint", specifier = ">=1.37.1" },
+    { name = "yamllint", specifier = ">=1.38.0" },
 ]
 
 [[package]]
