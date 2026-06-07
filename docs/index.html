@@ -990,7 +990,7 @@
         </a>
         <nav class="bc-nav">
             <a href="index.html" class="active">Home</a>
-            <a href="catalog.html" class="">Catalog</a>
+            <a href="catalog.html" class="">Catalogue</a>
             <a href="consume.html" class="">Consume</a>
             <a href="contribute.html" class="">Contribute</a>
             <a href="spec.html" class="">Spec</a>
@@ -1041,7 +1041,7 @@
 <div class="hero">
     <span class="badge badge-gold">Open Source</span>
     <h1 id="bc-gov-agent-skills">BC Gov Agent Skills</h1>
-    <p>A shared catalogue of agent skill profiles for the BC Government — versioned, validated in CI, and published to GitHub Packages so any team can install the same skill into any compatible agent.</p>
+    <p>A shared catalogue of agent skill profiles for the BC Government: versioned, validated in CI, and published to GitHub Packages so any team can install the same skill into any compatible agent.</p>
     <p style="font-size: 0.95rem; opacity: 0.9; max-width: 52rem; margin: 0.75rem auto 0;">Each skill is a <code style="background:rgba(255,255,255,0.18);color:#fff;">SKILL.md</code> manifest plus a <code style="background:rgba(255,255,255,0.18);color:#fff;">package.json</code>, bundled with any helper scripts, references, or assets it needs. Every change goes through a pull request, runs through the validator, and ships as a semver-tagged npm package under <code style="background:rgba(255,255,255,0.18);color:#fff;">@bcgov/skill-&lt;name&gt;</code>.</p>
 
     <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
@@ -1063,7 +1063,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
     </div>
     <div>
-        <strong>What is a "skill"?</strong> A small, focused Markdown document that teaches an AI coding agent <em>when</em> to act, <em>what</em> to do, and <em>what to avoid</em>. The format is interoperable with GitHub Copilot, Claude, and other agents that load <code>SKILL.md</code> manifests — see <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> and <a href="spec.html">our spec</a>.
+        <strong>What is a "skill"?</strong> A small, focused Markdown document that teaches an AI coding agent <em>when</em> to act, <em>what</em> to do, and <em>what to avoid</em>. The format is interoperable with GitHub Copilot, Claude, and other agents that load <code>SKILL.md</code> manifests; see <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> and <a href="spec.html">our spec</a>.
     </div>
 </div>
 
@@ -1096,7 +1096,7 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </div>
             <h3 id="i-want-to-know-how-it-works" style="margin-top: 0; color: var(--bc-blue);">I want to know how it works</h3>
-            <p style="font-size: 0.9rem; color: var(--text-secondary);">PR validation, publish pipeline, branch protection, signed commits, fork gating, Dependabot auto-merge. The whole governance story.</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">PR validation, publish pipeline, branch protection, signed commits, fork gating, Dependabot auto-merge: how the controls actually fit together.</p>
             <div class="card-arrow">Pipeline &amp; governance →</div>
         </div>
     </a>
@@ -1109,31 +1109,27 @@
         <h3 id="published-skills" style="margin-top:0;">Published skills</h3>
         <p>Published as versioned npm packages on <strong>GitHub Packages</strong> under the <code>@bcgov</code> scope. Install with <code>npm install @bcgov/skill-&lt;name&gt;@&lt;version&gt;</code>.</p>
         <p>The live list — every package and every version — lives on GitHub Packages itself, so the catalogue scales as more skills ship.</p>
-        <p style="margin-top: 1rem;"><a href="https://github.com/orgs/bcgov/packages?repo_name=agent-skills" target="_blank" rel="noopener"><strong>Browse published packages →</strong></a> &nbsp;·&nbsp; <a href="catalog.html#published">Catalog page</a></p>
+        <p style="margin-top: 1rem;"><a href="https://github.com/orgs/bcgov/packages?repo_name=agent-skills" target="_blank" rel="noopener"><strong>Browse published packages →</strong></a> &nbsp;·&nbsp; <a href="catalog.html#published">Catalogue page</a></p>
     </div>
     <div class="card card-gold">
         <h3 id="meta-skills" style="margin-top:0;">Meta-skills</h3>
-        <p>Skills that operate on this repo itself. Validated against the same spec but <strong>not published</strong> — they ship with the repository so agents working in this checkout can use them.</p>
-        <ul>
-            <li><a href="catalog.html#skill-author"><strong>skill-author</strong></a> — scaffolds a new skill profile.</li>
-            <li><a href="catalog.html#skill-validator"><strong>skill-validator</strong></a> — explains validator failures.</li>
-            <li><a href="catalog.html#skill-release"><strong>skill-release</strong></a> — bumps a skill's version for release.</li>
-        </ul>
+        <p>Skills that operate on this repo itself: scaffolding a new skill, validating the spec, releasing a version. Validated against the same spec but <strong>not published</strong>; they ship with the repository so agents working in a checkout can use them.</p>
+        <p style="margin-top: 1rem; margin-bottom: 0;"><a href="catalog.html#meta-skills"><strong>See the meta-skills in the catalogue →</strong></a> &nbsp;·&nbsp; <a href="https://github.com/bcgov/agent-skills/tree/main/.github/skills" target="_blank" rel="noopener">Browse <code>.github/skills/</code> in the repo →</a></p>
     </div>
 </div>
 
 <h2 id="why-bc-gov-runs-its-own-catalogue">Why BC Gov runs its own catalogue</h2>
 
-<p>The most useful agent skills are <strong>specific</strong> — they encode a concrete policy, an internal service, or a known-good workflow. Generic catalogues already cover the generic ground (see the <a href="contribute.html#upstream-catalogs">upstream catalogues</a> we check before adding anything here). This repo only ships skills that are <strong>BC Gov–specific</strong>: skills that capture our Public Cloud Landing Zone rules, our policies, our subscription topology, and the workflows our teams have already paid the cost of figuring out.</p>
+<p>The most useful agent skills are <strong>specific</strong>: they encode a concrete policy, an internal service, or a known-good workflow. Generic catalogues already cover the generic ground (see the <a href="contribute.html#upstream-catalogs">upstream catalogues</a> we check before adding anything here). This repo only ships skills that are <strong>BC Gov–specific</strong>: skills that capture our Public Cloud Landing Zone rules, our policies, our subscription topology, and the workflows our teams have already paid the cost of figuring out.</p>
 
 <div class="grid grid-2" style="margin-top: 1rem;">
     <div class="card">
-        <h3 id="reuse-beats-rediscovery" style="margin-top:0;">Reuse beats rediscovery</h3>
-        <p>Once a team has worked out the right way to do something inside BC Gov constraints, that knowledge belongs in a skill — not in a Confluence page or a Slack thread. The next team gets a working answer instead of a fresh investigation.</p>
+        <h3 id="knowledge-worth-sharing" style="margin-top:0;">Knowledge worth sharing</h3>
+        <p>When a team figures out how to do something within BC Gov constraints, that should live in a skill instead of a Confluence page nobody finds. The next team starts from a working answer rather than another fresh investigation.</p>
     </div>
     <div class="card">
-        <h3 id="versioned-not-viral" style="margin-top:0;">Versioned, not viral</h3>
-        <p>Every skill ships as a semver-tagged npm package. Consumers pin a version; updates land deliberately. There is no shared "latest" that silently changes agent behaviour for everyone at once.</p>
+        <h3 id="versioned-releases-no-silent-updates" style="margin-top:0;">Versioned releases, no silent updates</h3>
+        <p>Every skill ships as a semver-tagged npm package, and consumers pin a version. Updates land deliberately, on each consuming team's schedule. There is no shared "latest" channel that quietly changes agent behaviour for everyone at once.</p>
     </div>
 </div>
     </main>
@@ -1155,7 +1151,7 @@
             <div class="footer-links">
                 <h4>Documentation</h4>
                 <ul>
-                    <li><a href="catalog.html">Skill Catalog</a></li>
+                    <li><a href="catalog.html">Skill Catalogue</a></li>
                     <li><a href="consume.html">Consume a Skill</a></li>
                     <li><a href="contribute.html">Contribute a Skill</a></li>
                     <li><a href="spec.html">SKILL.md Spec</a></li>

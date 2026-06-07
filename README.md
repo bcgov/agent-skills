@@ -1,14 +1,13 @@
 # agent-skills
 
 **A shared, reusable catalogue of BC Government agent skill profiles.** Write a
-good pattern once, and every team across the BC Gov ecosystem can build on it.
+good pattern once, and every team across BC Gov can build on it.
 
-Each skill is validated against a common spec on every pull request and — once
-merged — published as a versioned **npm package** you install and upgrade with
-tooling you already use.
+Every skill is validated against a common spec on every pull request. Once it
+merges, the same change ships as a versioned **npm package** that you install
+and upgrade with the npm tooling you already use.
 
-Browse the catalogue and full documentation at
-**<https://bcgov.github.io/agent-skills/>**.
+Browse the live catalogue at **<https://bcgov.github.io/agent-skills/>**.
 
 ---
 
@@ -16,15 +15,15 @@ Browse the catalogue and full documentation at
 
 | I want to… | Go to |
 | ---------- | ----- |
-| Understand why skills are structured this way | [Why this structure?](#why-this-structure) |
+| Understand why skills look the way they do | [Why this structure?](#why-this-structure) |
 | Find my way around the repo | [Repository layout](#repository-layout) |
-| Write and submit a new skill | [Add a skill](#add-a-skill) |
-| Understand how releases ship | [How publishing works](#how-publishing-works) |
 | Use a published skill in my agent | [Consume a skill](#consume-a-skill) |
+| Write and submit a new skill | [Add a skill](#add-a-skill) |
+| See how a merge becomes a release | [How publishing works](#how-publishing-works) |
 | Run the validator and tooling locally | [Local development](#local-development) |
 
-> New here? Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for access
-> requirements, then [`spec/SKILL_SPEC.md`](spec/SKILL_SPEC.md) for the full
+> New here? Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for access and
+> branch rules, then [`spec/SKILL_SPEC.md`](spec/SKILL_SPEC.md) for the full
 > manifest contract.
 
 ---
@@ -32,140 +31,95 @@ Browse the catalogue and full documentation at
 ## Why this structure?
 
 A skill is, at its core, just instructions for an agent. Left to a free-form
-body, those instructions **drift**: one skill buries the trigger in a paragraph,
-another forgets the failure path, a third never says what *not* to do. The agent
-is left inferring intent from prose — and inference is where agents get vague,
-hesitant, or wrong.
+body, those instructions drift. One skill buries the trigger inside a paragraph;
+another forgets the failure path; a third never says what *not* to do. The
+agent ends up inferring intent from prose, which is exactly where it starts to
+guess.
 
 The **seven required sections** turn open-ended prose into a fixed contract.
 Each one answers a question the agent actually asks at runtime:
 
 | Section | The question it answers for the agent |
 | ------- | ------------------------------------- |
-| **Use When** | Should the agent fire for *this* request? |
+| **Use When** | Should I fire for *this* request? |
 | **Don't Use When** | Is a *different* skill the better fit? |
-| **Workflow** | What concrete steps and tools does the agent run? |
-| **Rules** | What must the agent always / never do, and why? |
+| **Workflow** | What concrete steps and tools do I run? |
+| **Rules** | What must I always / never do, and why? |
 | **Examples** | What does a real invocation look like? |
-| **Edge Cases** | What does the agent do when the happy path doesn't hold? |
-| **References** | Where's the heavy detail it can pull on demand? |
+| **Edge Cases** | What do I do when the happy path doesn't hold? |
+| **References** | Where's the heavy detail I can pull on demand? |
 
-Because every skill answers the same questions in the same order, the agent gets
-a **concrete plan instead of an abstract description** — when to engage, which
-sibling skill to defer to, the exact steps, and how to recover when a lookup
-comes back empty.
+Because every skill answers the same questions in the same order, the agent
+loads a plan it can actually act on: when to engage, which sibling skill to
+defer to, the exact steps, and the fallback when a lookup comes back empty.
 
-That predictability is what makes the catalogue **composable**: a reviewer can
-diff a skill against the spec, the validator can enforce it mechanically, and an
-agent can load dozens of skills knowing each exposes the same surface. Structure
-is what lets many teams contribute skills that still behave like one coherent
-system.
+Because every skill has the same shape, a reviewer can diff one against the
+spec and the validator can check it automatically. An agent can load dozens of
+them without relearning the layout each time, which is what lets many teams
+contribute skills that still behave like one coherent system.
 
 ---
 
 ## Repository layout
 
+Two roots for skills, plus the tooling that keeps them honest:
+
 ```
 agent-skills/
-├── README.md
-├── CONTRIBUTING.md
-├── pyproject.toml              # validator tooling + dependencies (managed with uv)
-├── Makefile
+├── README.md                       # you are here
+├── CONTRIBUTING.md                 # access, branch rules, PR flow
+├── pyproject.toml / uv.lock        # validator + test deps (managed with uv)
+├── Makefile                        # make format / lint / test / validate / pack
+├── .yamllint                       # workflow YAML style
+│
 ├── spec/
-│   └── SKILL_SPEC.md           # the authoritative manifest spec
+│   └── SKILL_SPEC.md               # authoritative manifest spec
 ├── templates/
-│   ├── SKILL.md                # copy this to start a new skill
-│   └── package.json            # copy this — holds the skill's name + version
-├── skills/
-│   └── <skill-name>/           # contributed skills — the whole folder is bundled
-│       ├── SKILL.md            # required, spec-compliant manifest
-│       ├── package.json        # required, publishes the skill to npm
-│       ├── scripts/            # optional, executable helpers
-│       ├── references/         # optional, heavy detail
-│       └── assets/             # optional, templates & resources
+│   ├── SKILL.md                    # copy this to start a new skill
+│   └── package.json                # copy this — holds the skill's name + version
+│
+├── skills/                         # contributed skills — validated AND published
+│   └── <skill>/                    # one folder per skill (browse the live site for the catalogue)
+│
 ├── scripts/
-│   └── validate_skill.py       # spec validator (used by CI + locally)
+│   └── validate_skill.py           # the spec validator (CI + local)
 ├── tests/
 │   └── test_validate_skill.py
+│
+├── docs/                           # static site published to GitHub Pages
+│
 └── .github/
-    ├── skills/                 # the repo's own meta-skills (validated, not published)
-    │   ├── skill-author/
-    │   ├── skill-validator/
-    │   └── skill-release/
-    └── workflows/
-        ├── pr.yml              # lints + tests tooling, then validates changed skills on every PR
-        └── publish.yml         # npm-publishes changed skills on merge to main
+    ├── CODEOWNERS                  # add ownership rules to gate review (see CONTRIBUTING.md)
+    ├── dependabot.yml              # cadence + grouping + Conventional-Commit prefixes
+    ├── pull_request_template.md
+    ├── scripts/                    # helpers called from workflows
+    ├── skills/                     # the repo's own meta-skills (validated, never published)
+    │   └── <meta-skill>/
+    └── workflows/                  # PR validation, publish-on-merge, docs deploy, Dependabot auto-merge, etc.
 ```
 
-**Skills live under two roots:**
+Worth flagging about the layout above:
 
-- **`skills/`** — contributed BC Gov domain skills. Validated *and* published to
-  npm.
-- **`.github/skills/`** — the repo's own meta-skills (the tools that scaffold,
-  validate, and release skills). Validated the same way, but **never published**.
-
----
-
-## Add a skill
-
-1. **Copy the templates** into a new folder:
-   ```bash
-   mkdir -p skills/<your-skill>/references
-   cp templates/SKILL.md skills/<your-skill>/SKILL.md
-   cp templates/package.json skills/<your-skill>/package.json
-   ```
-2. **Fill in** the `SKILL.md` frontmatter and all seven sections — see
-   [spec/SKILL_SPEC.md](spec/SKILL_SPEC.md).
-3. **Set the package name and version** in `package.json`
-   (`@bcgov/skill-<your-skill>`). This is the single source of truth for the
-   published version — there is no `version` in `SKILL.md`.
-4. **Validate locally:**
-   ```bash
-   uv run python scripts/validate_skill.py skills/<your-skill>/SKILL.md
-   ```
-5. **Open a PR.** The check validates your changed skill automatically.
-
----
-
-## How publishing works
-
-Each skill is its own npm package, and its **`package.json` version is the
-single source of truth.** Bumping that version is what ships a release.
-
-When a PR merges to `main`, the publish workflow:
-
-1. Re-validates every skill.
-2. Finds the skills the merge changed.
-3. Reads `name` + `version` from each one's `package.json` and runs
-   `npm publish` — **unless that exact version is already published**, in which
-   case it's skipped.
-
-A few things worth knowing:
-
-- **The whole skill folder ships.** Everything under `skills/<name>/` —
-  `SKILL.md`, `package.json`, and any `scripts/`, `references/`, or `assets/` —
-  is bundled, with no `files` list to maintain. To keep scratch files out, add an
-  optional `.npmignore` inside the folder (it must not exclude `SKILL.md`).
-- **Where packages land:** GitHub Packages (`https://npm.pkg.github.com`) under
-  the `@bcgov` scope, authenticated with the workflow's built-in `GITHUB_TOKEN` —
-  no extra secrets.
-
-> **Switching to the public npm registry** is a two-line change: drop the
-> `registry`/`scope` from `actions/setup-node` in
-> [`publish.yml`](.github/workflows/publish.yml) and the `publishConfig` from
-> each `package.json`, then publish with an `NPM_TOKEN`. Upside: consumers install
-> with no auth. Tradeoff: you give up GitHub Packages' tenant-scoped access
-> control.
+- **`skills/` is what ships.** Each folder there is bundled and published to
+  npm whenever its `package.json` `version` is bumped. Browse
+  [the live catalogue](https://bcgov.github.io/agent-skills/) for the current
+  set; the [`skills/`](skills/) directory is the authoritative source.
+- **`.github/skills/` is internal.** The meta-skills in that directory follow
+  the same spec, but they exist to help contributors. They're validated, never
+  published.
+- **`docs/` is the public catalogue.** Pushes to `main` that touch `docs/**`
+  rebuild and deploy the site through the Pages workflow under
+  [`.github/workflows/`](.github/workflows/).
 
 ---
 
 ## Consume a skill
 
 Skills install like any other npm dependency, so your existing
-`npm` / `npx` / `npm update` flow manages them — upgrades included.
+`npm` / `npx` / `npm update` flow already manages them, upgrades included.
 
-**1. Point the `@bcgov` scope at GitHub Packages** by adding an `.npmrc` next to
-your agent's `package.json`:
+**1. Point the `@bcgov` scope at GitHub Packages** by adding an `.npmrc` next
+to your agent's `package.json`:
 
 ```ini
 @bcgov:registry=https://npm.pkg.github.com
@@ -176,16 +130,17 @@ your agent's `package.json`:
 itself never lands on disk or in version control.
 
 **2. Provide the token.** GitHub Packages requires authentication even for
-public packages, so `NODE_AUTH_TOKEN` needs to be set with a credential that has
-the `read:packages` scope. Pick whichever fits where the install runs:
+public packages, so `NODE_AUTH_TOKEN` needs a credential with the
+`read:packages` scope. Pick whichever fits where the install runs:
 
-- **Local development — use the [GitHub CLI](https://cli.github.com/).** No PAT
-  to create, store, or rotate; the CLI already manages a token for you.
+- **Local development: let the [GitHub CLI](https://cli.github.com/) manage
+  it.** No PAT to create, store, or rotate; the CLI already holds a token for
+  you.
 
   *Prerequisite:* install and sign in to the GitHub CLI once
   ([install guide](https://github.com/cli/cli#installation)). On Windows:
   `winget install --id GitHub.cli`. On macOS: `brew install gh`. Then
-  `gh auth login` to sign in. Verify with `gh auth status`.
+  `gh auth login` and verify with `gh auth status`.
 
   One-time, add the `read:packages` scope to the CLI's token:
 
@@ -205,11 +160,11 @@ the `read:packages` scope. Pick whichever fits where the install runs:
   export NODE_AUTH_TOKEN=$(gh auth token)
   ```
 
-  `gh auth logout` revokes npm access at the same time — credential management
-  stays in one place.
+  `gh auth logout` revokes npm access at the same time, so credential
+  management stays in one place.
 
-- **GitHub Actions (consuming workflow) — use the built-in `GITHUB_TOKEN`.** No
-  secret to configure:
+- **GitHub Actions (consuming workflow): use the built-in `GITHUB_TOKEN`.** No
+  extra secret needed:
 
   ```yaml
   jobs:
@@ -228,18 +183,18 @@ the `read:packages` scope. Pick whichever fits where the install runs:
             NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   ```
 
-**3. Install** — pin a version for reproducible pulls:
+**3. Install.** Pin a version for reproducible pulls:
 
 ```bash
 npm install @bcgov/skill-<name>@0.1.0
 ```
 
-It installs to `node_modules/@bcgov/skill-<name>/` with `SKILL.md` plus whatever
-else the skill ships, exactly as it lives in this repo. Point your agent's skills
-loader at that directory — the on-disk layout is preserved, so there's no extra
-wiring.
+It installs to `node_modules/@bcgov/skill-<name>/` with `SKILL.md` plus
+whatever else the skill ships, exactly as it lives in this repo. Point your
+agent's skill loader at that directory; the on-disk layout is preserved, so
+there's no extra wiring.
 
-**4. Upgrade** — because skills are plain npm packages:
+**4. Upgrade.** Because skills are plain npm packages:
 
 ```bash
 npm outdated @bcgov/skill-<name>        # see what's newer
@@ -248,21 +203,101 @@ npm install @bcgov/skill-<name>@0.2.0   # jump to an exact version
 ```
 
 Use a semver range (e.g. `"^0.1.0"`) to pick up compatible updates on
-`npm update`, or pin an exact version to freeze it. Your lockfile keeps installs
-reproducible across the team.
+`npm update`, or pin an exact version to freeze it. Your lockfile keeps
+installs reproducible across the team.
+
+---
+
+## Add a skill
+
+Once you have access set up, the loop looks like this:
+
+1. **Copy the templates** into a new folder:
+   ```bash
+   mkdir -p skills/<your-skill>/references
+   cp templates/SKILL.md skills/<your-skill>/SKILL.md
+   cp templates/package.json skills/<your-skill>/package.json
+   ```
+2. **Fill in** the `SKILL.md` frontmatter and all seven sections; see
+   [`spec/SKILL_SPEC.md`](spec/SKILL_SPEC.md).
+3. **Set the package name and version** in `package.json`
+   (`@bcgov/skill-<your-skill>`, starting at `0.1.0`). The published version
+   lives only here; there is no `version` field in `SKILL.md` for it to drift
+   from.
+4. **Validate locally:**
+   ```bash
+   uv run python scripts/validate_skill.py skills/<your-skill>/SKILL.md
+   ```
+5. **Open a PR from a branch in this repo** (forks are blocked by the
+   `fork-gate` job). The PR check validates your changed skill automatically.
+
+> **Heads-up:** check an upstream catalogue (Microsoft Agent Skills, Anthropic
+> `anthropics/skills`, awesome-copilot) before adding a new skill. If your use
+> case is already covered, point consumers at the upstream skill instead of
+> duplicating it here. Full guidance in
+> [`CONTRIBUTING.md`](CONTRIBUTING.md#before-adding-a-new-skill-check-upstream-catalogs-first).
+
+---
+
+## How publishing works
+
+Each skill is its own npm package, and bumping `version` inside its
+**`package.json`** is what ships a release.
+
+When a PR merges to `main`, [`publish.yml`](.github/workflows/publish.yml):
+
+1. Re-validates every skill.
+2. Finds the skills the merge changed (via git diff).
+3. Reads `name` + `version` from each one's `package.json` and runs
+   `npm publish` — **unless that exact version is already published**, in
+   which case it's skipped.
+
+Three things shape how this works:
+
+- **The whole skill folder ships.** Everything under `skills/<name>/` —
+  `SKILL.md`, `package.json`, plus any `scripts/`, `references/`, or `assets/`
+  — is bundled, with no `files` list to maintain. To keep scratch files out,
+  add an optional `.npmignore` inside the folder (it must not exclude
+  `SKILL.md`).
+- **Where packages land:** GitHub Packages (`https://npm.pkg.github.com`)
+  under the `@bcgov` scope, authenticated with the workflow's built-in
+  `GITHUB_TOKEN`. No extra secrets.
+- **Dependabot keeps the tooling current.** Grouped, Conventional-Commit-
+  prefixed PRs (cadence and ecosystems in
+  [`.github/dependabot.yml`](.github/dependabot.yml)). Green Dependabot PRs
+  auto-squash-merge themselves; red ones stay red until a human fixes them.
+
+> **Switching to the public npm registry** is a two-line change: drop the
+> `registry`/`scope` from `actions/setup-node` in
+> [`publish.yml`](.github/workflows/publish.yml) and the `publishConfig` from
+> each `package.json`, then publish with an `NPM_TOKEN`. Upside: consumers
+> install with no auth. Tradeoff: you give up GitHub Packages' tenant-scoped
+> access control.
 
 ---
 
 ## Local development
 
-This project uses [uv](https://docs.astral.sh/uv/) — no `requirements.txt`, no
-manual virtualenv. uv reads `pyproject.toml` and builds the environment on
-demand, so these work on a fresh checkout:
+This project uses [uv](https://docs.astral.sh/uv/). No `requirements.txt`,
+no manual virtualenv. uv reads `pyproject.toml` and builds the environment on
+demand, so these all work on a fresh checkout:
 
 ```bash
+make setup      # pre-warm the uv-managed virtualenv (optional)
 make format     # auto-format Python (2-space indent, double quotes)
-make lint       # lint Python (style, imports, docstrings)
-make test       # run validator unit tests
-make validate   # validate every skill
-make pack       # dry-run each skill's npm package (no publish)
+make lint       # lint Python (ruff) AND workflow YAML (yamllint)
+make test       # run the validator unit tests
+make validate   # validate every skill against the spec
+make pack       # dry-run each publishable skill's npm package (no publish)
 ```
+
+Python style is enforced by [ruff](https://docs.astral.sh/ruff/) (2-space
+indent, double quotes, docstring on every function; see `pyproject.toml`).
+Workflow YAML under `.github/workflows/` is linted by
+[yamllint](https://yamllint.readthedocs.io/) using `.yamllint` at the repo root.
+
+The meta-skills under [`.github/skills/`](.github/skills/) are part of the
+normal workflow. They take care of scaffolding, running the validator,
+and cutting a release on your behalf. Use them the same way you'd use any
+other skill in your agent. They're the fastest path from idea to a published
+skill.

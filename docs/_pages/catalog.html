@@ -1,7 +1,7 @@
-<!-- TITLE: Skill Catalog -->
+<!-- TITLE: Skill Catalogue -->
 <!-- NAV: catalog -->
 
-<h1>Skill Catalog</h1>
+<h1>Skill Catalogue</h1>
 
 <p>Every skill in this repo, grouped by whether it ships to GitHub Packages (<strong>Published</strong>) or stays inside the repo as a tool for working <em>on</em> the repo itself (<strong>Meta</strong>). Both are validated against the same <a href="spec.html">SKILL.md spec</a>.</p>
 
@@ -10,15 +10,15 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
     </div>
     <div>
-        <strong>The catalog is intentionally short.</strong> Skills live here only when they are <strong>BC Gov–specific</strong>. Before adding a new skill, contributors check the <a href="contribute.html#upstream-catalogs">upstream catalogues</a> first. See <a href="contribute.html">Contribute a Skill</a>.
+        <strong>The catalogue is intentionally short.</strong> Skills live here only when they are <strong>BC Gov–specific</strong>. Before adding a new skill, contributors check the <a href="contribute.html#upstream-catalogs">upstream catalogues</a> first. See <a href="contribute.html">Contribute a Skill</a>.
     </div>
 </div>
 
 <h2 id="published">Published skills</h2>
 
-<p>Published skills live on <strong>GitHub Packages</strong> under the <code>@bcgov</code> npm scope. The packages page is the source of truth — it always shows the current list, every released version, install counts, and the README for each package. See <a href="consume.html">Consume a Skill</a> for the install workflow.</p>
+<p>Published skills live on <strong>GitHub Packages</strong> under the <code>@bcgov</code> npm scope. Browse the packages page for the live list, every released version, install counts, and each package's README. See <a href="consume.html">Consume a Skill</a> for the install workflow.</p>
 
-<div class="card card-gold" id="azure-networking">
+<div class="card card-gold" id="published-skills">
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
         <h3 style="margin: 0; color: var(--bc-blue);">Browse published skills on GitHub Packages</h3>
         <span class="badge badge-gold">live</span>
@@ -31,37 +31,13 @@
     </p>
 </div>
 
-<h2>Meta-skills</h2>
+<h2 id="meta-skills">Meta-skills</h2>
 
-<p>Skills the repo uses on itself. They live under <code>.github/skills/</code> and are validated by the same PR check, but they are <strong>not published</strong> to GitHub Packages — they are picked up by agents working in a checkout of this repo.</p>
+<p>Skills the repo uses on itself: scaffolding a new skill, validating the spec, releasing a version. They live under <code>.github/skills/</code> and are validated by the same PR check, but they are <strong>not published</strong> to GitHub Packages; they're picked up by agents working in a checkout of this repo.</p>
 
-<div class="grid grid-2">
-    <div class="card" id="skill-author">
-        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <h3 style="margin: 0; color: var(--bc-blue);">skill-author</h3>
-            <span class="badge" style="background:#e2e8f0; color: var(--bc-blue);">meta</span>
-        </div>
-        <p>Scaffolds a new skill profile in this repo and fills in the required <code>SKILL.md</code> structure when a contributor wants to add a skill.</p>
-        <p><a href="https://github.com/bcgov/agent-skills/blob/main/.github/skills/skill-author/SKILL.md" target="_blank" rel="noopener">View SKILL.md →</a></p>
-    </div>
-
-    <div class="card" id="skill-validator">
-        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <h3 style="margin: 0; color: var(--bc-blue);">skill-validator</h3>
-            <span class="badge" style="background:#e2e8f0; color: var(--bc-blue);">meta</span>
-        </div>
-        <p>Validates skill profiles against the spec and explains how to fix failures before a PR is opened or merged.</p>
-        <p><a href="https://github.com/bcgov/agent-skills/blob/main/.github/skills/skill-validator/SKILL.md" target="_blank" rel="noopener">View SKILL.md →</a></p>
-    </div>
-
-    <div class="card" id="skill-release">
-        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <h3 style="margin: 0; color: var(--bc-blue);">skill-release</h3>
-            <span class="badge" style="background:#e2e8f0; color: var(--bc-blue);">meta</span>
-        </div>
-        <p>Bumps a skill's version and ships it as an npm package when a contributor is ready to release a change.</p>
-        <p><a href="https://github.com/bcgov/agent-skills/blob/main/.github/skills/skill-release/SKILL.md" target="_blank" rel="noopener">View SKILL.md →</a></p>
-    </div>
+<div class="card">
+    <p>Each meta-skill is a self-contained <code>SKILL.md</code> with its own <em>Use When</em>, <em>Workflow</em>, and <em>Rules</em>. Open one in the repo to see exactly when it fires and what it does.</p>
+    <p style="margin-top: 1rem; margin-bottom: 0;"><a href="https://github.com/bcgov/agent-skills/tree/main/.github/skills" target="_blank" rel="noopener"><strong>Browse <code>.github/skills/</code> on GitHub →</strong></a></p>
 </div>
 
 <h2>Don't see what you need?</h2>
@@ -69,7 +45,7 @@
 <div class="grid grid-2">
     <div class="card">
         <h3 style="margin-top:0;">Check the upstream catalogues first</h3>
-        <p>Generic skills (Azure SDKs, Microsoft Foundry, document formats, language workflows) are usually already published elsewhere. We list the catalogues we check on the <a href="contribute.html#upstream-catalogs">contribute</a> page.</p>
+        <p>Generic skills (Azure SDKs, Microsoft Foundry, document formats, language workflows) are usually already published elsewhere. The catalogues we check first are listed on the <a href="contribute.html#upstream-catalogs">contribute</a> page.</p>
     </div>
     <div class="card card-gold">
         <h3 style="margin-top:0;">Then add yours here</h3>

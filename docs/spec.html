@@ -990,7 +990,7 @@
         </a>
         <nav class="bc-nav">
             <a href="index.html" class="">Home</a>
-            <a href="catalog.html" class="">Catalog</a>
+            <a href="catalog.html" class="">Catalogue</a>
             <a href="consume.html" class="">Consume</a>
             <a href="contribute.html" class="">Contribute</a>
             <a href="spec.html" class="active">Spec</a>
@@ -1073,7 +1073,7 @@
     </thead>
     <tbody>
         <tr><td><code>name</code></td><td>string</td><td>Unique, kebab-case identifier. Must match the skill's directory name.</td></tr>
-        <tr><td><code>description</code></td><td>string</td><td>What the skill does and when it should trigger. The only metadata an agent sees when routing — keep it specific.</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td>What the skill does and when it should trigger. This is the only metadata an agent sees when routing, so keep it specific.</td></tr>
     </tbody>
 </table>
 
@@ -1081,7 +1081,7 @@
     <div class="card">
         <h3 id="name-rules" style="margin-top:0;"><code>name</code> rules</h3>
         <ul>
-            <li>Kebab-case: <code>^[a-z0-9]+(-[a-z0-9]+)*$</code> — lowercase letters and digits in hyphen-separated groups, no leading/trailing/consecutive hyphens.</li>
+            <li>Kebab-case (<code>^[a-z0-9]+(-[a-z0-9]+)*$</code>): lowercase letters and digits in hyphen-separated groups, no leading, trailing, or consecutive hyphens.</li>
             <li>At most <strong>64 characters</strong>.</li>
             <li>Must <strong>exactly match the skill's directory name</strong>, so manifest, folder, and npm package all line up.</li>
         </ul>
@@ -1090,22 +1090,22 @@
         <h3 id="description-rules" style="margin-top:0;"><code>description</code> rules</h3>
         <ul>
             <li>At most <strong>1024 characters</strong>.</li>
-            <li><strong>No angle brackets</strong> (<code>&lt;</code> or <code>&gt;</code>) — they get misread as markup where the manifest is injected.</li>
-            <li>Routing depends on it — be specific about <em>when</em> the skill fires.</li>
+            <li><strong>No angle brackets</strong> (<code>&lt;</code> or <code>&gt;</code>): they get misread as markup where the manifest is injected.</li>
+            <li>Routing depends on it, so be specific about <em>when</em> the skill fires.</li>
         </ul>
     </div>
 </div>
 
 <h3 id="allowed-keys" style="margin-top: 1.5rem;">Allowed frontmatter keys</h3>
 
-<p>Only these keys are accepted — any other key is rejected by the validator: <code>name</code>, <code>description</code>, <code>owner</code>, <code>tags</code>, <code>license</code>, <code>allowed-tools</code>, <code>compatibility</code>, <code>metadata</code>. Of the optional ones, <code>owner</code> and <code>tags</code> are recommended.</p>
+<p>Only these keys are accepted (any other key is rejected by the validator): <code>name</code>, <code>description</code>, <code>owner</code>, <code>tags</code>, <code>license</code>, <code>allowed-tools</code>, <code>compatibility</code>, <code>metadata</code>. Of the optional ones, <code>owner</code> and <code>tags</code> are recommended.</p>
 
 <div class="alert alert-warning">
     <div class="alert-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </div>
     <div>
-        The published <strong>version is not in the frontmatter</strong> — it lives in <code>package.json</code> (see <a href="#package-json">§3</a>) as the single source of truth. Don't add a <code>version</code> field to <code>SKILL.md</code>.
+        The published <strong>version is not in the frontmatter</strong>. It lives in <code>package.json</code> (see <a href="#package-json">§3</a>), and that's the one place to set it; don't add a <code>version</code> field to <code>SKILL.md</code>.
     </div>
 </div>
 
@@ -1147,25 +1147,25 @@ tags: [example]
 ## References
 See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;</code></pre>
 
-<h3 id="length-limit" style="margin-top: 1.5rem;">Keep it short — 500 lines max</h3>
+<h3 id="length-limit" style="margin-top: 1.5rem;">Keep it short: 500 lines max</h3>
 
 <p>A <code>SKILL.md</code> is loaded into the agent's context up front, so it must stay skimmable. The manifest is capped at <strong>500 lines</strong> (the whole file, frontmatter included). When a skill needs deeper material — long procedures, lookup tables, worked examples, API detail — put it in a <code>references/</code> file the agent pulls on demand, and link it from the <code>## References</code> section.</p>
 
-<h3 id="flat-resources">Keep bundled resources flat — one level deep</h3>
+<h3 id="flat-resources">Keep bundled resources flat: one level deep</h3>
 
-<p>Skills may ship <code>scripts/</code>, <code>references/</code>, and <code>assets/</code> directories beside the <code>SKILL.md</code>. These must stay <strong>exactly one level deep</strong> — flat files only, no nested subdirectories. Use <code>references/REFERENCE.md</code>, not <code>references/api/v1/REFERENCE.md</code>. A flat layout keeps on-demand resources predictable for the agent to locate.</p>
+<p>Skills may ship <code>scripts/</code>, <code>references/</code>, and <code>assets/</code> directories beside the <code>SKILL.md</code>. These must stay <strong>exactly one level deep</strong>: flat files only, no nested subdirectories. Use <code>references/REFERENCE.md</code>, not <code>references/api/v1/REFERENCE.md</code>. A flat layout keeps on-demand resources predictable for the agent to locate.</p>
 
 <h2 id="package-json">3. <code>package.json</code> (required for published skills)</h2>
 
-<p>A contributed skill under <code>skills/</code> ships as a versioned npm package, so it MUST include a <code>package.json</code> beside its <code>SKILL.md</code>. Meta-skills under <code>.github/skills/</code> are never published, so a <code>package.json</code> is <strong>optional</strong> there — and validated only when one is present.</p>
+<p>A contributed skill under <code>skills/</code> ships as a versioned npm package, so it MUST include a <code>package.json</code> beside its <code>SKILL.md</code>. Meta-skills under <code>.github/skills/</code> are never published, so a <code>package.json</code> is <strong>optional</strong> there, and validated only when one is present.</p>
 
 <table>
     <thead>
         <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
     </thead>
     <tbody>
-        <tr><td><code>name</code></td><td>string</td><td>Scoped package name — <code>@bcgov/skill-&lt;skill-name&gt;</code>.</td></tr>
-        <tr><td><code>version</code></td><td>string</td><td>Semver (<code>MAJOR.MINOR.PATCH</code>). The source of truth for releases.</td></tr>
+        <tr><td><code>name</code></td><td>string</td><td>Scoped package name (<code>@bcgov/skill-&lt;skill-name&gt;</code>).</td></tr>
+        <tr><td><code>version</code></td><td>string</td><td>Semver (<code>MAJOR.MINOR.PATCH</code>). The publish workflow reads this to decide what (if anything) to ship.</td></tr>
     </tbody>
 </table>
 
@@ -1180,15 +1180,15 @@ See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;<
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </div>
     <div>
-        <strong>The entire skill directory is bundled automatically.</strong> Do <strong>not</strong> add a <code>files</code> field — that turns npm into a whitelist and would silently drop directories. To exclude scratch files, add a <code>.npmignore</code> inside the skill folder (it must not exclude <code>SKILL.md</code>).
+        <strong>The entire skill directory is bundled automatically.</strong> Do <strong>not</strong> add a <code>files</code> field; that turns npm into a whitelist and would silently drop directories. To exclude scratch files, add a <code>.npmignore</code> inside the skill folder (it must not exclude <code>SKILL.md</code>).
     </div>
 </div>
 
-<p>The publish workflow reads <code>name</code> + <code>version</code> from this file and skips any version already published — bumping <code>version</code> is what ships a new release. See <a href="contribute.html#versioning">Contribute → Versioning</a> for the <code>npm version</code> flow.</p>
+<p>The publish workflow reads <code>name</code> + <code>version</code> from this file and skips any version already published. Bumping <code>version</code> is what ships a new release. See <a href="contribute.html#versioning">Contribute → Versioning</a> for the <code>npm version</code> flow.</p>
 
 <h2 id="validator-checks">4. What the PR check enforces</h2>
 
-<p>For each <strong>changed</strong> skill, the validator confirms all of the following. If you see a failure on a PR, this list maps directly to the checks.</p>
+<p>For each <strong>changed</strong> skill, the validator confirms all of the following. If this list and the validator script (<a href="https://github.com/bcgov/agent-skills/blob/main/scripts/validate_skill.py" target="_blank" rel="noopener"><code>scripts/validate_skill.py</code></a>) ever disagree, the script wins. If you see a failure on a PR, this list maps directly to the checks:</p>
 
 <div class="card">
     <ol>
@@ -1201,7 +1201,7 @@ See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;<
         <li>All seven required sections are present: <strong>Use When</strong>, <strong>Don't Use When</strong>, <strong>Workflow</strong>, <strong>Rules</strong>, <strong>Examples</strong>, <strong>Edge Cases</strong>, <strong>References</strong>.</li>
         <li>None of those required sections is empty.</li>
         <li>The whole <code>SKILL.md</code> is at most 500 lines.</li>
-        <li>Any bundled <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory is flat — no nested subdirectories.</li>
+        <li>Any bundled <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory is flat (no nested subdirectories).</li>
         <li>For a published skill under <code>skills/</code>, a <code>package.json</code> sits beside the manifest with a valid <code>name</code> and a semver <code>version</code>, and does <strong>not</strong> pin a <code>files</code> whitelist. For a meta-skill under <code>.github/skills/</code>, a missing <code>package.json</code> is allowed; if one is present it is held to the same rules.</li>
     </ol>
 </div>
@@ -1234,7 +1234,7 @@ make validate</code></pre>
             <div class="footer-links">
                 <h4>Documentation</h4>
                 <ul>
-                    <li><a href="catalog.html">Skill Catalog</a></li>
+                    <li><a href="catalog.html">Skill Catalogue</a></li>
                     <li><a href="consume.html">Consume a Skill</a></li>
                     <li><a href="contribute.html">Contribute a Skill</a></li>
                     <li><a href="spec.html">SKILL.md Spec</a></li>
