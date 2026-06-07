@@ -9,10 +9,17 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "ci"
+      # Conventional Commits: `deps(actions): bump foo from 1 to 2`.
+      prefix: "deps(actions)"
+    groups:
+      # Roll every github-actions bump into a single PR per run so we review
+      # and merge them as one ci(deps) batch instead of N parallel PRs.
+      github-actions:
+        patterns:
+          - "*"
 
   # Python tooling (validator + tests). Declared in pyproject.toml; uv resolves
   # them at runtime, but Dependabot watches the manifest for security and
@@ -20,7 +27,14 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "deps"
+      # Conventional Commits: `deps(pip): bump foo from 1 to 2`.
+      prefix: "deps(pip)"
+    groups:
+      # Roll every pip bump into a single PR per run so the validator + test
+      # suite runs once for the batch instead of once per dependency.
+      python:
+        patterns:
+          - "*"
