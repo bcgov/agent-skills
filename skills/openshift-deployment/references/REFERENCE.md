@@ -67,6 +67,22 @@ spec:
       labels: { app: api }
     spec:
       terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:
+          # Mandatory: spread replicas across nodes so a single node failure
+          # or drain cannot take the whole workload down (regardless of PDB).
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: { app: api }
+              topologyKey: kubernetes.io/hostname
+      # On Gold / GoldDR, also spread across zones so a zone outage
+      # doesn't take every replica.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: api }
       containers:
         - name: api
           image: artifacts.developer.gov.bc.ca/bcgov-docker-local/api:1.4.2
@@ -112,6 +128,26 @@ spec:
       resource:
         name: cpu
         target: { type: Utilization, averageUtilization: 70 }
+  # Mandatory: explicit rampup (scaleUp) and rampdown (scaleDown).
+  # Defaults are conservative and cause user-visible incidents on this platform.
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30      # react quickly to traffic spikes
+      policies:
+        - type: Percent
+          value: 100                      # at most double replicas per minute
+          periodSeconds: 60
+        - type: Pods
+          value: 4                        # ...but never add more than 4 pods/min
+          periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300     # wait 5 min before scaling down
+      policies:
+        - type: Percent
+          value: 50                       # at most halve replicas per minute
+          periodSeconds: 60
+      selectPolicy: Max
 ```
 
 ### 3.2 `StatefulSet` for a 3-pod HA database
@@ -129,6 +165,19 @@ spec:
     metadata: { labels: { app: pg } }
     spec:
       terminationGracePeriodSeconds: 300
+      affinity:
+        podAntiAffinity:
+          # Mandatory for multi-replica stateful workloads: never colocate.
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: { app: pg }
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: pg }
       containers:
         - name: pg
           image: artifacts.developer.gov.bc.ca/bcgov-docker-local/patroni-postgres:12.4-2.0
@@ -299,9 +348,12 @@ Quick band-aid when the alert fires: `oc -n <ns> delete pod <name>`. The underly
 | Both CPU autoscaling and memory rightsizing | HPA on CPU + VPA `Off` (never `Auto` on the same metric) |
 
 Rules of thumb:
+- `HorizontalPodAutoscaler` is mandatory for any long-running workload, not optional.
 - `minReplicas ≥ 2` in production (single replica = outage on node drain).
 - `maxReplicas` bounded by `compute-long-running-quota` — math out the worst case (`maxReplicas × requests.cpu` ≤ quota CPU).
-- Pair HPA with a PDB so scale-down can't violate the budget during a drain.
+- Always pair HPA with a PDB so scale-down can't violate the budget during a drain.
+- Always set `spec.behavior.scaleUp` (rampup) and `spec.behavior.scaleDown` (rampdown) explicitly — see §3.1 for the baseline (`scaleUp.stabilizationWindowSeconds: 30` + `Percent: 100 / periodSeconds: 60`; `scaleDown.stabilizationWindowSeconds: 300` + `Percent: 50 / periodSeconds: 60`). Tune from observed traffic, but never ship defaults.
+- Always set `podAntiAffinity` on `topologyKey: kubernetes.io/hostname` so HPA-added replicas don't pile onto the same node and erase the resilience benefit.
 
 ## 9. Workload error cheat sheet
 
