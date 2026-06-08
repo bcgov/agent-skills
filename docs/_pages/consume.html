@@ -82,8 +82,7 @@ gh auth status</code></pre>
 <p>Create a project-local <code>.npmrc</code> beside the <code>package.json</code> where you want to consume the skill. The same file works in local dev and GitHub Actions; the only thing that changes is where <code>NODE_AUTH_TOKEN</code> comes from.</p>
 
 <pre><code class="language-ini">@bcgov:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-always-auth=true</code></pre>
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}</code></pre>
 
 <p><code>${NODE_AUTH_TOKEN}</code> is expanded by npm at install time from the environment variable; the literal string lives in the file, so it's safe to commit.</p>
 
@@ -262,8 +261,7 @@ npm install  @bcgov/&lt;name&gt;@&lt;version&gt;  # jump to an exact version</co
         <div class="accordion-content">
             <p>Make sure the scope and the auth line both point at GitHub Packages; they must both be present in <code>.npmrc</code>:</p>
 <pre><code>@bcgov:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-always-auth=true</code></pre>
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}</code></pre>
             <p>If you also have a global <code>~/.npmrc</code> with a different <code>registry=</code>, the scoped registry line wins, but the auth line must match the URL of whatever registry actually serves the install.</p>
         </div>
     </details>
