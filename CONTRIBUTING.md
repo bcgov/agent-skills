@@ -45,16 +45,20 @@ makes it ambiguous which one consumers should install.
 
 Check these first:
 
-1. **[Microsoft Agent Skills catalog](https://microsoft.github.io/skills/#agents)**
+1. **[The Agent Skills Directory](https://www.skills.sh/)** — a
+   vendor-neutral directory of agent skills aggregated across publishers. Good
+   first stop for a broad sweep before drilling into the publisher-specific
+   catalogs below.
+2. **[Microsoft Agent Skills catalog](https://microsoft.github.io/skills/#agents)**
    — a large catalog of skills covering Azure SDKs, Microsoft Foundry, M365,
    Entra, Azure Resource Manager, plus cross-cutting workflows (`azure-prepare`,
    `azure-deploy`, `azure-validate`, `azure-cost`, `microsoft-docs`, `kql`,
    `mcp-builder`, `cloud-solution-architect`, and others).
-2. **[Anthropic's `anthropics/skills`](https://github.com/anthropics/skills)** —
+3. **[Anthropic's `anthropics/skills`](https://github.com/anthropics/skills)** —
    reference skills for document work (`pdf`, `docx`, `xlsx`, `pptx`) and other
    patterns, plus material on the SKILL.md format this repo follows (see also
    [agentskills.io](https://agentskills.io)).
-3. **[awesome-copilot](https://github.com/github/awesome-copilot)** — the
+4. **[awesome-copilot](https://github.com/github/awesome-copilot)** — the
    community-curated index of skills, prompts, custom agents, and hooks; it
    also distributes vendor plugin catalogs (M365 Agents Toolkit, Power BI,
    Oracle-to-PostgreSQL, Spark, WorkIQ, and others) so one check covers them.
