@@ -117,8 +117,8 @@ Worth flagging about the layout above:
 
 Skills install with the [`skills` CLI](https://skills.sh) (from
 [vercel-labs/skills](https://github.com/vercel-labs/skills)). It clones this
-repo, finds every `SKILL.md`, and copies the matching skill folders \u2014 plus
-their `scripts/`, `references/`, and `assets/` \u2014 into the right location for
+repo, finds every `SKILL.md`, and copies the matching skill folders — plus
+their `scripts/`, `references/`, and `assets/` — into the right location for
 your agent.
 
 ```bash
@@ -137,12 +137,12 @@ npx skills add bcgov/agent-skills --list
 ```
 
 The CLI handles everything: no `.npmrc`, no GitHub token, no registry config.
-**Re-run any time to pick up newer versions** \u2014 the CLI re-copies the latest
+**Re-run any time to pick up newer versions** — the CLI re-copies the latest
 `main`. Pin to a specific commit by using a GitHub URL:
 `npx skills add https://github.com/bcgov/agent-skills/tree/<SHA>`.
 
 For consumers who want to wire skills in manually, every skill is a self-
-contained folder under [`skills/`](skills/) \u2014 copy it anywhere your agent
+contained folder under [`skills/`](skills/) — copy it anywhere your agent
 scans for skills.
 
 ---
@@ -179,14 +179,14 @@ There is no publish step. Skills ship the moment a PR merges to `main`:
 
 - **`npx skills add` reads the repo directly.** It clones `bcgov/agent-skills`
   at `main` (or whatever ref the consumer pins to), walks the `skills/` tree
-  for `SKILL.md` files, and copies the entire containing folder \u2014 manifest,
-  `scripts/`, `references/`, `assets/`, everything \u2014 into the agent\u2011specific
+  for `SKILL.md` files, and copies the entire containing folder — manifest,
+  `scripts/`, `references/`, `assets/`, everything — into the agent‑specific
   destination it picks for you. No registry, no auth, no version pinning
   metadata to maintain.
 - **The PR check is the only gate.** Every change runs the validator on the
   skills it touches; merge-to-`main` requires the `results` aggregator to be
   green. Once a PR merges, the next `npx skills add` run sees the new content.
-- **Dependabot keeps the tooling current.** Grouped, Conventional-Commit\u2011
+- **Dependabot keeps the tooling current.** Grouped, Conventional-Commit‑
   prefixed PRs (cadence and ecosystems in
   [`.github/dependabot.yml`](.github/dependabot.yml)). Green Dependabot PRs
   auto-squash-merge themselves; red ones stay red until a human fixes them.
@@ -215,4 +215,4 @@ Workflow YAML under `.github/workflows/` is linted by
 The meta-skills under [`.github/skills/`](.github/skills/) are part of the
 normal workflow. They take care of scaffolding new skills and running the
 validator on your behalf. Use them the same way you'd use any other skill in
-your agent &mdash; they're the fastest path from idea to a merged skill.
+your agent — they're the fastest path from idea to a merged skill.
