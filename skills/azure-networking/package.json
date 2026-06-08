@@ -1,5 +1,5 @@
 {
-  "name": "@bcgov/skill-azure-networking",
+  "name": "@bcgov/azure-networking",
   "version": "0.1.1",
   "description": "Azure subnet, NSG, and private-endpoint patterns for adding subnets inside an existing VNet — atomic NSG-at-creation, per-service delegation, PE subnet layout, ARM write serialization, and reference NSG layouts for PE, APIM, App Gateway, and Container Apps subnets. Tool-agnostic with Terraform, Bicep, and az CLI examples.",
   "publishConfig": {

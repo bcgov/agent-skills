@@ -1,5 +1,5 @@
 {
-  "name": "@bcgov/skill-openshift-deployment",
+  "name": "@bcgov/openshift-deployment",
   "version": "0.1.1",
   "description": "BC Gov Private Cloud OpenShift workload-manifest guidance — choosing the right controller (Deployment, StatefulSet, DaemonSet, Job, CronJob) and shaping it for the platform: container resources and QoS (Guaranteed vs Burstable vs BestEffort), the namespace LimitRange defaults, liveness/readiness/startup probes, terminationGracePeriod and SIGTERM (PID-1 reaping with tini/dumb-init), PodDisruptionBudgets, horizontal scaling (HPA, VPA), and CronJob admission rules. Out of scope: NetworkPolicies, Vault/ESO, Argo CD, Artifactory, Porter, storage class choice, Sysdig, ACS.",
   "publishConfig": {

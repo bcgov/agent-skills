@@ -100,7 +100,7 @@ and match the skill's directory name; `description` must be ≤1024 chars with n
 angle brackets. Keep the manifest under 500 lines and any `scripts/`,
 `references/`, or `assets/` directory flat (one level deep).
 
-`package.json` holds the published package `name` (`@bcgov/skill-<name>`) and
+`package.json` holds the published package `name` (`@bcgov/<name>`) and
 the `version`. **The version lives only here — not in `SKILL.md`** — so there's
 one source of truth and no drift. See the spec for the full definition.
 

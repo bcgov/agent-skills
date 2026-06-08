@@ -15,7 +15,7 @@
                                                    publish workflow
                                                           │
                                                           ▼
-                                            @bcgov/skill-&lt;name&gt;@x.y.z
+                                            @bcgov/&lt;name&gt;@x.y.z
                                             on GitHub Packages</code></pre>
 </div>
 
@@ -52,7 +52,7 @@
         <li>Install <code>uv</code> (third-party action, SHA-pinned per the policy below).</li>
         <li><strong>Re-validate every skill</strong> with <code>uv run python scripts/validate_skill.py --all</code>, the final check before any package bytes leave the repo.</li>
         <li>Set up Node with the registry pointed at <code>https://npm.pkg.github.com</code> and the <code>@bcgov</code> scope. (The exact Node version lives in the workflow file.)</li>
-        <li>Run <a href="https://github.com/bcgov/agent-skills/blob/main/.github/scripts/publish-changed-skills.sh" target="_blank" rel="noopener"><code>.github/scripts/publish-changed-skills.sh</code></a>, which diffs <code>BEFORE_SHA</code> against <code>HEAD_SHA</code>, walks each changed skill, and runs <code>npm publish --tag latest</code> with <code>NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code>. The <code>--tag latest</code> keeps the <code>latest</code> dist-tag pointed at the just-shipped version, so <code>npm install @bcgov/skill-&lt;name&gt;</code> (no version) always pulls the most recent release.</li>
+        <li>Run <a href="https://github.com/bcgov/agent-skills/blob/main/.github/scripts/publish-changed-skills.sh" target="_blank" rel="noopener"><code>.github/scripts/publish-changed-skills.sh</code></a>, which diffs <code>BEFORE_SHA</code> against <code>HEAD_SHA</code>, walks each changed skill, and runs <code>npm publish --tag latest</code> with <code>NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code>. The <code>--tag latest</code> keeps the <code>latest</code> dist-tag pointed at the just-shipped version, so <code>npm install @bcgov/&lt;name&gt;</code> (no version) always pulls the most recent release.</li>
     </ol>
 </div>
 

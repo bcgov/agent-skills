@@ -1038,7 +1038,7 @@
 
 <h1 id="consume-a-skill">Consume a Skill</h1>
 
-<p>Skills are published as npm packages to GitHub Packages under the <code>@bcgov</code> scope. Installing one is four steps: configure the registry, authenticate, install, and (later) upgrade.</p>
+<p>Skills are published as npm packages to GitHub Packages under the <code>@bcgov</code> scope. Installing one is five steps: configure the registry, authenticate, install, wire the skill into your agent, and (later) upgrade. The SKILL.md format follows the <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> open standard, so the same install flow works for GitHub Copilot, Claude Code, and any other agent that loads SKILL.md manifests.</p>
 
 <div class="alert alert-info">
     <div class="alert-icon">
@@ -1048,6 +1048,51 @@
         <strong>GitHub Packages always requires authentication</strong>, even for public packages on the npm registry. This is a GitHub Packages behaviour, not a permission setting on this repo. The flow below uses the GitHub CLI to mint a short-lived token, so you don't need to manage a personal access token.
     </div>
 </div>
+
+<h2 id="quick-install">Quick install (recommended)</h2>
+
+<div class="card">
+    <p>One line. The installer checks for the GitHub CLI (and installs it if missing), adds the <code>read:packages</code> scope, writes the project <code>.npmrc</code>, runs <code>npm install</code>, <strong>and offers to wire the skill into your agent</strong> (GitHub Copilot, Claude Code, or a custom location for Codex / Cursor / Cline / etc.). Re-run any time to install another skill or upgrade an existing one.</p>
+
+    <div class="alert alert-warning" style="margin: 1rem 0;">
+        <div class="alert-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div>
+            <strong>Supply-chain note &mdash; pin to an immutable ref in production.</strong> The forms below default to <code>main</code>, which is mutable: the installer code can change between when you read it and when you run it. For CI, scripted setup, or any environment where reproducibility matters, replace <code>main</code> with a 40-char commit SHA you have audited &mdash; pick the latest green commit from <a href="https://github.com/bcgov/agent-skills/commits/main/scripts" target="_blank" rel="noopener">bcgov/agent-skills/commits/main/scripts</a>. This matches the advice our own <a href="https://github.com/bcgov/agent-skills/blob/main/skills/github-actions/SKILL.md" target="_blank" rel="noopener">github-actions</a> skill gives for third-party Actions.
+        </div>
+    </div>
+
+<pre><code># macOS / Linux  (interactive prompts work via process substitution)
+# Pinned (recommended) -- replace &lt;SHA&gt; with a 40-char commit you have reviewed:
+bash &lt;(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/&lt;SHA&gt;/scripts/install-skill.sh)
+
+# Rolling (convenient for one-off installs -- may change without notice):
+bash &lt;(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/main/scripts/install-skill.sh)</code></pre>
+<pre><code># Windows (PowerShell)  works on PS 5.1 and PS 7 with no ExecutionPolicy change
+# Pinned (recommended) -- replace &lt;SHA&gt; with a 40-char commit you have reviewed:
+&amp; ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/&lt;SHA&gt;/scripts/install-skill.ps1)))
+
+# Rolling (convenient for one-off installs -- may change without notice):
+&amp; ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/main/scripts/install-skill.ps1)))</code></pre>
+    <p>Prefer to audit the script before running it? Pin to a SHA, download, read, then run. <strong>When you pin to a commit SHA, GitHub serves the exact blob that was committed at that ref &mdash; the SHA itself is the integrity anchor; there is no separate published hash to compare against.</strong> Recording a <code>sha256sum</code> is useful for your own change-management trail (so re-deploys can detect drift), not as a first-time verification step.</p>
+<pre><code># macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/&lt;SHA&gt;/scripts/install-skill.sh -o install-skill.sh
+less install-skill.sh                              # review the code
+sha256sum install-skill.sh                         # optional: record with your deploy ticket
+bash install-skill.sh</code></pre>
+<pre><code># Windows (PowerShell)
+irm https://raw.githubusercontent.com/bcgov/agent-skills/&lt;SHA&gt;/scripts/install-skill.ps1 -OutFile install-skill.ps1
+Get-Content install-skill.ps1 | more               # review the code
+Get-FileHash install-skill.ps1 -Algorithm SHA256   # optional: record with your deploy ticket
+.\install-skill.ps1</code></pre>
+    <p>Non-interactive form (CI or scripted setup &mdash; passing a positional skill name skips the wire-up prompt automatically):</p>
+<pre><code>bash &lt;(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/&lt;SHA&gt;/scripts/install-skill.sh) azure-networking 0.1.1
+&amp; ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/&lt;SHA&gt;/scripts/install-skill.ps1))) -Skill azure-networking -Version 0.1.1</code></pre>
+    <p style="margin-bottom: 0;"><strong>Agent compatibility today:</strong> only Copilot and Claude Code load <code>SKILL.md</code> natively via the <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> standard. For Codex CLI, Cursor, Cline, Continue.dev, and others, pick &ldquo;Custom location&rdquo; in the wire-up prompt and the script symlinks the skill into the folder your tool already scans &mdash; see <a href="#step-4-wire-up">Step 4</a> for the underlying snippets.</p>
+</div>
+
+<p style="margin-top: 1.5rem;">Prefer to understand or run each step yourself? The manual flow follows.</p>
 
 <h2 id="prerequisites">Prerequisites</h2>
 
@@ -1120,13 +1165,13 @@ export NODE_AUTH_TOKEN=$(gh auth token)</code></pre>
 
 <p>Pick a skill from <a href="catalog.html">the catalogue</a> and pin a version for reproducible pulls:</p>
 
-<pre><code>npm install @bcgov/skill-&lt;name&gt;@&lt;version&gt;</code></pre>
+<pre><code>npm install @bcgov/&lt;name&gt;@&lt;version&gt;</code></pre>
 
 <p>Or omit the version to track the <code>latest</code> dist-tag, which the publish workflow updates on every release:</p>
 
-<pre><code>npm install @bcgov/skill-&lt;name&gt;</code></pre>
+<pre><code>npm install @bcgov/&lt;name&gt;</code></pre>
 
-<p>The package lands at <code>node_modules/@bcgov/skill-&lt;name&gt;/</code> with its <code>SKILL.md</code> plus any <code>references/</code>, <code>scripts/</code>, or <code>assets/</code> the skill ships. The on-disk layout matches the source repo exactly, so your agent's skills loader can point at the directory with no extra wiring.</p>
+<p>The package lands at <code>node_modules/@bcgov/&lt;name&gt;/</code> with its <code>SKILL.md</code> at the root, plus any <code>references/</code>, <code>scripts/</code>, or <code>assets/</code> the skill ships. The on-disk layout matches the source repo exactly. Step 4 wires that directory into the location your agent already scans.</p>
 
 <div class="alert alert-success">
     <div class="alert-icon">
@@ -1137,13 +1182,86 @@ export NODE_AUTH_TOKEN=$(gh auth token)</code></pre>
     </div>
 </div>
 
-<h2 id="step-4-upgrade">Step 4: Upgrade</h2>
+<h2 id="step-4-wire-up">Step 4: Wire it into your agent</h2>
+
+<p>The SKILL.md format is the <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> open standard, so GitHub Copilot, Claude Code, Cursor, and any other compatible agent can load these skills. Because the published package name (<code>@bcgov/&lt;name&gt;</code>) is identical to the manifest <code>name</code>, you have two ways to wire skills in &mdash; pick whichever fits your setup.</p>
+
+<h3 id="wire-option-a">Option A: Point your agent at the whole <code>@bcgov</code> scope (recommended)</h3>
+
+<div class="card">
+    <p>Set the agent's skills location to <code>node_modules/@bcgov/</code> once. Every installed <code>@bcgov/*</code> skill is auto-discovered, and new installs (or upgrades) are picked up on the next reload &mdash; no per-skill wiring, no symlinks to maintain.</p>
+<pre><code class="language-jsonc">// .vscode/settings.json &mdash; GitHub Copilot in VS Code
+{
+  "chat.agentSkillsLocations": ["node_modules/@bcgov"]
+}</code></pre>
+<pre><code># Claude Code (project session)
+claude --add-dir node_modules/@bcgov</code></pre>
+    <p style="margin-bottom: 0;">For details on each agent's discovery setting see <a href="https://code.visualstudio.com/docs/agent-customization/agent-skills" target="_blank" rel="noopener">VS Code Agent Skills</a> and <a href="https://code.claude.com/docs/en/skills" target="_blank" rel="noopener">Claude Code skills</a>.</p>
+</div>
+
+<h3 id="wire-option-b">Option B: Symlink one skill at a time</h3>
+
+<p>Some agents only scan a fixed project folder. Symlink each installed package in &mdash; the folder name matches the package name, so the link is one-to-one with no renaming.</p>
+
+<p>The snippets below assume <code>azure-networking</code>; substitute any <code>@bcgov/&lt;name&gt;</code> you installed.</p>
+
+<h4 id="agent-copilot">GitHub Copilot (VS Code)</h4>
+
+<div class="card">
+    <p>VS Code Copilot auto-discovers project skills under <code>.github/skills/</code>, <code>.claude/skills/</code>, or <code>.agents/skills/</code>; personal skills live under <code>~/.copilot/skills/</code>, <code>~/.claude/skills/</code>, or <code>~/.agents/skills/</code>.</p>
+<pre><code># bash / zsh (from repo root)
+mkdir -p .github/skills
+ln -s ../../node_modules/@bcgov/azure-networking .github/skills/azure-networking
+
+# PowerShell (from repo root; symlinks need Developer Mode or admin)
+New-Item -ItemType Directory -Force .github\skills | Out-Null
+New-Item -ItemType SymbolicLink -Path .github\skills\azure-networking -Target ..\..\node_modules\@bcgov\azure-networking
+
+# Copy instead of symlink (works everywhere, but you re-copy on update)
+cp -r node_modules/@bcgov/azure-networking .github/skills/azure-networking</code></pre>
+    <p style="margin-bottom: 0;">Copilot picks up the skill on the next chat.</p>
+</div>
+
+<h4 id="agent-claude">Claude Code</h4>
+
+<div class="card">
+    <p>Claude Code loads project skills from <code>.claude/skills/</code> and personal skills from <code>~/.claude/skills/</code>, and watches the directory so newly linked skills appear in the same session.</p>
+<pre><code># bash / zsh (from repo root)
+mkdir -p .claude/skills
+ln -s ../../node_modules/@bcgov/azure-networking .claude/skills/azure-networking
+
+# PowerShell (from repo root)
+New-Item -ItemType Directory -Force .claude\skills | Out-Null
+New-Item -ItemType SymbolicLink -Path .claude\skills\azure-networking -Target ..\..\node_modules\@bcgov\azure-networking</code></pre>
+</div>
+
+<h4 id="agent-other">Other agents (Cursor, Claude API, custom loaders)</h4>
+
+<div class="card">
+    <p>Any agent that loads <code>SKILL.md</code> manifests directly can point at the installed directory:</p>
+<pre><code>node_modules/@bcgov/&lt;name&gt;/SKILL.md</code></pre>
+    <p style="margin-bottom: 0;">References, scripts, and assets sit next to <code>SKILL.md</code>, so relative links inside the manifest resolve without extra config. For the Claude API Skills beta, pass the same path to the SDK's skill loader; see the <a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">anthropics/skills</a> reference repo for the SKILL.md contract and loader examples.</p>
+</div>
+
+<h4 id="agent-actions">GitHub Actions</h4>
+
+<div class="card">
+    <p>If a workflow runs an agent and needs the skill on disk in the agent's expected location, install and link in the same step:</p>
+<pre><code class="language-yaml">- run: |
+    npm ci
+    mkdir -p .github/skills
+    ln -sf "$(pwd)/node_modules/@bcgov/azure-networking" .github/skills/azure-networking
+  env:
+    NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code></pre>
+</div>
+
+<h2 id="step-5-upgrade">Step 5: Upgrade</h2>
 
 <p>Skills are plain npm packages, so use the npm commands you already know:</p>
 
-<pre><code>npm outdated @bcgov/skill-&lt;name&gt;        # see what's newer
-npm update   @bcgov/skill-&lt;name&gt;        # move within your semver range
-npm install  @bcgov/skill-&lt;name&gt;@&lt;version&gt;  # jump to an exact version</code></pre>
+<pre><code>npm outdated @bcgov/&lt;name&gt;        # see what's newer
+npm update   @bcgov/&lt;name&gt;        # move within your semver range
+npm install  @bcgov/&lt;name&gt;@&lt;version&gt;  # jump to an exact version</code></pre>
 
 <p>Use a semver range (e.g. <code>"^0.1.0"</code>) in <code>package.json</code> to pick up compatible updates on <code>npm update</code>, or pin an exact version to freeze it. Your lockfile keeps installs reproducible across the team.</p>
 
@@ -1196,6 +1314,18 @@ always-auth=true</code></pre>
         <summary>Can I use a personal access token (PAT) instead of <code>gh auth token</code>?</summary>
         <div class="accordion-content">
             <p>Yes; a classic PAT with <code>read:packages</code> works in place of the CLI-issued token. The CLI flow is just lower friction (no separate token to generate, rotate, or revoke), and <code>gh auth logout</code> cleans up both your CLI session and any token sourced from it.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>My agent doesn't see the skill after I linked it in</summary>
+        <div class="accordion-content">
+            <p>Both VS Code Copilot and Claude Code require the skill's on-disk folder name to match the <code>name</code> field in <code>SKILL.md</code> exactly. With this repo's <code>@bcgov/&lt;name&gt;</code> convention the names line up automatically, but if you renamed a folder or copied with a different name you'll hit a silent skip.</p>
+            <ul>
+                <li><strong>Correct:</strong> <code>.github/skills/azure-networking</code> &rarr; <code>node_modules/@bcgov/azure-networking</code></li>
+                <li><strong>Wrong:</strong> <code>.github/skills/azure-net</code> (folder name doesn't match the manifest <code>name: azure-networking</code>) &rarr; agent ignores the skill</li>
+            </ul>
+            <p style="margin-bottom: 0;">In VS Code, run <em>Chat: Open Customizations</em> and check the Skills tab to see whether Copilot picked it up. In Claude Code, run <code>/skills</code>. If you used <strong>Option A</strong> (pointed your agent at <code>node_modules/@bcgov</code>) instead of symlinking, you don't need to worry about this at all.</p>
         </div>
     </details>
 </div>

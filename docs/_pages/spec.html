@@ -127,13 +127,13 @@ See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;<
         <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
     </thead>
     <tbody>
-        <tr><td><code>name</code></td><td>string</td><td>Scoped package name (<code>@bcgov/skill-&lt;skill-name&gt;</code>).</td></tr>
+        <tr><td><code>name</code></td><td>string</td><td>Scoped package name (<code>@bcgov/&lt;skill-name&gt;</code>) &mdash; must match the manifest <code>name</code> so the install path doubles as the agent skill directory.</td></tr>
         <tr><td><code>version</code></td><td>string</td><td>Semver (<code>MAJOR.MINOR.PATCH</code>). The publish workflow reads this to decide what (if anything) to ship.</td></tr>
     </tbody>
 </table>
 
 <pre><code class="language-json">{
-  "name": "@bcgov/skill-example-skill",
+  "name": "@bcgov/example-skill",
   "version": "0.1.0",
   "publishConfig": { "registry": "https://npm.pkg.github.com" }
 }</code></pre>

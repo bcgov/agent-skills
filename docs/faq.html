@@ -1049,6 +1049,17 @@
     <p style="margin-bottom: 0;">The format is interoperable with GitHub Copilot, Claude, and other agents that load <code>SKILL.md</code> manifests. See <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> for the broader ecosystem and <a href="spec.html">our spec</a> for the exact rules this repo enforces.</p>
 </div>
 
+<h2 id="how-to-wire-up">How do I point my agent at an installed skill?</h2>
+
+<div class="card">
+    <p>Because the package name (<code>@bcgov/&lt;name&gt;</code>) matches the manifest <code>name</code>, you have two options:</p>
+    <ul>
+        <li><strong>Point your agent at the whole <code>@bcgov</code> scope (recommended).</strong> Set <code>chat.agentSkillsLocations</code> in VS Code Copilot (or <code>claude --add-dir node_modules/@bcgov</code> for Claude Code) to <code>node_modules/@bcgov</code> and every installed <code>@bcgov/*</code> skill auto-discovers &mdash; new installs picked up on the next reload, no per-skill wiring.</li>
+        <li><strong>Symlink one skill at a time.</strong> For agents that scan a fixed folder, symlink the installed package into <code>.github/skills/&lt;name&gt;/</code> (Copilot), <code>.claude/skills/&lt;name&gt;/</code> (Claude Code), or whichever location your agent reads. Folder name and package name match, so the link is one-to-one.</li>
+    </ul>
+    <p style="margin-bottom: 0;">Full snippets &mdash; bash, PowerShell, copy fallback, and the GitHub Actions form &mdash; live on <a href="consume.html#step-4-wire-up">Consume &rarr; Step 4</a>.</p>
+</div>
+
 <h2 id="why-bcgov-specific">Why does this repo only host BC Gov–specific skills?</h2>
 
 <div class="card">
