@@ -6,9 +6,8 @@ name: PR
 #   2. lint-tests — formats, lints, and unit-tests the tooling that produces
 #      skills (scripts/, tests/, pyproject.toml). Runs after fork-gate: if the
 #      generator is broken, validating skill output is meaningless.
-#   3. skills     — validates the SKILL.md profiles the PR changed and
-#      enforces that every changed publishable skill has its package.json
-#      version bumped. Gated on lint-tests passing.
+#   3. skills     — validates the SKILL.md profiles the PR changed. Gated on
+#      lint-tests passing.
 #   4. results    — always runs (`if: always()`), needs every other job, and
 #      fails if any of them failed or was cancelled. This is the SINGLE
 #      required status check on `main`, so we can add or rename jobs in this
@@ -88,11 +87,6 @@ jobs:
 
       - name: Validate changed skills
         run: uv run python scripts/validate_skill.py --base "origin/${{ github.base_ref }}"
-
-      - name: Check version bumps on changed skills
-        env:
-          BASE_REF: origin/${{ github.base_ref }}
-        run: bash .github/scripts/check-version-bumps.sh
 
   # 3. Aggregator. Always runs (even if upstream jobs failed or were cancelled)
   #    and fails if any required job failed or was cancelled. Branch protection

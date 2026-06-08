@@ -1,18 +1,16 @@
 # SKILL.md Spec
 
-Every skill profile in this repository is described by a `SKILL.md` manifest and
-a `package.json`, both validated by the PR check.
+Every skill profile in this repository is described by a `SKILL.md` manifest,
+validated by the PR check.
 
 A skill lives in its own directory under one of two roots — `skills/` for
 contributed skills, or `.github/skills/` for the repo's own operational
-meta-skills. Both are validated against this spec the same way; only the root
-`skills/` tree is published to npm (the meta-skills stay internal to the repo):
+meta-skills. Both are validated against this spec the same way:
 
 ```
 skills/<skill-name>/            # contributed skills
 .github/skills/<skill-name>/    # the repo's own meta-skills
-├── SKILL.md        # manifest (this spec)
-└── package.json    # published name + version
+└── SKILL.md        # manifest (this spec)
 ```
 
 ## 1. Frontmatter (required)
@@ -28,8 +26,8 @@ mandatory:
 **`name`** must be kebab-case — lowercase letters and digits in
 hyphen-separated groups, with no leading, trailing, or consecutive hyphens
 (`^[a-z0-9]+(-[a-z0-9]+)*$`) — at most **64 characters**, and must **exactly
-match the skill's directory name** (so the manifest, the folder, and the npm
-package all line up).
+match the skill's directory name** (so the manifest and the folder line up,
+since consumers wire skills in by folder name).
 
 **`description`** is the only metadata an agent sees when routing, so keep it
 specific. It must be at most **1024 characters** and contain **no angle
@@ -39,9 +37,6 @@ injected.
 Only the following frontmatter keys are allowed; any other key is rejected:
 `name`, `description`, `owner`, `tags`, `license`, `allowed-tools`,
 `compatibility`, `metadata`. Of these, `owner` and `tags` are recommended.
-
-> The published **version is not in the frontmatter** — it lives in
-> `package.json` (see §4) as the single source of truth.
 
 ```yaml
 ---
@@ -103,39 +98,7 @@ nested subdirectories (e.g. `references/REFERENCE.md`, not
 predictable for the agent to locate. The validator fails any nested resource
 directory.
 
-## 3. package.json (required for published skills)
-
-A contributed skill under `skills/` ships as a versioned npm package, so it MUST
-include a `package.json` beside its `SKILL.md`. The repo's own meta-skills under
-`.github/skills/` are never published, so a `package.json` is **optional** there
-— and validated only when one is present. These fields are mandatory whenever a
-`package.json` exists:
-
-| Field     | Type   | Notes                                                       |
-| --------- | ------ | ----------------------------------------------------------- |
-| `name`    | string | The package name, scoped — `@bcgov/<skill-name>`. Must match the manifest `name` so the install path doubles as the agent skill directory. |
-| `version` | string | Semver (`MAJOR.MINOR.PATCH`). The source of truth for releases. |
-
-```json
-{
-  "name": "@bcgov/example-skill",
-  "version": "0.1.0",
-  "publishConfig": { "registry": "https://npm.pkg.github.com" }
-}
-```
-
-**The entire skill directory is bundled automatically.** Everything under
-`skills/<skill-name>/` — `SKILL.md`, plus any `scripts/`, `references/`,
-`assets/`, or other files — ships in the package. Do **not** add a `files` field:
-that turns npm into a whitelist and would silently drop directories. To exclude
-scratch files, add an optional `.npmignore` inside the skill folder (it must not
-exclude `SKILL.md`).
-
-The publish workflow reads `name` + `version` from this file and skips any
-version already published. Bumping `version` is what ships a new release — see
-[CONTRIBUTING.md](../CONTRIBUTING.md) for the `npm version` flow.
-
-## 4. What the PR check enforces
+## 3. What the PR check enforces
 
 For each **changed** skill the validator confirms:
 
@@ -154,11 +117,6 @@ For each **changed** skill the validator confirms:
 9. The whole `SKILL.md` is at most 500 lines.
 10. Any bundled `scripts/`, `references/`, or `assets/` directory is flat — no
     nested subdirectories.
-11. For a published skill under `skills/`, a `package.json` sits beside the
-    manifest with a valid `name` and a semver `version`, and does **not** pin a
-    `files` whitelist (the whole directory bundles automatically). For a
-    meta-skill under `.github/skills/`, a missing `package.json` is allowed; if
-    one is present it is held to the same rules.
 
 Run the same check locally before opening a PR:
 

@@ -3,7 +3,7 @@
 
 <h1>Pipeline &amp; Governance</h1>
 
-<p>How a change moves from a pull request to a published npm package, and the controls that keep that path safe.</p>
+<p>How a change moves from a pull request into the live catalogue, and the controls that keep that path safe.</p>
 
 <h2 id="overview">Lifecycle at a glance</h2>
 
@@ -12,11 +12,10 @@
                                                           │
                                             merge to main │
                                                           ▼
-                                                   publish workflow
-                                                          │
-                                                          ▼
-                                            @bcgov/&lt;name&gt;@x.y.z
-                                            on GitHub Packages</code></pre>
+                                          npx skills add bcgov/agent-skills
+                                          reads the new content directly
+                                          from the repo — no publish step,
+                                          no registry, no auth token.</code></pre>
 </div>
 
 <h2 id="pr-workflow">PR workflow: <code>.github/workflows/pr.yml</code></h2>
@@ -42,26 +41,23 @@
     </div>
 </div>
 
-<h2 id="publish-workflow">Publish workflow: <code>.github/workflows/publish.yml</code></h2>
+<h2 id="distribution">Distribution: how a merged change becomes installable</h2>
 
-<p>Triggered on push to <code>main</code> with the path filter <code>skills/**</code>, so docs-only or workflow-only merges don't run it. The workflow grants <code>packages: write</code> only to this job and uses the built-in <code>GITHUB_TOKEN</code>. No PAT, no org secret.</p>
+<p>There is no publish step. Once a PR merges to <code>main</code>, the new content is the released content. Consumers install it (or pick up the update) with:</p>
 
 <div class="card">
-    <ol>
-        <li>Check out the full history (<code>fetch-depth: 0</code>) so the diff against the previous commit works.</li>
-        <li>Install <code>uv</code> (third-party action, SHA-pinned per the policy below).</li>
-        <li><strong>Re-validate every skill</strong> with <code>uv run python scripts/validate_skill.py --all</code>, the final check before any package bytes leave the repo.</li>
-        <li>Set up Node with the registry pointed at <code>https://npm.pkg.github.com</code> and the <code>@bcgov</code> scope. (The exact Node version lives in the workflow file.)</li>
-        <li>Run <a href="https://github.com/bcgov/agent-skills/blob/main/.github/scripts/publish-changed-skills.sh" target="_blank" rel="noopener"><code>.github/scripts/publish-changed-skills.sh</code></a>, which diffs <code>BEFORE_SHA</code> against <code>HEAD_SHA</code>, walks each changed skill, and runs <code>npm publish --tag latest</code> with <code>NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}</code>. The <code>--tag latest</code> keeps the <code>latest</code> dist-tag pointed at the just-shipped version, so <code>npm install @bcgov/&lt;name&gt;</code> (no version) always pulls the most recent release.</li>
-    </ol>
+<pre style="margin: 0;"><code>npx skills add bcgov/agent-skills              # all public skills
+npx skills add bcgov/agent-skills --skill X    # just one</code></pre>
 </div>
+
+<p>The <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener"><code>skills</code> CLI</a> reads the repo directly (no registry, no token), walks every <code>SKILL.md</code>, and copies the containing folder into the right place for the chosen agent. See <a href="consume.html">Consume a Skill</a> for the full flow, including pinning to a specific commit.</p>
 
 <div class="alert alert-info">
     <div class="alert-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
     </div>
     <div>
-        <strong>Already-published versions are skipped.</strong> A merge that doesn't bump a skill's <code>package.json</code> <code>version</code> is a no-op for that skill, so re-publishing is impossible by design. Bumping the version is what ships a release. See <a href="contribute.html#versioning">Versioning</a>.
+        <strong>No version metadata to maintain.</strong> The merge-to-<code>main</code> state of the repo is the release; nothing in the repo carries a version number, and there is no "publish failed because the version wasn't bumped" failure mode.
     </div>
 </div>
 
@@ -115,17 +111,16 @@ uses: actions/setup-node@v&lt;major&gt;</code></pre>
 <div class="card">
     <ul>
         <li><strong>PR workflow:</strong> top-level <code>permissions: contents: read</code>. Every job is read-only; nothing here needs to write back to the repo.</li>
-        <li><strong>Publish workflow:</strong> <code>contents: read</code> + <code>packages: write</code>. The write scope is granted only on the path that actually ships packages.</li>
         <li><strong>Dependabot auto-merge:</strong> <code>contents: write</code> + <code>pull-requests: write</code>. Required to approve and auto-merge, but the merge itself still has to clear the <code>results</code> gate.</li>
     </ul>
+    <p style="margin-bottom: 0;">There is no publish workflow and no <code>packages: write</code> token anywhere in this repo &mdash; distribution happens client-side via <code>npx skills add</code> reading the repo directly.</p>
 </div>
 
 <h2 id="references">References in the repo</h2>
 
-<p>Everything described above lives in three directories. Trust the directories themselves rather than the file names inside them, so this page doesn't go stale every time a file is added, renamed, or split:</p>
+<p>Everything described above lives in two directories. Trust the directories themselves rather than the file names inside them, so this page doesn't go stale every time a file is added, renamed, or split:</p>
 
 <ul>
-    <li><a href="https://github.com/bcgov/agent-skills/tree/main/.github/workflows" target="_blank" rel="noopener"><code>.github/workflows/</code></a>: PR validation, publish-on-merge, Dependabot auto-merge, docs deploy.</li>
-    <li><a href="https://github.com/bcgov/agent-skills/tree/main/.github/scripts" target="_blank" rel="noopener"><code>.github/scripts/</code></a>: the helper scripts the workflows call, so workflow YAML stays short and reviewable.</li>
+    <li><a href="https://github.com/bcgov/agent-skills/tree/main/.github/workflows" target="_blank" rel="noopener"><code>.github/workflows/</code></a>: PR validation, Dependabot auto-merge, docs deploy.</li>
     <li><a href="https://github.com/bcgov/agent-skills/tree/main/scripts" target="_blank" rel="noopener"><code>scripts/</code></a>: the Python validator and its tests.</li>
 </ul>

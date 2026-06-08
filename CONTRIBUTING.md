@@ -25,20 +25,16 @@ per machine — see [GitHub's docs](https://docs.github.com/en/authentication/ma
 2. **Add or update a skill** — for a new skill, first confirm no [upstream
    catalog](#before-adding-a-new-skill-check-upstream-catalogs-first) already
    covers it. Then follow [spec/SKILL_SPEC.md](spec/SKILL_SPEC.md) and start
-   from [templates/SKILL.md](templates/SKILL.md) +
-   [templates/package.json](templates/package.json).
-3. **Bump the version** — if you're changing an existing skill, raise its
-   `version` in that skill's `package.json` (see below). New skills start at
-   `0.1.0`.
-4. **Validate locally** — `uv run python scripts/validate_skill.py skills/<name>/SKILL.md`.
-5. **Open a pull request** — describe what the skill does and why it's useful.
-6. **Pass the checks** — the PR workflow validates the skills your branch
+   from [templates/SKILL.md](templates/SKILL.md).
+3. **Validate locally** — `uv run python scripts/validate_skill.py skills/<name>/SKILL.md`.
+4. **Open a pull request** — describe what the skill does and why it's useful.
+5. **Pass the checks** — the PR workflow validates the skills your branch
    changed (diffed against the base branch).
-7. **Merge** — once the `results` check is green and your branch is up to date
+6. **Merge** — once the `results` check is green and your branch is up to date
    with `main`, the PR can be merged (squash or merge commit; rebase is
-   disabled). The publish workflow then ships any bumped versions as npm
-   packages. Review is encouraged but not gated by the ruleset — see
-   [Review expectations](#review-expectations).
+   disabled). Consumers pick up the change the next time they run
+   `npx skills add bcgov/agent-skills`. Review is encouraged but not gated by
+   the ruleset — see [Review expectations](#review-expectations).
 
 ## Before adding a new skill: check upstream catalogs first
 
@@ -49,16 +45,20 @@ makes it ambiguous which one consumers should install.
 
 Check these first:
 
-1. **[Microsoft Agent Skills catalog](https://microsoft.github.io/skills/#agents)**
+1. **[The Agent Skills Directory](https://www.skills.sh/)** — a
+   vendor-neutral directory of agent skills aggregated across publishers. Good
+   first stop for a broad sweep before drilling into the publisher-specific
+   catalogs below.
+2. **[Microsoft Agent Skills catalog](https://microsoft.github.io/skills/#agents)**
    — a large catalog of skills covering Azure SDKs, Microsoft Foundry, M365,
    Entra, Azure Resource Manager, plus cross-cutting workflows (`azure-prepare`,
    `azure-deploy`, `azure-validate`, `azure-cost`, `microsoft-docs`, `kql`,
    `mcp-builder`, `cloud-solution-architect`, and others).
-2. **[Anthropic's `anthropics/skills`](https://github.com/anthropics/skills)** —
+3. **[Anthropic's `anthropics/skills`](https://github.com/anthropics/skills)** —
    reference skills for document work (`pdf`, `docx`, `xlsx`, `pptx`) and other
    patterns, plus material on the SKILL.md format this repo follows (see also
    [agentskills.io](https://agentskills.io)).
-3. **[awesome-copilot](https://github.com/github/awesome-copilot)** — the
+4. **[awesome-copilot](https://github.com/github/awesome-copilot)** — the
    community-curated index of skills, prompts, custom agents, and hooks; it
    also distributes vendor plugin catalogs (M365 Agents Toolkit, Power BI,
    Oracle-to-PostgreSQL, Spark, WorkIQ, and others) so one check covers them.
@@ -81,13 +81,13 @@ will ask for it otherwise.
 
 ## Skill structure
 
-Each skill lives in its own directory. The whole directory is bundled into the
-published package, so put everything the skill needs alongside its manifest:
+Each skill lives in its own directory. The whole directory is what consumers
+install with `npx skills add`, so put everything the skill needs alongside its
+manifest:
 
 ```
 skills/<skill-name>/
 ├── SKILL.md        # required: the manifest
-├── package.json    # required: published name + version
 ├── scripts/        # optional: executable helpers
 ├── references/     # optional: heavy detail
 └── assets/         # optional: templates & resources
@@ -98,26 +98,8 @@ an H1 title and the seven required sections (Use When, Don't Use When, Workflow,
 Rules, Examples, Edge Cases, References). `name` must be kebab-case (≤64 chars)
 and match the skill's directory name; `description` must be ≤1024 chars with no
 angle brackets. Keep the manifest under 500 lines and any `scripts/`,
-`references/`, or `assets/` directory flat (one level deep).
-
-`package.json` holds the published package `name` (`@bcgov/<name>`) and
-the `version`. **The version lives only here — not in `SKILL.md`** — so there's
-one source of truth and no drift. See the spec for the full definition.
-
-## Versioning
-
-Skills are published as npm packages, so use [semver](https://semver.org/) and
-bump the version with npm from inside the skill directory:
-
-```bash
-cd skills/<your-skill>
-npm version patch   # bug fix / wording tweak   → 0.1.0 → 0.1.1
-npm version minor   # new capability, compatible → 0.1.1 → 0.2.0
-npm version major   # breaking change            → 0.2.0 → 1.0.0
-```
-
-The publish workflow **skips any version already published**, so a merge only
-ships a release when the version has been bumped.
+`references/`, or `assets/` directory flat (one level deep). See the spec for
+the full definition.
 
 ## Tooling
 
@@ -130,7 +112,6 @@ make format     # auto-format Python (2-space indent, double quotes)
 make lint       # lint Python with ruff + workflow YAML with yamllint
 make test       # run the validator unit tests
 make validate   # validate every skill
-make pack       # dry-run each publishable skill's npm package
 ```
 
 Python is formatted and linted with [ruff](https://docs.astral.sh/ruff/),
@@ -163,12 +144,7 @@ jobs in three phases:
    - the body has an H1 title,
    - all seven required sections are present and non-empty,
    - the manifest is at most 500 lines,
-   - any bundled `scripts/`, `references/`, or `assets/` directory is flat,
-   - a `package.json` sits beside the manifest with a valid `name` and a semver
-     `version`, and no `files` whitelist (the whole skill folder bundles
-     automatically). `package.json` is required for publishable skills under
-     `skills/`; for meta-skills under `.github/skills/` it is optional, and
-     only validated when present.
+   - any bundled `scripts/`, `references/`, or `assets/` directory is flat.
 3. **results** — always runs, depends on the other three, and fails if any of
    them failed or was cancelled. It is designed to be the single required
    status check on `main` so adding or renaming jobs in `pr.yml` doesn't

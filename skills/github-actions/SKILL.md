@@ -76,7 +76,7 @@ tags: [github-actions, ci, cd, security, bcgov, devops]
 - **OIDC cloud login fails with `AADSTS70021: No matching federated identity record found` (Azure) or `Not authorized to perform sts:AssumeRoleWithWebIdentity` (AWS)** → the cloud-side federated-credential subject claim doesn't match the workflow's actual `sub`. Print the runtime `sub` from inside the deploy job (decode `$ACTIONS_ID_TOKEN_REQUEST_TOKEN`, or check the provider action's debug output with `ACTIONS_STEP_DEBUG: true`) and update the Federated Identity Credential / IAM trust to match — typically `repo:OWNER/REPO:environment:NAME` for environment-gated deploys, `repo:OWNER/REPO:ref:refs/heads/main` for branch-gated, or `repo:OWNER/REPO:pull_request` for PR-time runs (rarely granted). **Never** unblock by adding a `client-secret` / `aws-access-key-id` — that silently regresses the deploy to a stored credential.
 
 ## References
-**This repo is the canonical worked example.** Read `.github/workflows/pr.yml`, `.github/workflows/publish.yml`, `.github/workflows/pages.yml`, and `.github/workflows/dependabot-auto-merge.yml` first — they implement every pattern above, fully commented.
+**This repo is the canonical worked example.** Read `.github/workflows/pr.yml`, `.github/workflows/pages.yml`, and `.github/workflows/dependabot-auto-merge.yml` first — they implement every pattern above, fully commented.
 
 See [references/REFERENCE.md](./references/REFERENCE.md) for an annotated end-to-end PR workflow with fork-gate + aggregator, a publish workflow with version-skip and least-privilege scoping, the Dependabot config + auto-merge pair, an OIDC cloud-login worked example (Azure / AWS) with a federated-credential subject-claim cookbook, a `permissions:` scope lookup table, a pinning-style decision matrix, the branch-protection / ruleset settings checklist, and a threat-model section mapping each rule to the attack it defends against (tag hijack, fork-PR token exfil, script injection, `pull_request_target` abuse, PAT sprawl, long-lived cloud-secret exfil).
 
@@ -86,4 +86,3 @@ For broader topics that live elsewhere, prefer these upstream skills / docs inst
 - Hardening guidance from GitHub itself → [Security hardening for GitHub Actions](https://docs.github.com/actions/security-guides/security-hardening-for-github-actions)
 - OIDC-to-Azure federation for keyless deploys → upstream Microsoft `azure-prepare` / `azure-deploy` skills (if installed)
 - Authoring the skill profile this workflow ships → `.github/skills/skill-author`
-- Bumping a skill's version before publish → `.github/skills/skill-release`

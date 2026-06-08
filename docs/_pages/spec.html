@@ -3,7 +3,7 @@
 
 <h1>SKILL.md Spec</h1>
 
-<p>Every skill in this repo is described by a <code>SKILL.md</code> manifest and (for published skills) a <code>package.json</code>. Both are validated by the PR check. This page summarises what the validator enforces. The authoritative document lives at <a href="https://github.com/bcgov/agent-skills/blob/main/spec/SKILL_SPEC.md" target="_blank" rel="noopener"><code>spec/SKILL_SPEC.md</code></a>.</p>
+<p>Every skill in this repo is described by a <code>SKILL.md</code> manifest, validated by the PR check. This page summarises what the validator enforces. The authoritative document lives at <a href="https://github.com/bcgov/agent-skills/blob/main/spec/SKILL_SPEC.md" target="_blank" rel="noopener"><code>spec/SKILL_SPEC.md</code></a>.</p>
 
 <div class="alert alert-info">
     <div class="alert-icon">
@@ -16,12 +16,11 @@
 
 <h2 id="layout">Directory layout</h2>
 
-<p>A skill lives in its own directory under one of two roots. Both are validated against this spec; only <code>skills/</code> is published.</p>
+<p>A skill lives in its own directory under one of two roots. Both are validated against this spec; only <code>skills/</code> is part of the public catalogue.</p>
 
-<pre><code>skills/&lt;skill-name&gt;/            # contributed skills (published)
-.github/skills/&lt;skill-name&gt;/    # the repo's own meta-skills (not published)
+<pre><code>skills/&lt;skill-name&gt;/            # contributed skills (public catalogue)
+.github/skills/&lt;skill-name&gt;/    # the repo's own meta-skills (internal)
 ├── SKILL.md        # required: the manifest
-├── package.json    # required for skills/, optional for .github/skills/
 ├── scripts/        # optional, flat — one level deep
 ├── references/     # optional, flat
 └── assets/         # optional, flat</code></pre>
@@ -68,7 +67,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </div>
     <div>
-        The published <strong>version is not in the frontmatter</strong>. It lives in <code>package.json</code> (see <a href="#package-json">§3</a>), and that's the one place to set it; don't add a <code>version</code> field to <code>SKILL.md</code>.
+        <strong>There is no <code>version</code> field.</strong> The merge-to-<code>main</code> state of the repo is the released state, and <code>npx skills add</code> reads the repo directly. Don't add a <code>version</code> field to <code>SKILL.md</code> or anywhere else in the skill.
     </div>
 </div>
 
@@ -118,38 +117,7 @@ See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;<
 
 <p>Skills may ship <code>scripts/</code>, <code>references/</code>, and <code>assets/</code> directories beside the <code>SKILL.md</code>. These must stay <strong>exactly one level deep</strong>: flat files only, no nested subdirectories. Use <code>references/REFERENCE.md</code>, not <code>references/api/v1/REFERENCE.md</code>. A flat layout keeps on-demand resources predictable for the agent to locate.</p>
 
-<h2 id="package-json">3. <code>package.json</code> (required for published skills)</h2>
-
-<p>A contributed skill under <code>skills/</code> ships as a versioned npm package, so it MUST include a <code>package.json</code> beside its <code>SKILL.md</code>. Meta-skills under <code>.github/skills/</code> are never published, so a <code>package.json</code> is <strong>optional</strong> there, and validated only when one is present.</p>
-
-<table>
-    <thead>
-        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
-    </thead>
-    <tbody>
-        <tr><td><code>name</code></td><td>string</td><td>Scoped package name (<code>@bcgov/&lt;skill-name&gt;</code>) &mdash; must match the manifest <code>name</code> so the install path doubles as the agent skill directory.</td></tr>
-        <tr><td><code>version</code></td><td>string</td><td>Semver (<code>MAJOR.MINOR.PATCH</code>). The publish workflow reads this to decide what (if anything) to ship.</td></tr>
-    </tbody>
-</table>
-
-<pre><code class="language-json">{
-  "name": "@bcgov/example-skill",
-  "version": "0.1.0",
-  "publishConfig": { "registry": "https://npm.pkg.github.com" }
-}</code></pre>
-
-<div class="alert alert-warning">
-    <div class="alert-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    </div>
-    <div>
-        <strong>The entire skill directory is bundled automatically.</strong> Do <strong>not</strong> add a <code>files</code> field; that turns npm into a whitelist and would silently drop directories. To exclude scratch files, add a <code>.npmignore</code> inside the skill folder (it must not exclude <code>SKILL.md</code>).
-    </div>
-</div>
-
-<p>The publish workflow reads <code>name</code> + <code>version</code> from this file and skips any version already published. Bumping <code>version</code> is what ships a new release. See <a href="contribute.html#versioning">Contribute → Versioning</a> for the <code>npm version</code> flow.</p>
-
-<h2 id="validator-checks">4. What the PR check enforces</h2>
+<h2 id="validator-checks">3. What the PR check enforces</h2>
 
 <p>For each <strong>changed</strong> skill, the validator confirms all of the following. If this list and the validator script (<a href="https://github.com/bcgov/agent-skills/blob/main/scripts/validate_skill.py" target="_blank" rel="noopener"><code>scripts/validate_skill.py</code></a>) ever disagree, the script wins. If you see a failure on a PR, this list maps directly to the checks:</p>
 
@@ -165,7 +133,6 @@ See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;<
         <li>None of those required sections is empty.</li>
         <li>The whole <code>SKILL.md</code> is at most 500 lines.</li>
         <li>Any bundled <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory is flat (no nested subdirectories).</li>
-        <li>For a published skill under <code>skills/</code>, a <code>package.json</code> sits beside the manifest with a valid <code>name</code> and a semver <code>version</code>, and does <strong>not</strong> pin a <code>files</code> whitelist. For a meta-skill under <code>.github/skills/</code>, a missing <code>package.json</code> is allowed; if one is present it is held to the same rules.</li>
     </ol>
 </div>
 

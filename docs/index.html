@@ -1039,8 +1039,8 @@
 <div class="hero">
     <span class="badge badge-gold">Open Source</span>
     <h1 id="bc-gov-agent-skills">BC Gov Agent Skills</h1>
-    <p>A shared catalogue of agent skill profiles for the BC Government: versioned, validated in CI, and published to GitHub Packages so any team can install the same skill into any compatible agent.</p>
-    <p style="font-size: 0.95rem; opacity: 0.9; max-width: 52rem; margin: 0.75rem auto 0;">Each skill is a <code style="background:rgba(255,255,255,0.18);color:#fff;">SKILL.md</code> manifest plus a <code style="background:rgba(255,255,255,0.18);color:#fff;">package.json</code>, bundled with any helper scripts, references, or assets it needs. Every change goes through a pull request, runs through the validator, and ships as a semver-tagged npm package under <code style="background:rgba(255,255,255,0.18);color:#fff;">@bcgov/&lt;name&gt;</code>.</p>
+    <p>A shared catalogue of agent skill profiles for the BC Government: validated in CI on every PR, installable into any compatible agent with one <code style="background:rgba(255,255,255,0.18);color:#fff;">npx skills add</code> command.</p>
+    <p style="font-size: 0.95rem; opacity: 0.9; max-width: 52rem; margin: 0.75rem auto 0;">Each skill is a <code style="background:rgba(255,255,255,0.18);color:#fff;">SKILL.md</code> manifest bundled with any helper scripts, references, or assets it needs. Every change goes through a pull request and runs through the validator; once a PR merges, the next <code style="background:rgba(255,255,255,0.18);color:#fff;">npx skills add</code> picks it up &mdash; no registry, no auth token, no version metadata to maintain.</p>
 
     <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
         <a href="consume.html" style="text-decoration: none;">
@@ -1074,7 +1074,7 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--bc-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
             </div>
             <h3 id="i-want-to-use-a-skill" style="margin-top: 0; color: var(--bc-blue);">I want to use a skill</h3>
-            <p style="font-size: 0.9rem; color: var(--text-secondary);">Install a published skill into Copilot, Claude, or any other agent that loads <code>SKILL.md</code>: <code>.npmrc</code>, GitHub CLI for auth, <code>npm install</code>, then symlink into your agent's skill folder. Works locally and from GitHub Actions.</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Install a skill into Copilot, Claude Code, Cursor, Cline, or any other agent that loads <code>SKILL.md</code>. One command: <code>npx skills add bcgov/agent-skills</code> picks the target agent, copies the skill folder into the right place, and you're done.</p>
             <div class="card-arrow">Consume guide →</div>
         </div>
     </a>
@@ -1084,7 +1084,7 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </div>
             <h3 id="i-want-to-add-a-skill" style="margin-top: 0; color: var(--bc-blue);">I want to add a skill</h3>
-            <p style="font-size: 0.9rem; color: var(--text-secondary);">Scaffold from the template, write the seven required sections, run <code>make validate</code>, open a PR. Merge ships it to GitHub Packages.</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Scaffold from the template, write the seven required sections, run <code>make validate</code>, open a PR. Merge makes it installable.</p>
             <div class="card-arrow">Contribute guide →</div>
         </div>
     </a>
@@ -1094,7 +1094,7 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </div>
             <h3 id="i-want-to-know-how-it-works" style="margin-top: 0; color: var(--bc-blue);">I want to know how it works</h3>
-            <p style="font-size: 0.9rem; color: var(--text-secondary);">PR validation, publish pipeline, branch protection, signed commits, fork gating, Dependabot auto-merge: how the controls actually fit together.</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">PR validation, branch protection, signed commits, fork gating, Dependabot auto-merge: how the controls actually fit together.</p>
             <div class="card-arrow">Pipeline &amp; governance →</div>
         </div>
     </a>
@@ -1104,14 +1104,14 @@
 
 <div class="grid grid-2">
     <div class="card">
-        <h3 id="published-skills" style="margin-top:0;">Published skills</h3>
-        <p>Published as versioned npm packages on <strong>GitHub Packages</strong> under the <code>@bcgov</code> scope. Install with <code>npm install @bcgov/&lt;name&gt;@&lt;version&gt;</code>, or drop the version to track the <code>latest</code> dist-tag the publish workflow updates on every release.</p>
-        <p>The live list — every package and every version — lives on GitHub Packages itself, so the catalogue scales as more skills ship.</p>
-        <p style="margin-top: 1rem;"><a href="https://github.com/orgs/bcgov/packages?repo_name=agent-skills" target="_blank" rel="noopener"><strong>Browse published packages →</strong></a> &nbsp;·&nbsp; <a href="catalog.html#published">Catalogue page</a></p>
+        <h3 id="public-skills" style="margin-top:0;">Public skills</h3>
+        <p>Everything under <a href="https://github.com/bcgov/agent-skills/tree/main/skills" target="_blank" rel="noopener"><code>skills/</code></a> is the public catalogue. Install one with <code>npx skills add bcgov/agent-skills --skill &lt;name&gt;</code>, or grab the lot with <code>npx skills add bcgov/agent-skills</code>.</p>
+        <p>There is no version metadata to maintain: the merge-to-<code>main</code> state of this repo <em>is</em> the released state, so the catalogue is always as fresh as the last green PR.</p>
+        <p style="margin-top: 1rem;"><a href="catalog.html#published"><strong>Browse the catalogue page →</strong></a> &nbsp;·&nbsp; <a href="https://github.com/bcgov/agent-skills/tree/main/skills" target="_blank" rel="noopener">View <code>skills/</code> on GitHub</a></p>
     </div>
     <div class="card card-gold">
         <h3 id="meta-skills" style="margin-top:0;">Meta-skills</h3>
-        <p>Skills that operate on this repo itself: scaffolding a new skill, validating the spec, releasing a version. Validated against the same spec but <strong>not published</strong>; they ship with the repository so agents working in a checkout can use them.</p>
+        <p>Skills that operate on this repo itself: scaffolding a new skill and validating the spec. Validated against the same spec, but they live inside the repo for agents working in a checkout rather than being part of the public catalogue.</p>
         <p style="margin-top: 1rem; margin-bottom: 0;"><a href="catalog.html#meta-skills"><strong>See the meta-skills in the catalogue →</strong></a> &nbsp;·&nbsp; <a href="https://github.com/bcgov/agent-skills/tree/main/.github/skills" target="_blank" rel="noopener">Browse <code>.github/skills/</code> in the repo →</a></p>
     </div>
 </div>
@@ -1126,8 +1126,8 @@
         <p>When a team figures out how to do something within BC Gov constraints, that should live in a skill instead of a Confluence page nobody finds. The next team starts from a working answer rather than another fresh investigation.</p>
     </div>
     <div class="card">
-        <h3 id="versioned-releases-no-silent-updates" style="margin-top:0;">Versioned releases, no silent updates</h3>
-        <p>Every skill ships as a semver-tagged npm package, and consumers pin a version. Updates land deliberately, on each consuming team's schedule. There is no shared "latest" channel that quietly changes agent behaviour for everyone at once.</p>
+        <h3 id="validated-releases-no-silent-updates" style="margin-top:0;">Validated releases, no silent updates</h3>
+        <p>Every change runs through the same validator before it can merge, so the catalogue stays consistent. Consumers pull updates explicitly when they re-run <code>npx skills add</code> &mdash; nothing in the agent's environment changes without that command.</p>
     </div>
 </div>
     </main>
