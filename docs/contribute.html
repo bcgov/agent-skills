@@ -1085,51 +1085,31 @@
 <div class="card">
     <ol>
         <li><strong>Branch.</strong> Create a feature branch in this repo for your change.</li>
-        <li><strong>Add or update a skill.</strong> For a new skill, follow <a href="spec.html">the spec</a> and start from <a href="https://github.com/bcgov/agent-skills/tree/main/templates" target="_blank" rel="noopener"><code>templates/SKILL.md</code></a> + <a href="https://github.com/bcgov/agent-skills/blob/main/templates/package.json" target="_blank" rel="noopener"><code>templates/package.json</code></a>.</li>
-        <li><strong>Bump the version.</strong> If you're changing an existing skill, raise its <code>version</code> in that skill's <code>package.json</code> (see <a href="#versioning">Versioning</a>). New skills start at <code>0.1.0</code>.</li>
+        <li><strong>Add or update a skill.</strong> For a new skill, follow <a href="spec.html">the spec</a> and start from <a href="https://github.com/bcgov/agent-skills/blob/main/templates/SKILL.md" target="_blank" rel="noopener"><code>templates/SKILL.md</code></a>.</li>
         <li><strong>Validate locally:</strong> <code>uv run python scripts/validate_skill.py skills/&lt;name&gt;/SKILL.md</code>.</li>
         <li><strong>Open a pull request.</strong> Describe what the skill does and why it's useful.</li>
         <li><strong>Pass the checks.</strong> The PR workflow validates the skills your branch changed (diffed against the base branch).</li>
-        <li><strong>Merge.</strong> Once <code>results</code> is green and your branch is up to date with <code>main</code>, the PR can be merged. The publish workflow then ships any bumped versions as npm packages.</li>
+        <li><strong>Merge.</strong> Once <code>results</code> is green and your branch is up to date with <code>main</code>, the PR can be merged. Consumers pick up the change the next time they run <code>npx skills add bcgov/agent-skills</code>.</li>
     </ol>
 </div>
 
 <h2 id="skill-structure">Skill structure</h2>
 
-<p>Each skill lives in its own directory. The whole directory is bundled into the published package, so put everything the skill needs alongside its manifest:</p>
+<p>Each skill lives in its own directory. The whole directory is what consumers install with <code>npx skills add</code>, so put everything the skill needs alongside its manifest:</p>
 
 <pre><code>skills/&lt;skill-name&gt;/
 ├── SKILL.md        # required: the manifest
-├── package.json    # required: published name + version
 ├── scripts/        # optional: executable helpers
 ├── references/     # optional: heavy detail
 └── assets/         # optional: templates &amp; resources</code></pre>
 
-<div class="grid grid-2">
-    <div class="card">
-        <h3 id="skillmd" style="margin-top:0;"><code>SKILL.md</code></h3>
-        <p>Mandatory <code>name</code> + <code>description</code> frontmatter, then a body with an H1 title and the seven required sections (<em>Use When</em>, <em>Don't Use When</em>, <em>Workflow</em>, <em>Rules</em>, <em>Examples</em>, <em>Edge Cases</em>, <em>References</em>).</p>
-        <p style="margin-bottom: 0;"><code>name</code> must be kebab-case (≤64 chars) and match the skill's directory name; <code>description</code> must be ≤1024 chars with no angle brackets. Keep the manifest under 500 lines; any <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory must be flat (one level deep).</p>
-    </div>
-    <div class="card card-gold">
-        <h3 id="packagejson" style="margin-top:0;"><code>package.json</code></h3>
-        <p>Holds the published package <code>name</code> (<code>@bcgov/&lt;name&gt;</code>) and the <code>version</code>. <strong>The version lives only here, not in <code>SKILL.md</code></strong>, so the two can't drift apart.</p>
-        <p style="margin-bottom: 0;">For meta-skills under <code>.github/skills/</code>, a <code>package.json</code> is optional (they aren't published). For contributed skills under <code>skills/</code> it is required.</p>
-    </div>
+<div class="card">
+    <h3 id="skillmd" style="margin-top:0;"><code>SKILL.md</code></h3>
+    <p>Mandatory <code>name</code> + <code>description</code> frontmatter, then a body with an H1 title and the seven required sections (<em>Use When</em>, <em>Don't Use When</em>, <em>Workflow</em>, <em>Rules</em>, <em>Examples</em>, <em>Edge Cases</em>, <em>References</em>).</p>
+    <p style="margin-bottom: 0;"><code>name</code> must be kebab-case (≤64 chars) and match the skill's directory name; <code>description</code> must be ≤1024 chars with no angle brackets. Keep the manifest under 500 lines; any <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory must be flat (one level deep).</p>
 </div>
 
 <p>See <a href="spec.html">the spec</a> for the full definition of every required field and what the validator checks.</p>
-
-<h2 id="versioning">Versioning</h2>
-
-<p>Skills are published as npm packages, so use <a href="https://semver.org/" target="_blank" rel="noopener">semver</a> and bump the version with npm from inside the skill directory:</p>
-
-<pre><code>cd skills/&lt;your-skill&gt;
-npm version patch   # bug fix / wording tweak   → 0.1.0 → 0.1.1
-npm version minor   # new capability, compatible → 0.1.1 → 0.2.0
-npm version major   # breaking change            → 0.2.0 → 1.0.0</code></pre>
-
-<p>The publish workflow <strong>skips any version already published</strong>, so a merge only ships a release when the version has been bumped.</p>
 
 <h2 id="tooling">Tooling</h2>
 
@@ -1138,8 +1118,7 @@ npm version major   # breaking change            → 0.2.0 → 1.0.0</code></pre
 <pre><code>make format     # auto-format Python (2-space indent, double quotes)
 make lint       # lint Python with ruff + workflow YAML with yamllint
 make test       # run the validator unit tests
-make validate   # validate every skill
-make pack       # dry-run each publishable skill's npm package</code></pre>
+make validate   # validate every skill</code></pre>
 
 <p>Python is formatted and linted with <a href="https://docs.astral.sh/ruff/" target="_blank" rel="noopener">ruff</a> (2-space indentation, double quotes, docstrings required on every function). Workflow YAML under <code>.github/workflows/</code> is linted with <a href="https://yamllint.readthedocs.io/" target="_blank" rel="noopener">yamllint</a>. Run <code>make format</code> before pushing.</p>
 

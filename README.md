@@ -4,8 +4,8 @@
 good pattern once, and every team across BC Gov can build on it.
 
 Every skill is validated against a common spec on every pull request. Once it
-merges, the same change ships as a versioned **npm package** that you install
-and upgrade with the npm tooling you already use.
+merges to `main`, it is immediately installable into any compatible agent with
+one `npx skills add` command — no registry, no auth, no version pinning.
 
 Browse the live catalogue at **<https://bcgov.github.io/agent-skills/>**.
 
@@ -17,9 +17,9 @@ Browse the live catalogue at **<https://bcgov.github.io/agent-skills/>**.
 | ---------- | ----- |
 | Understand why skills look the way they do | [Why this structure?](#why-this-structure) |
 | Find my way around the repo | [Repository layout](#repository-layout) |
-| Use a published skill in my agent | [Consume a skill](#consume-a-skill) |
+| Install a skill into my agent | [Consume a skill](#consume-a-skill) |
 | Write and submit a new skill | [Add a skill](#add-a-skill) |
-| See how a merge becomes a release | [How publishing works](#how-publishing-works) |
+| See how a merge reaches consumers | [How distribution works](#how-distribution-works) |
 | Run the validator and tooling locally | [Local development](#local-development) |
 
 > New here? Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for access and
@@ -69,24 +69,21 @@ agent-skills/
 ├── README.md                       # you are here
 ├── CONTRIBUTING.md                 # access, branch rules, PR flow
 ├── pyproject.toml / uv.lock        # validator + test deps (managed with uv)
-├── Makefile                        # make format / lint / test / validate / pack
+├── Makefile                        # make format / lint / test / validate
 ├── .yamllint                       # workflow YAML style
 │
 ├── spec/
 │   └── SKILL_SPEC.md               # authoritative manifest spec
 ├── templates/
 │   ├── SKILL.md                    # copy this to start a new skill
-│   ├── package.json                # copy this — holds the skill's name + version
 │   └── references/
 │       └── REFERENCE.md            # template for an optional reference doc
 │
-├── skills/                         # contributed skills — validated AND published
-│   └── <skill>/                    # one folder per skill (browse the live site for the catalogue)
+├── skills/                         # contributed skills — the shared catalogue
+│   └── <skill>/                    # one folder per skill (browse the live site)
 │
 ├── scripts/
-│   ├── validate_skill.py           # the spec validator (CI + local)
-│   ├── install-skill.sh            # consumer installer (macOS / Linux)
-│   └── install-skill.ps1           # consumer installer (Windows / PowerShell)
+│   └── validate_skill.py           # the spec validator (CI + local)
 ├── tests/
 │   └── test_validate_skill.py
 │
@@ -96,239 +93,57 @@ agent-skills/
     ├── CODEOWNERS                  # add ownership rules to gate review (see CONTRIBUTING.md)
     ├── dependabot.yml              # cadence + grouping + Conventional-Commit prefixes
     ├── pull_request_template.md
-    ├── scripts/                    # helpers called from workflows
-    ├── skills/                     # the repo's own meta-skills (validated, never published)
+    ├── skills/                     # the repo's own meta-skills (validated, not part of the public catalogue)
     │   └── <meta-skill>/
-    └── workflows/                  # PR validation, publish-on-merge, docs deploy, Dependabot auto-merge, etc.
+    └── workflows/                  # PR validation, docs deploy, Dependabot auto-merge, etc.
 ```
 
 Worth flagging about the layout above:
 
-- **`skills/` is what ships.** Each folder there is bundled and published to
-  npm whenever its `package.json` `version` is bumped. Browse
+- **`skills/` is the public catalogue.** Each folder there is what consumers
+  install with `npx skills add`. Browse
   [the live catalogue](https://bcgov.github.io/agent-skills/) for the current
   set; the [`skills/`](skills/) directory is the authoritative source.
 - **`.github/skills/` is internal.** The meta-skills in that directory follow
-  the same spec, but they exist to help contributors. They're validated, never
-  published.
-- **`docs/` is the public catalogue.** Pushes to `main` that touch `docs/**`
-  rebuild and deploy the site through the Pages workflow under
+  the same spec, but they exist to help contributors. They're validated by the
+  same PR check but are not part of the public catalogue.
+- **`docs/` is the public catalogue site.** Pushes to `main` that touch
+  `docs/**` rebuild and deploy the site through the Pages workflow under
   [`.github/workflows/`](.github/workflows/).
 
 ---
 
 ## Consume a skill
 
-Skills install like any other npm dependency, so your existing
-`npm` / `npx` / `npm update` flow already manages them, upgrades included.
-
-### Quick install (recommended)
-
-One line. The installer checks for the GitHub CLI (and installs it if missing),
-adds the `read:packages` scope, writes the project `.npmrc`, runs `npm install`,
-**and offers to wire the skill into your agent** (GitHub Copilot, Claude Code,
-or a custom location for Codex / Cursor / Cline / etc.). Re-run any time to
-install another skill or upgrade an existing one.
-
-> **Supply-chain note &mdash; pin to an immutable ref in production.**
-> The forms below default to `main`, which is mutable: the installer code can
-> change between when you read it and when you run it. For CI, scripted setup,
-> or any environment where reproducibility matters, replace `main` with a
-> 40-char commit SHA you have audited &mdash; pick the latest green commit from
-> [bcgov/agent-skills/commits/main/scripts](https://github.com/bcgov/agent-skills/commits/main/scripts).
-> This is the same advice our own [`github-actions`](skills/github-actions/SKILL.md)
-> skill gives for third-party Actions.
-
-**macOS / Linux** (interactive prompts work because of process substitution):
+Skills install with the [`skills` CLI](https://skills.sh) (from
+[vercel-labs/skills](https://github.com/vercel-labs/skills)). It clones this
+repo, finds every `SKILL.md`, and copies the matching skill folders \u2014 plus
+their `scripts/`, `references/`, and `assets/` \u2014 into the right location for
+your agent.
 
 ```bash
-# Pinned (recommended) -- replace <SHA> with a 40-char commit you have reviewed:
-bash <(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.sh)
+# Install the whole catalogue into your current project (interactive picker
+# for the target agent: GitHub Copilot, Claude Code, Cursor, Cline, etc.).
+npx skills add bcgov/agent-skills
 
-# Rolling (convenient for one-off installs -- may change without notice):
-bash <(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/main/scripts/install-skill.sh)
+# Install just one skill, non-interactively, into GitHub Copilot.
+npx skills add bcgov/agent-skills --skill azure-networking --agent github-copilot --yes
+
+# Install globally (skill is available across all of an agent's projects).
+npx skills add bcgov/agent-skills --skill azure-networking --agent claude-code --global
+
+# List the skills available in this catalogue without installing anything.
+npx skills add bcgov/agent-skills --list
 ```
 
-**Windows (PowerShell)** &mdash; works on PS 5.1 and PS 7, no `ExecutionPolicy`
-change needed (in-memory scriptblocks aren't restricted):
+The CLI handles everything: no `.npmrc`, no GitHub token, no registry config.
+**Re-run any time to pick up newer versions** \u2014 the CLI re-copies the latest
+`main`. Pin to a specific commit by using a GitHub URL:
+`npx skills add https://github.com/bcgov/agent-skills/tree/<SHA>`.
 
-```powershell
-# Pinned (recommended) -- replace <SHA> with a 40-char commit you have reviewed:
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.ps1)))
-
-# Rolling (convenient for one-off installs -- may change without notice):
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/main/scripts/install-skill.ps1)))
-```
-
-Prefer to audit the script before running it? Pin to a SHA, download, read,
-then run. **When you pin to a commit SHA, GitHub serves the exact blob that
-was committed at that ref &mdash; the SHA itself is the integrity anchor; there
-is no separate published hash to compare against.** Recording a `sha256sum`
-is useful for your own change-management trail (so re-deploys can detect
-drift), not as a first-time verification step.
-
-```bash
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.sh -o install-skill.sh
-less install-skill.sh                              # review the code
-sha256sum install-skill.sh                         # optional: record with your deploy ticket
-bash install-skill.sh
-```
-
-```powershell
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.ps1 -OutFile install-skill.ps1
-Get-Content install-skill.ps1 | more               # review the code
-Get-FileHash install-skill.ps1 -Algorithm SHA256   # optional: record with your deploy ticket
-.\install-skill.ps1
-```
-
-Non-interactive form (CI or scripted setup &mdash; passing a positional skill
-name skips the wire-up prompt automatically):
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.sh) azure-networking 0.1.1
-```
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.ps1))) -Skill azure-networking -Version 0.1.1
-```
-
-**Agent compatibility today** &mdash; only Copilot and Claude Code load `SKILL.md`
-natively via the [agentskills.io](https://agentskills.io) standard. For Codex
-CLI, Cursor, Cline, Continue.dev, and others, pick "Custom location" and the
-script symlinks the skill into the folder your tool already scans.
-
-Prefer to understand or run each step yourself? The manual flow is below.
-
-### Manual install
-
-**1. Point the `@bcgov` scope at GitHub Packages** by adding an `.npmrc` next
-to your agent's `package.json`:
-
-```ini
-@bcgov:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-`${NODE_AUTH_TOKEN}` is read from the environment at install time, so the token
-itself never lands on disk or in version control.
-
-**2. Provide the token.** GitHub Packages requires authentication even for
-public packages, so `NODE_AUTH_TOKEN` needs a credential with the
-`read:packages` scope. Pick whichever fits where the install runs:
-
-- **Local development: let the [GitHub CLI](https://cli.github.com/) manage
-  it.** No PAT to create, store, or rotate; the CLI already holds a token for
-  you.
-
-  *Prerequisite:* install and sign in to the GitHub CLI once
-  ([install guide](https://github.com/cli/cli#installation)). On Windows:
-  `winget install --id GitHub.cli`. On macOS: `brew install gh`. Then
-  `gh auth login` and verify with `gh auth status`.
-
-  One-time, add the `read:packages` scope to the CLI's token:
-
-  ```bash
-  gh auth refresh -h github.com -s read:packages
-  ```
-
-  Then, in each shell session you install from:
-
-  ```powershell
-  # PowerShell
-  $env:NODE_AUTH_TOKEN = gh auth token
-  ```
-
-  ```bash
-  # bash / zsh
-  export NODE_AUTH_TOKEN=$(gh auth token)
-  ```
-
-  `gh auth logout` revokes npm access at the same time, so credential
-  management stays in one place.
-
-- **GitHub Actions (consuming workflow): use the built-in `GITHUB_TOKEN`.** No
-  extra secret needed:
-
-  ```yaml
-  jobs:
-    install-skills:
-      runs-on: ubuntu-24.04
-      permissions:
-        contents: read
-        packages: read
-      steps:
-        - uses: actions/checkout@v6
-        - uses: actions/setup-node@v6
-          with:
-            node-version: "24"
-        - run: npm ci
-          env:
-            NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  ```
-
-**3. Install.** Pin a version for reproducible pulls:
-
-```bash
-npm install @bcgov/<name>@0.1.0
-```
-
-Or omit the version to track the `latest` dist-tag, which the publish
-workflow updates on every release:
-
-```bash
-npm install @bcgov/<name>
-```
-
-It installs to `node_modules/@bcgov/<name>/` with `SKILL.md` at the root
-plus whatever else the skill ships, exactly as it lives in this repo.
-
-**4. Wire it into your agent.** The SKILL.md format follows the
-[agentskills.io](https://agentskills.io) open standard, so GitHub Copilot,
-Claude Code, Cursor, and other compatible agents can all read it. Because the
-package name (`@bcgov/<name>`) already matches the manifest `name`, you have
-two options:
-
-- **Point your agent at the whole scope (recommended).** Set the skills
-  location to `node_modules/@bcgov/` once and every installed `@bcgov/*` skill
-  shows up &mdash; no per-skill wiring, new installs picked up automatically:
-
-  ```jsonc
-  // .vscode/settings.json &mdash; GitHub Copilot in VS Code
-  { "chat.agentSkillsLocations": ["node_modules/@bcgov"] }
-  ```
-
-  ```bash
-  # Claude Code (project session)
-  claude --add-dir node_modules/@bcgov
-  ```
-
-- **Symlink one skill at a time.** If your agent only scans a fixed folder
-  (`.github/skills/`, `.claude/skills/`, `.agents/skills/`), symlink each
-  installed package in. Folder name and package name match, so the link is
-  one-to-one:
-
-  ```bash
-  ln -s ../../node_modules/@bcgov/azure-networking .github/skills/azure-networking
-  ln -s ../../node_modules/@bcgov/azure-networking .claude/skills/azure-networking
-  ```
-
-For anything else, point the loader directly at
-`node_modules/@bcgov/<name>/SKILL.md`. See
-[Consume &rarr; Step 4](https://bcgov.github.io/agent-skills/consume.html#step-4-wire-up)
-for PowerShell snippets, the GitHub Actions form, and troubleshooting.
-
-**5. Upgrade.** Because skills are plain npm packages:
-
-```bash
-npm outdated @bcgov/<name>        # see what's newer
-npm update @bcgov/<name>          # move within your semver range
-npm install @bcgov/<name>@0.2.0   # jump to an exact version
-```
-
-Use a semver range (e.g. `"^0.1.0"`) to pick up compatible updates on
-`npm update`, or pin an exact version to freeze it. Your lockfile keeps
-installs reproducible across the team.
+For consumers who want to wire skills in manually, every skill is a self-
+contained folder under [`skills/`](skills/) \u2014 copy it anywhere your agent
+scans for skills.
 
 ---
 
@@ -336,23 +151,18 @@ installs reproducible across the team.
 
 Once you have access set up, the loop looks like this:
 
-1. **Copy the templates** into a new folder:
+1. **Copy the template** into a new folder:
    ```bash
    mkdir -p skills/<your-skill>/references
    cp templates/SKILL.md skills/<your-skill>/SKILL.md
-   cp templates/package.json skills/<your-skill>/package.json
    ```
 2. **Fill in** the `SKILL.md` frontmatter and all seven sections; see
    [`spec/SKILL_SPEC.md`](spec/SKILL_SPEC.md).
-3. **Set the package name and version** in `package.json`
-   (`@bcgov/<your-skill>`, starting at `0.1.0`). The published version
-   lives only here; there is no `version` field in `SKILL.md` for it to drift
-   from.
-4. **Validate locally:**
+3. **Validate locally:**
    ```bash
    uv run python scripts/validate_skill.py skills/<your-skill>/SKILL.md
    ```
-5. **Open a PR from a branch in this repo** (forks are blocked by the
+4. **Open a PR from a branch in this repo** (forks are blocked by the
    `fork-gate` job). The PR check validates your changed skill automatically.
 
 > **Heads-up:** check an upstream catalogue (Microsoft Agent Skills, Anthropic
@@ -363,42 +173,23 @@ Once you have access set up, the loop looks like this:
 
 ---
 
-## How publishing works
+## How distribution works
 
-Each skill is its own npm package, and bumping `version` inside its
-**`package.json`** is what ships a release.
+There is no publish step. Skills ship the moment a PR merges to `main`:
 
-When a PR merges to `main`, [`publish.yml`](.github/workflows/publish.yml):
-
-1. Re-validates every skill.
-2. Finds the skills the merge changed (via git diff).
-3. Reads `name` + `version` from each one's `package.json` and runs
-   `npm publish --tag latest` — **unless that exact version is already
-   published**, in which case it's skipped. The `--tag latest` keeps the
-   `latest` dist-tag pointed at whatever this run shipped, so consumers who
-   `npm install @bcgov/<name>` (no version) get the most recent release.
-
-Three things shape how this works:
-
-- **The whole skill folder ships.** Everything under `skills/<name>/` —
-  `SKILL.md`, `package.json`, plus any `scripts/`, `references/`, or `assets/`
-  — is bundled, with no `files` list to maintain. To keep scratch files out,
-  add an optional `.npmignore` inside the folder (it must not exclude
-  `SKILL.md`).
-- **Where packages land:** GitHub Packages (`https://npm.pkg.github.com`)
-  under the `@bcgov` scope, authenticated with the workflow's built-in
-  `GITHUB_TOKEN`. No extra secrets.
-- **Dependabot keeps the tooling current.** Grouped, Conventional-Commit-
+- **`npx skills add` reads the repo directly.** It clones `bcgov/agent-skills`
+  at `main` (or whatever ref the consumer pins to), walks the `skills/` tree
+  for `SKILL.md` files, and copies the entire containing folder \u2014 manifest,
+  `scripts/`, `references/`, `assets/`, everything \u2014 into the agent\u2011specific
+  destination it picks for you. No registry, no auth, no version pinning
+  metadata to maintain.
+- **The PR check is the only gate.** Every change runs the validator on the
+  skills it touches; merge-to-`main` requires the `results` aggregator to be
+  green. Once a PR merges, the next `npx skills add` run sees the new content.
+- **Dependabot keeps the tooling current.** Grouped, Conventional-Commit\u2011
   prefixed PRs (cadence and ecosystems in
   [`.github/dependabot.yml`](.github/dependabot.yml)). Green Dependabot PRs
   auto-squash-merge themselves; red ones stay red until a human fixes them.
-
-> **Switching to the public npm registry** is a two-line change: drop the
-> `registry`/`scope` from `actions/setup-node` in
-> [`publish.yml`](.github/workflows/publish.yml) and the `publishConfig` from
-> each `package.json`, then publish with an `NPM_TOKEN`. Upside: consumers
-> install with no auth. Tradeoff: you give up GitHub Packages' tenant-scoped
-> access control.
 
 ---
 
@@ -414,7 +205,6 @@ make format     # auto-format Python (2-space indent, double quotes)
 make lint       # lint Python (ruff) AND workflow YAML (yamllint)
 make test       # run the validator unit tests
 make validate   # validate every skill against the spec
-make pack       # dry-run each publishable skill's npm package (no publish)
 ```
 
 Python style is enforced by [ruff](https://docs.astral.sh/ruff/) (2-space
@@ -423,7 +213,6 @@ Workflow YAML under `.github/workflows/` is linted by
 [yamllint](https://yamllint.readthedocs.io/) using `.yamllint` at the repo root.
 
 The meta-skills under [`.github/skills/`](.github/skills/) are part of the
-normal workflow. They take care of scaffolding, running the validator,
-and cutting a release on your behalf. Use them the same way you'd use any
-other skill in your agent. They're the fastest path from idea to a published
-skill.
+normal workflow. They take care of scaffolding new skills and running the
+validator on your behalf. Use them the same way you'd use any other skill in
+your agent &mdash; they're the fastest path from idea to a merged skill.

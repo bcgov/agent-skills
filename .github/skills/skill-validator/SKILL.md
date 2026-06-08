@@ -12,7 +12,6 @@ description: Validates skill profiles against the spec and explains how to fix f
 
 ## Don't Use When
 - The user wants to create a new skill from scratch → use `skill-author`.
-- The user wants to bump a version or publish → use `skill-release`.
 - The failure is a Python/tooling error unrelated to a skill's contents.
 
 ## Workflow
@@ -20,11 +19,10 @@ description: Validates skill profiles against the spec and explains how to fix f
 2. For everything, run `uv run python scripts/validate_skill.py --all`.
 3. To mirror CI on a branch, run `uv run python scripts/validate_skill.py --base origin/main`.
 4. Read each `- <message>` line under a failing file and map it to the offending section or field.
-5. Edit the `SKILL.md` or `package.json` to fix it, then re-run until the file shows `✓`.
+5. Edit the `SKILL.md` to fix it, then re-run until the file shows `✓`.
 
 ## Rules
 - Always re-run the validator after each fix rather than batching guesses. (Why: one fix can reveal or mask another, and the validator is fast.)
-- Always check both the `SKILL.md` and the sibling `package.json` on a failure. (Why: the validator reports manifest and package errors together for the same skill.)
 - Never edit `scripts/validate_skill.py` to make a skill pass. (Why: the spec is the contract; loosening the validator weakens every skill in the catalogue.)
 
 ## Examples
@@ -34,7 +32,7 @@ description: Validates skill profiles against the spec and explains how to fix f
 
 ## Edge Cases
 - If `--base` finds no changed skills → report that nothing changed; there is nothing to validate.
-- If the error is `missing package.json` → create one from `templates/package.json` beside the manifest before re-running.
+- If the error names a missing or empty section → add the section heading (verbatim) with at least one bullet of content and re-run.
 
 ## References
 See [spec/SKILL_SPEC.md](../../../spec/SKILL_SPEC.md) for what each check enforces and [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the PR-check summary.

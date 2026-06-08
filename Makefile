@@ -1,4 +1,4 @@
-.PHONY: setup validate test format lint pack
+.PHONY: setup validate test format lint
 
 # One-time (or after pulling new deps): install the Python tooling declared in
 # pyproject.toml into a uv-managed virtualenv. Running `uv run` also does this
@@ -24,13 +24,3 @@ format:
 lint:
 	uv run ruff check .
 	uv run yamllint .github/workflows
-
-# Dry-run the npm package for every publishable skill (CI does the real publish
-# on merge). Only the root skills/ tree publishes; the .github/skills/ meta-skills
-# are validated but never shipped, so they're excluded here.
-pack:
-	@for d in skills/*/; do \
-		[ -f "$$d/package.json" ] || continue; \
-		echo "== $$d =="; \
-		( cd "$$d" && npm pack --dry-run ); \
-	done

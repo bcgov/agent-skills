@@ -1052,12 +1052,8 @@
 <h2 id="how-to-wire-up">How do I point my agent at an installed skill?</h2>
 
 <div class="card">
-    <p>Because the package name (<code>@bcgov/&lt;name&gt;</code>) matches the manifest <code>name</code>, you have two options:</p>
-    <ul>
-        <li><strong>Point your agent at the whole <code>@bcgov</code> scope (recommended).</strong> Set <code>chat.agentSkillsLocations</code> in VS Code Copilot (or <code>claude --add-dir node_modules/@bcgov</code> for Claude Code) to <code>node_modules/@bcgov</code> and every installed <code>@bcgov/*</code> skill auto-discovers &mdash; new installs picked up on the next reload, no per-skill wiring.</li>
-        <li><strong>Symlink one skill at a time.</strong> For agents that scan a fixed folder, symlink the installed package into <code>.github/skills/&lt;name&gt;/</code> (Copilot), <code>.claude/skills/&lt;name&gt;/</code> (Claude Code), or whichever location your agent reads. Folder name and package name match, so the link is one-to-one.</li>
-    </ul>
-    <p style="margin-bottom: 0;">Full snippets &mdash; bash, PowerShell, copy fallback, and the GitHub Actions form &mdash; live on <a href="consume.html#step-4-wire-up">Consume &rarr; Step 4</a>.</p>
+    <p>You don't need to. <code>npx skills add bcgov/agent-skills</code> asks which agent you're using (or you can pass <code>--agent github-copilot</code>, <code>claude-code</code>, <code>cursor</code>, <code>cline</code>, <code>continue</code>, etc.) and copies the skill folder into the location that agent already reads. The next time the agent loads, the skill is there.</p>
+    <p style="margin-bottom: 0;">If your agent isn't on the supported list, see the <em>Manual install</em> section on <a href="consume.html#manual">Consume a Skill</a> for the <code>git clone</code> + <code>cp -r</code> fallback.</p>
 </div>
 
 <h2 id="why-bcgov-specific">Why does this repo only host BC Gov–specific skills?</h2>
@@ -1067,42 +1063,16 @@
     <p style="margin-bottom: 0;">What's missing upstream is the BC Gov–specific layer: Public Cloud Landing Zone constraints, internal services, policy-driven workflows, organisational conventions. That's the gap this repo fills, and the bar we apply when reviewing new skills.</p>
 </div>
 
-<h2 id="why-github-packages">Why GitHub Packages and not public npm?</h2>
+<h2 id="why-no-registry">Why doesn't this use a registry like npm or GitHub Packages?</h2>
 
 <div class="card">
-    <p>A few practical reasons line up:</p>
+    <p>The merge-to-<code>main</code> state of the repo is the release. <code>npx skills add</code> reads <code>SKILL.md</code> files straight out of the repo (via the <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">vercel-labs/skills</a> CLI) and copies the containing folder into the location each agent reads. That removes:</p>
     <ul>
-        <li><strong>Scoped to the org.</strong> The <code>@bcgov</code> scope on GitHub Packages lives inside the same GitHub org that owns the repo, which means the same access surface, audit log, and identity. Public npm would introduce a second account plus another set of tokens to rotate, and one more place where secrets can leak.</li>
-        <li><strong>Token-free CI.</strong> Workflows in this org can publish and consume with the built-in <code>GITHUB_TOKEN</code>: no bot account, no <code>NPM_TOKEN</code> secret to manage.</li>
-        <li><strong>Right audience.</strong> These skills encode BC Gov rules and aren't intended for general public consumption. GitHub Packages keeps the catalogue scoped to the people it was written for, without having to make it private.</li>
+        <li>A publish workflow and the <code>packages: write</code> token it would need.</li>
+        <li>An auth flow on the consumer side &mdash; no tokens, no <code>.npmrc</code>, no <code>gh auth login</code> just to read public skills.</li>
+        <li>Version metadata to keep in sync between the manifest and a package file.</li>
     </ul>
-</div>
-
-<h2 id="why-auth-for-public">Why does installing a "public" package still need authentication?</h2>
-
-<div class="card">
-    <p>This is a GitHub Packages behaviour, not a permission on this repo. The npm registry GitHub runs (<code>npm.pkg.github.com</code>) requires a token on every install, even for packages anyone can read. There is no anonymous read path.</p>
-    <p style="margin-bottom: 0;">The good news is that the token doesn't have to be sensitive: any GitHub user can mint a short-lived one with <code>gh auth refresh -h github.com -s read:packages</code>, and CI gets one for free via <code>secrets.GITHUB_TOKEN</code>. See <a href="consume.html#step-2-authenticate">Consume → Step 2</a>.</p>
-</div>
-
-<h2 id="why-gh-cli">Why the GitHub CLI instead of a personal access token?</h2>
-
-<div class="card">
-    <p>Both work; the CLI flow is just lower friction for a few practical reasons:</p>
-    <ul>
-        <li>One credential to manage (your <code>gh auth login</code>), not two.</li>
-        <li>Short-lived tokens by default; rotation is automatic when you re-authenticate.</li>
-        <li><code>gh auth logout</code> cleans up both your CLI session <em>and</em> any <code>NODE_AUTH_TOKEN</code> sourced from it.</li>
-        <li>No "is this PAT still in use anywhere?" graveyard to maintain.</li>
-    </ul>
-    <p style="margin-bottom: 0;">If your environment can't run <code>gh</code> (locked-down CI runner, etc.), a classic PAT with <code>read:packages</code> is a drop-in replacement.</p>
-</div>
-
-<h2 id="why-no-oidc">Why doesn't installation use OIDC?</h2>
-
-<div class="card">
-    <p>GitHub Packages doesn't accept OIDC for npm reads, only registry tokens. Inside GitHub Actions the built-in <code>GITHUB_TOKEN</code> is already the equivalent of a workflow-scoped, single-job credential, which is the value OIDC would otherwise provide. Outside Actions, the GitHub CLI fills the same role for humans.</p>
-    <p style="margin-bottom: 0;">If GitHub Packages ever exposes an OIDC-backed npm read flow, we'll switch the docs to it.</p>
+    <p style="margin-bottom: 0;">If you need a reproducible install, pin to a specific commit: <code>npx skills add https://github.com/bcgov/agent-skills/tree/&lt;sha&gt;</code>. See <a href="consume.html#pinning">Consume → Pinning</a>.</p>
 </div>
 
 <h2 id="why-no-fork">Why can't I open a PR from a fork?</h2>
@@ -1115,27 +1085,14 @@
 <h2 id="why-signed-commits">Why are signed commits required?</h2>
 
 <div class="card">
-    <p>The <code>main</code> branch ruleset requires it. Signed commits give us a verifiable chain of who actually authored each change in the history. That's useful for audit, for catching compromised credentials, and for keeping the published packages traceable back to a real contributor.</p>
+    <p>The <code>main</code> branch ruleset requires it. Signed commits give us a verifiable chain of who actually authored each change in the history. That's useful for audit, for catching compromised credentials, and for keeping the catalogue traceable back to a real contributor.</p>
     <p style="margin-bottom: 0;">SSH commit signing is the simplest path on a developer laptop. See <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification" target="_blank" rel="noopener">GitHub's signing docs</a>.</p>
-</div>
-
-<h2 id="version-bump">Why didn't my change publish a new version?</h2>
-
-<div class="card">
-    <p>The publish workflow skips any <code>version</code> already on GitHub Packages. If your PR edited a skill but didn't bump its <code>package.json</code> <code>version</code>, the merge ran the publish job successfully but no package was uploaded. Open a follow-up PR with <code>npm version patch</code> (or <code>minor</code>/<code>major</code>) inside the skill directory.</p>
-    <p style="margin-bottom: 0;">See <a href="contribute.html#versioning">Contribute → Versioning</a> for the full bump flow.</p>
-</div>
-
-<h2 id="why-no-version-in-skill-md">Why isn't there a <code>version</code> in <code>SKILL.md</code>?</h2>
-
-<div class="card">
-    <p>To keep one version, not two. The published version lives in <code>package.json</code>: that's the file npm reads when publishing, and the file the publish workflow checks before deciding whether to ship. Duplicating it in the manifest just creates a chance for the two to disagree (and a question of which one wins when they do), so the spec disallows it entirely.</p>
 </div>
 
 <h2 id="meta-skills">What are "meta-skills"?</h2>
 
 <div class="card">
-    <p>Skills that operate on this repository itself: scaffolding a new skill, validating the spec, releasing a version. They live under <code>.github/skills/</code> and are validated against the same <a href="spec.html">SKILL.md spec</a> as published skills, but <strong>they are not published</strong>. They ship with the repo so agents working in a checkout can use them.</p>
+    <p>Skills that operate on this repository itself: scaffolding a new skill and validating the spec. They live under <code>.github/skills/</code> and are validated against the same <a href="spec.html">SKILL.md spec</a> as the public catalogue, but they aren't part of it. They ship with the repo so agents working in a checkout can use them.</p>
     <p style="margin-bottom: 0;">Listed on the <a href="catalog.html#meta-skills">catalogue</a>.</p>
 </div>
 

@@ -8,17 +8,14 @@ Usage:
 
 Exit code 0 = all valid, 1 = one or more errors.
 
-Frontmatter is parsed with PyYAML and npmignore globbing with pathspec-free
-``fnmatch`` from the standard library — the validator leans on these instead of
-hand-rolled parsers so there is far less custom code to maintain.
+Frontmatter is parsed with PyYAML so the validator has no hand-rolled parser to
+maintain.
 """
 
 from __future__ import annotations
 
 import argparse
-import fnmatch
 import glob
-import json
 import os
 import re
 import subprocess
@@ -58,9 +55,6 @@ MAX_NAME_LEN = 64
 # injected into prompts/markup where '<...>' is interpreted as a tag.
 MAX_DESCRIPTION_LEN = 1024
 
-# package.json is the source of truth for a skill's published version.
-SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:[-+].+)?$")
-
 # A SKILL.md must stay skimmable: it is loaded into the agent's context up front,
 # so deep detail belongs in references/ that the agent pulls on demand. This is
 # the agent-skills standard cap on the whole manifest.
@@ -81,8 +75,7 @@ REQUIRED_SECTIONS = [
 RESOURCE_DIRS = ("scripts", "references", "assets")
 
 # Skills live under two roots: contributed skills in skills/, and the repo's own
-# operational meta-skills in .github/skills/. Both are validated identically;
-# only the root skills/ tree is published to npm (see publish.yml).
+# operational meta-skills in .github/skills/. Both are validated identically.
 SKILL_ROOTS = ("skills", ".github/skills")
 
 
@@ -282,7 +275,7 @@ def validate_name_matches_dir(data, skill_dir: str) -> list:
   """Check that the frontmatter ``name`` equals the skill's directory name.
 
   The name is the skill's identity — it must match the directory so the
-  manifest, the folder, and the npm package all line up.
+  manifest and the folder line up (consumers wire skills in by folder name).
 
   Args:
     data: The parsed frontmatter mapping, or ``None`` if parsing failed.
@@ -334,141 +327,15 @@ def validate_resource_layout(skill_dir: str) -> list:
   return errors
 
 
-def _check_package_dict(data) -> list:
-  """Validate a parsed package.json dict against the publishing requirements.
-
-  Args:
-    data: The object parsed from a skill's ``package.json``.
-
-  Returns:
-    A list of error strings for every requirement the package fails: a missing
-    ``name``, a missing or non-semver ``version``, or the presence of a
-    forbidden ``files`` whitelist. Empty when the package is valid.
-  """
-  errors = []
-  if not isinstance(data, dict):
-    return ["package.json must be a JSON object"]
-
-  name = data.get("name")
-  if not isinstance(name, str) or not name.strip():
-    errors.append("package.json missing required field 'name'")
-
-  version = data.get("version")
-  if not isinstance(version, str) or not version.strip():
-    errors.append("package.json missing required field 'version'")
-  elif not SEMVER_RE.match(version.strip()):
-    errors.append(f"package.json 'version' is not valid semver: '{version}'")
-
-  # A skill bundles its whole directory automatically. A 'files' whitelist
-  # would silently drop scripts/, references/, assets/, etc. — so forbid it.
-  if "files" in data:
-    errors.append(
-      "package.json must not set 'files' — a skill bundles its entire "
-      "directory automatically; remove the field"
-    )
-
-  return errors
-
-
-def _skill_md_excluded_by_npmignore(skill_dir: str) -> bool:
-  """Report whether an `.npmignore` would drop SKILL.md from the package.
-
-  Evaluates each non-comment line of the skill directory's ``.npmignore`` in
-  order against the bare filename ``SKILL.md``, honouring ``!`` negation, using
-  ``fnmatch`` glob semantics. This handles the realistic patterns authors write
-  to scope a top-level manifest (``SKILL.md``, ``*.md``, ``!SKILL.md``,
-  ``/SKILL.md``) but does **not** implement the full gitignore grammar:
-  ``**`` segments, directory-only ``foo/`` markers, and nested-path anchors are
-  not interpreted. Bundling-affecting patterns outside that subset are not
-  caught here.
-
-  Args:
-    skill_dir: Path to the directory that holds the skill's ``SKILL.md``.
-
-  Returns:
-    ``True`` if ``SKILL.md`` would be excluded from the published package,
-    ``False`` otherwise (including when no ``.npmignore`` is present).
-  """
-  path = os.path.join(skill_dir, ".npmignore")
-  if not os.path.isfile(path):
-    return False
-  ignored = False
-  with open(path, encoding="utf-8") as f:
-    for raw in f:
-      line = raw.strip()
-      if not line or line.startswith("#"):
-        continue
-      negated = line.startswith("!")
-      pattern = (line[1:] if negated else line).strip().lstrip("/")
-      if fnmatch.fnmatch("SKILL.md", pattern):
-        ignored = not negated
-  return ignored
-
-
-def _is_meta_skill(skill_dir: str) -> bool:
-  """Report whether a skill dir sits under the ``.github/skills`` meta-skill root.
-
-  Meta-skills are validated against the spec but never published to npm, so a
-  ``package.json`` is optional for them.
-
-  Args:
-    skill_dir: Path to the directory that holds the skill's ``SKILL.md``.
-
-  Returns:
-    ``True`` when ``skill_dir`` is inside a ``.github/skills`` tree, else
-    ``False``.
-  """
-  parts = skill_dir.replace(os.sep, "/").strip("/").split("/")
-  return any(
-    parts[i] == ".github" and parts[i + 1] == "skills" for i in range(len(parts) - 1)
-  )
-
-
-def validate_package(skill_dir: str) -> list:
-  """Validate the package.json that sits beside a skill's SKILL.md.
-
-  A ``package.json`` is required for publishable contributed skills under
-  ``skills/``. For the repo's own meta-skills under ``.github/skills/`` — which
-  are never published — it is optional, and only validated when present.
-
-  Args:
-    skill_dir: Path to the directory that holds the skill's ``SKILL.md`` and,
-      for publishable skills, its ``package.json``.
-
-  Returns:
-    A list of error strings covering a missing or malformed ``package.json``
-    and any ``.npmignore`` that would exclude ``SKILL.md``; empty when the
-    package is publishable or the skill is an unpublished meta-skill with no
-    ``package.json``.
-  """
-  path = os.path.join(skill_dir, "package.json")
-  if not os.path.isfile(path):
-    # Published skills must ship a package.json; the repo's own meta-skills
-    # under .github/skills/ are never published, so it's optional for them.
-    if _is_meta_skill(skill_dir):
-      return []
-    return ["missing package.json — it holds the skill's published name and version"]
-  with open(path, encoding="utf-8") as f:
-    raw = f.read()
-  try:
-    data = json.loads(raw)
-  except json.JSONDecodeError as exc:
-    return [f"package.json is not valid JSON: {exc}"]
-  errors = _check_package_dict(data)
-  if _skill_md_excluded_by_npmignore(skill_dir):
-    errors.append(".npmignore excludes SKILL.md — it must ship in the package")
-  return errors
-
-
 def validate_file(path: str) -> list:
-  """Validate a single SKILL.md file and its sibling package.json.
+  """Validate a single SKILL.md file against the spec.
 
   Args:
     path: Path to a ``SKILL.md`` file.
 
   Returns:
-    A combined list of every frontmatter, body, layout, and package error found;
-    empty when the skill is fully spec-compliant.
+    A combined list of every frontmatter, body, and layout error found; empty
+    when the skill is fully spec-compliant.
   """
   if not os.path.isfile(path):
     return [f"file not found: {path}"]
@@ -482,7 +349,6 @@ def validate_file(path: str) -> list:
   errors += validate_length(text)
   errors += validate_name_matches_dir(data, skill_dir)
   errors += validate_resource_layout(skill_dir)
-  errors += validate_package(skill_dir)
   return errors
 
 

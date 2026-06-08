@@ -3,11 +3,10 @@
 Run with: python -m pytest tests/ -q
 
 There is one test (or a focused cluster of tests) for every function in
-``scripts/validate_skill.py`` — the frontmatter parsers, the body and package
-checks, the filesystem/git discovery helpers, and the CLI entry point.
+``scripts/validate_skill.py`` — the frontmatter parsers, the body checks, the
+filesystem/git discovery helpers, and the CLI entry point.
 """
 
-import json
 import os
 import sys
 import tempfile
@@ -46,11 +45,6 @@ One sentence summary.
 See [references/REFERENCE.md](references/REFERENCE.md)
 """
 
-VALID_PKG = {
-  "name": "@bcgov/demo",
-  "version": "0.1.0",
-}
-
 
 # --- Test helpers -----------------------------------------------------------
 
@@ -70,7 +64,7 @@ def _errors(text):
 
 
 def _make_skill(root, name="demo"):
-  """Write a valid SKILL.md + package.json pair into a fresh skill directory.
+  """Write a valid SKILL.md into a fresh skill directory.
 
   Args:
     root: Directory in which to create the skill subdirectory.
@@ -83,8 +77,6 @@ def _make_skill(root, name="demo"):
   os.makedirs(skill_dir, exist_ok=True)
   with open(os.path.join(skill_dir, "SKILL.md"), "w", encoding="utf-8") as f:
     f.write(VALID)
-  with open(os.path.join(skill_dir, "package.json"), "w", encoding="utf-8") as f:
-    json.dump(dict(VALID_PKG), f)
   return skill_dir
 
 
@@ -320,132 +312,12 @@ def test_missing_name_and_description():
   """Both required frontmatter fields are reported when each is absent."""
   # Keep the frontmatter block closed (swap the keys out) so we exercise the
   # per-field check rather than the "block not closed" path.
-  text = VALID.replace("name: demo", "version: 0.1.0").replace(
-    "description: A demo skill.", "owner: someone"
+  text = VALID.replace("name: demo", "owner: nobody").replace(
+    "description: A demo skill.", "tags: [example]"
   )
   errs = _errors(text)
   assert any("name" in e for e in errs)
   assert any("description" in e for e in errs)
-
-
-# --- _check_package_dict ----------------------------------------------------
-
-
-def test_valid_package_has_no_errors():
-  """A package.json with a valid name and semver version passes cleanly."""
-  assert v._check_package_dict(dict(VALID_PKG)) == []
-
-
-def test_check_package_dict_rejects_non_dict():
-  """A non-object package payload is rejected."""
-  assert any("object" in e for e in v._check_package_dict(["not", "a", "dict"]))
-
-
-def test_package_missing_name():
-  """A package.json without a name field is reported."""
-  pkg = dict(VALID_PKG)
-  del pkg["name"]
-  assert any("name" in e for e in v._check_package_dict(pkg))
-
-
-def test_package_missing_version():
-  """A package.json without a version field is reported."""
-  pkg = dict(VALID_PKG)
-  del pkg["version"]
-  assert any("version" in e for e in v._check_package_dict(pkg))
-
-
-def test_package_bad_semver():
-  """A version string that is not valid semver is reported."""
-  pkg = dict(VALID_PKG)
-  pkg["version"] = "v1"
-  assert any("semver" in e for e in v._check_package_dict(pkg))
-
-
-def test_package_rejects_files_field():
-  """A 'files' whitelist is rejected because it breaks directory bundling."""
-  # A 'files' whitelist defeats whole-directory bundling, so it's forbidden.
-  pkg = dict(VALID_PKG)
-  pkg["files"] = ["SKILL.md"]
-  assert any("files" in e for e in v._check_package_dict(pkg))
-
-
-# --- _skill_md_excluded_by_npmignore ----------------------------------------
-
-
-def test_npmignore_absent_returns_false():
-  """With no .npmignore present, SKILL.md is not excluded."""
-  with tempfile.TemporaryDirectory() as d:
-    assert v._skill_md_excluded_by_npmignore(d) is False
-
-
-def test_npmignore_excludes_skill_md():
-  """An .npmignore that lists SKILL.md excludes it from the package."""
-  with tempfile.TemporaryDirectory() as d:
-    with open(os.path.join(d, ".npmignore"), "w", encoding="utf-8") as f:
-      f.write("SKILL.md\n")
-    assert v._skill_md_excluded_by_npmignore(d) is True
-
-
-def test_npmignore_negation_reincludes_skill_md():
-  """A later '!' negation re-includes a previously excluded SKILL.md."""
-  with tempfile.TemporaryDirectory() as d:
-    with open(os.path.join(d, ".npmignore"), "w", encoding="utf-8") as f:
-      f.write("*.md\n!SKILL.md\n")
-    assert v._skill_md_excluded_by_npmignore(d) is False
-
-
-# --- validate_package -------------------------------------------------------
-
-
-def test_validate_package_missing():
-  """A directory with no package.json is reported for a publishable skill."""
-  with tempfile.TemporaryDirectory() as d:
-    assert any("package.json" in e for e in v.validate_package(d))
-
-
-def test_validate_package_optional_for_meta_skill():
-  """A meta-skill under .github/skills/ with no package.json passes (not published)."""
-  with tempfile.TemporaryDirectory() as root:
-    meta = os.path.join(root, ".github", "skills", "skill-author")
-    os.makedirs(meta)
-    assert v.validate_package(meta) == []
-
-
-def test_validate_package_validated_when_present_for_meta_skill():
-  """A meta-skill that ships a package.json is still validated when present."""
-  with tempfile.TemporaryDirectory() as root:
-    meta = os.path.join(root, ".github", "skills", "skill-author")
-    os.makedirs(meta)
-    with open(os.path.join(meta, "package.json"), "w", encoding="utf-8") as f:
-      f.write("{ not json")
-    assert any("JSON" in e for e in v.validate_package(meta))
-
-
-def test_validate_package_invalid_json():
-  """A package.json that is not valid JSON is reported."""
-  with tempfile.TemporaryDirectory() as d:
-    with open(os.path.join(d, "package.json"), "w", encoding="utf-8") as f:
-      f.write("{ not json")
-    assert any("JSON" in e for e in v.validate_package(d))
-
-
-def test_validate_package_valid():
-  """A directory with a valid package.json passes with no errors."""
-  with tempfile.TemporaryDirectory() as d:
-    with open(os.path.join(d, "package.json"), "w", encoding="utf-8") as f:
-      json.dump(dict(VALID_PKG), f)
-    assert v.validate_package(d) == []
-
-
-def test_validate_package_npmignore_excludes_skill_md():
-  """A valid package.json with an excluding .npmignore is still reported."""
-  with tempfile.TemporaryDirectory() as d:
-    with open(os.path.join(d, "package.json"), "w", encoding="utf-8") as f:
-      json.dump(dict(VALID_PKG), f)
-    with open(os.path.join(d, ".npmignore"), "w", encoding="utf-8") as f:
-      f.write("SKILL.md\n")
-    assert any("npmignore" in e for e in v.validate_package(d))
 
 
 # --- validate_file ----------------------------------------------------------
@@ -496,7 +368,7 @@ def test_changed_modules_maps_changed_files_to_manifests():
     returncode = 0
     stdout = (
       "skills/demo/SKILL.md\n"
-      ".github/skills/meta/package.json\n"
+      ".github/skills/meta/SKILL.md\n"
       "README.md\n"
       "scripts/validate_skill.py\n"
     )

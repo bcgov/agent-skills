@@ -118,7 +118,7 @@ jobs:
 
 ## 2. Annotated Publish Workflow — path filter + version skip + least-privilege
 
-Publishes to GitHub Packages npm on a `main` push, but only when files under `skills/**` actually change, and skips any version already on the registry.
+A worked example of a workflow that publishes to GitHub Packages npm on a `main` push, but only when files under `skills/**` actually change, and skips any version already on the registry. (This is a generic teaching example; this repo doesn't actually publish to a registry.)
 
 ```yaml
 name: Publish
@@ -129,7 +129,7 @@ on:
     paths:
       - "skills/**"
       - ".github/workflows/publish.yml"
-      - ".github/scripts/publish-changed-skills.sh"
+      - "scripts/publish-changed-packages.sh"
 
 # Workflow scope: deny-all. The publish job opts in to the narrow scopes it needs.
 permissions: {}
@@ -153,12 +153,12 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@bcgov"
+          scope: "@example"
 
-      - name: Publish changed skills (version-skip if already on registry)
+      - name: Publish changed packages (version-skip if already on registry)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash .github/scripts/publish-changed-skills.sh
+        run: bash scripts/publish-changed-packages.sh
 ```
 
 **Why this shape**:
@@ -335,7 +335,7 @@ Start with `permissions: {}` (deny-all) at workflow scope, or `contents: read` i
 | `pull-requests: write`| Open/edit PRs, post review approvals, set labels                            | Bot-comment workflows, auto-approve, auto-merge.                            |
 | `issues: write`       | Open/edit issues, comment, label                                            | Triage bots, "stale" actions.                                               |
 | `packages: write`     | `npm publish`, push container images to GHCR                                | The publish job only.                                                       |
-| `packages: read`      | `npm install` private GHCR packages                                         | Any job that consumes `@bcgov/*` packages.                                  |
+| `packages: read`      | `npm install` private GHCR packages                                         | Any job that consumes `@your-org/*` packages.                                  |
 | `pages: write`        | Deploy to GitHub Pages via the official actions                             | Pages deploy job only.                                                      |
 | `id-token: write`     | Mint an OIDC token for federation (Pages, AWS, Azure, sigstore)             | OIDC-based deploys.                                                         |
 | `actions: read`       | Read other workflows' run metadata                                          | "Required workflows" reporting, run-skipping logic.                         |
@@ -447,7 +447,7 @@ The BC Gov standard is Conventional Commits with the scope derived from the prim
 | What changed                                                | Type + scope                                  | Example                                                                 |
 | ----------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- |
 | Edit a workflow file (`.github/workflows/<x>.yml`)          | `ci(workflows)`                               | `ci(workflows): add concurrency group to publish`                       |
-| Add a helper script under `.github/scripts/`                | `ci(scripts)`                                 | `ci(scripts): make publish-changed-skills.sh idempotent`                |
+| Add a helper script under `.github/scripts/`                | `ci(scripts)`                                 | `ci(scripts): make publish-changed-packages.sh idempotent`                |
 | Bump a pinned action SHA / tag                              | `deps(actions)`                               | `deps(actions): bump astral-sh/setup-uv to v8.3.0`                      |
 | Bump a runtime in a workflow (`node-version`, Python, etc.) | `ci(workflows)` (or `deps(<ecosystem>)`)      | `ci(workflows): pin Node to 24`                                         |
 | Bump `npm` / `pip` deps used by a workflow                  | `deps(npm)` / `deps(pip)`                     | `deps(npm): bump @octokit/core to 6.x`                                  |
