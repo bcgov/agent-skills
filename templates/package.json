@@ -1,5 +1,5 @@
 {
-  "name": "@bcgov/skill-my-skill-name",
+  "name": "@bcgov/my-skill-name",
   "version": "0.1.0",
   "description": "One line on what this skill does and when it should fire.",
   "publishConfig": {

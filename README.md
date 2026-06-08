@@ -76,13 +76,17 @@ agent-skills/
 │   └── SKILL_SPEC.md               # authoritative manifest spec
 ├── templates/
 │   ├── SKILL.md                    # copy this to start a new skill
-│   └── package.json                # copy this — holds the skill's name + version
+│   ├── package.json                # copy this — holds the skill's name + version
+│   └── references/
+│       └── REFERENCE.md            # template for an optional reference doc
 │
 ├── skills/                         # contributed skills — validated AND published
 │   └── <skill>/                    # one folder per skill (browse the live site for the catalogue)
 │
 ├── scripts/
-│   └── validate_skill.py           # the spec validator (CI + local)
+│   ├── validate_skill.py           # the spec validator (CI + local)
+│   ├── install-skill.sh            # consumer installer (macOS / Linux)
+│   └── install-skill.ps1           # consumer installer (Windows / PowerShell)
 ├── tests/
 │   └── test_validate_skill.py
 │
@@ -117,6 +121,86 @@ Worth flagging about the layout above:
 
 Skills install like any other npm dependency, so your existing
 `npm` / `npx` / `npm update` flow already manages them, upgrades included.
+
+### Quick install (recommended)
+
+One line. The installer checks for the GitHub CLI (and installs it if missing),
+adds the `read:packages` scope, writes the project `.npmrc`, runs `npm install`,
+**and offers to wire the skill into your agent** (GitHub Copilot, Claude Code,
+or a custom location for Codex / Cursor / Cline / etc.). Re-run any time to
+install another skill or upgrade an existing one.
+
+> **Supply-chain note &mdash; pin to an immutable ref in production.**
+> The forms below default to `main`, which is mutable: the installer code can
+> change between when you read it and when you run it. For CI, scripted setup,
+> or any environment where reproducibility matters, replace `main` with a
+> 40-char commit SHA you have audited &mdash; pick the latest green commit from
+> [bcgov/agent-skills/commits/main/scripts](https://github.com/bcgov/agent-skills/commits/main/scripts).
+> This is the same advice our own [`github-actions`](skills/github-actions/SKILL.md)
+> skill gives for third-party Actions.
+
+**macOS / Linux** (interactive prompts work because of process substitution):
+
+```bash
+# Pinned (recommended) -- replace <SHA> with a 40-char commit you have reviewed:
+bash <(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.sh)
+
+# Rolling (convenient for one-off installs -- may change without notice):
+bash <(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/main/scripts/install-skill.sh)
+```
+
+**Windows (PowerShell)** &mdash; works on PS 5.1 and PS 7, no `ExecutionPolicy`
+change needed (in-memory scriptblocks aren't restricted):
+
+```powershell
+# Pinned (recommended) -- replace <SHA> with a 40-char commit you have reviewed:
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.ps1)))
+
+# Rolling (convenient for one-off installs -- may change without notice):
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/main/scripts/install-skill.ps1)))
+```
+
+Prefer to audit the script before running it? Pin to a SHA, download, read,
+then run. **When you pin to a commit SHA, GitHub serves the exact blob that
+was committed at that ref &mdash; the SHA itself is the integrity anchor; there
+is no separate published hash to compare against.** Recording a `sha256sum`
+is useful for your own change-management trail (so re-deploys can detect
+drift), not as a first-time verification step.
+
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.sh -o install-skill.sh
+less install-skill.sh                              # review the code
+sha256sum install-skill.sh                         # optional: record with your deploy ticket
+bash install-skill.sh
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.ps1 -OutFile install-skill.ps1
+Get-Content install-skill.ps1 | more               # review the code
+Get-FileHash install-skill.ps1 -Algorithm SHA256   # optional: record with your deploy ticket
+.\install-skill.ps1
+```
+
+Non-interactive form (CI or scripted setup &mdash; passing a positional skill
+name skips the wire-up prompt automatically):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.sh) azure-networking 0.1.1
+```
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/bcgov/agent-skills/<SHA>/scripts/install-skill.ps1))) -Skill azure-networking -Version 0.1.1
+```
+
+**Agent compatibility today** &mdash; only Copilot and Claude Code load `SKILL.md`
+natively via the [agentskills.io](https://agentskills.io) standard. For Codex
+CLI, Cursor, Cline, Continue.dev, and others, pick "Custom location" and the
+script symlinks the skill into the folder your tool already scans.
+
+Prefer to understand or run each step yourself? The manual flow is below.
+
+### Manual install
 
 **1. Point the `@bcgov` scope at GitHub Packages** by adding an `.npmrc` next
 to your agent's `package.json`:
@@ -186,27 +270,60 @@ public packages, so `NODE_AUTH_TOKEN` needs a credential with the
 **3. Install.** Pin a version for reproducible pulls:
 
 ```bash
-npm install @bcgov/skill-<name>@0.1.0
+npm install @bcgov/<name>@0.1.0
 ```
 
 Or omit the version to track the `latest` dist-tag, which the publish
 workflow updates on every release:
 
 ```bash
-npm install @bcgov/skill-<name>
+npm install @bcgov/<name>
 ```
 
-It installs to `node_modules/@bcgov/skill-<name>/` with `SKILL.md` plus
-whatever else the skill ships, exactly as it lives in this repo. Point your
-agent's skill loader at that directory; the on-disk layout is preserved, so
-there's no extra wiring.
+It installs to `node_modules/@bcgov/<name>/` with `SKILL.md` at the root
+plus whatever else the skill ships, exactly as it lives in this repo.
 
-**4. Upgrade.** Because skills are plain npm packages:
+**4. Wire it into your agent.** The SKILL.md format follows the
+[agentskills.io](https://agentskills.io) open standard, so GitHub Copilot,
+Claude Code, Cursor, and other compatible agents can all read it. Because the
+package name (`@bcgov/<name>`) already matches the manifest `name`, you have
+two options:
+
+- **Point your agent at the whole scope (recommended).** Set the skills
+  location to `node_modules/@bcgov/` once and every installed `@bcgov/*` skill
+  shows up &mdash; no per-skill wiring, new installs picked up automatically:
+
+  ```jsonc
+  // .vscode/settings.json &mdash; GitHub Copilot in VS Code
+  { "chat.agentSkillsLocations": ["node_modules/@bcgov"] }
+  ```
+
+  ```bash
+  # Claude Code (project session)
+  claude --add-dir node_modules/@bcgov
+  ```
+
+- **Symlink one skill at a time.** If your agent only scans a fixed folder
+  (`.github/skills/`, `.claude/skills/`, `.agents/skills/`), symlink each
+  installed package in. Folder name and package name match, so the link is
+  one-to-one:
+
+  ```bash
+  ln -s ../../node_modules/@bcgov/azure-networking .github/skills/azure-networking
+  ln -s ../../node_modules/@bcgov/azure-networking .claude/skills/azure-networking
+  ```
+
+For anything else, point the loader directly at
+`node_modules/@bcgov/<name>/SKILL.md`. See
+[Consume &rarr; Step 4](https://bcgov.github.io/agent-skills/consume.html#step-4-wire-up)
+for PowerShell snippets, the GitHub Actions form, and troubleshooting.
+
+**5. Upgrade.** Because skills are plain npm packages:
 
 ```bash
-npm outdated @bcgov/skill-<name>        # see what's newer
-npm update @bcgov/skill-<name>          # move within your semver range
-npm install @bcgov/skill-<name>@0.2.0   # jump to an exact version
+npm outdated @bcgov/<name>        # see what's newer
+npm update @bcgov/<name>          # move within your semver range
+npm install @bcgov/<name>@0.2.0   # jump to an exact version
 ```
 
 Use a semver range (e.g. `"^0.1.0"`) to pick up compatible updates on
@@ -228,7 +345,7 @@ Once you have access set up, the loop looks like this:
 2. **Fill in** the `SKILL.md` frontmatter and all seven sections; see
    [`spec/SKILL_SPEC.md`](spec/SKILL_SPEC.md).
 3. **Set the package name and version** in `package.json`
-   (`@bcgov/skill-<your-skill>`, starting at `0.1.0`). The published version
+   (`@bcgov/<your-skill>`, starting at `0.1.0`). The published version
    lives only here; there is no `version` field in `SKILL.md` for it to drift
    from.
 4. **Validate locally:**
@@ -259,7 +376,7 @@ When a PR merges to `main`, [`publish.yml`](.github/workflows/publish.yml):
    `npm publish --tag latest` — **unless that exact version is already
    published**, in which case it's skipped. The `--tag latest` keeps the
    `latest` dist-tag pointed at whatever this run shipped, so consumers who
-   `npm install @bcgov/skill-<name>` (no version) get the most recent release.
+   `npm install @bcgov/<name>` (no version) get the most recent release.
 
 Three things shape how this works:
 

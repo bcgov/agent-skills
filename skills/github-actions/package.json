@@ -1,6 +1,6 @@
 {
-  "name": "@bcgov/skill-github-actions",
-  "version": "0.1.1",
+  "name": "@bcgov/github-actions",
+  "version": "0.1.2",
   "description": "BC Gov hardening defaults for GitHub Actions workflows — deny-all permissions baseline with per-job step-ups, first-party tag vs third-party SHA pinning, fork-gate, single results-aggregator required check, pinned ubuntu-24.04 runners, script-injection-safe env handling, and signed-commit ruleset interaction.",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

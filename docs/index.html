@@ -1040,7 +1040,7 @@
     <span class="badge badge-gold">Open Source</span>
     <h1 id="bc-gov-agent-skills">BC Gov Agent Skills</h1>
     <p>A shared catalogue of agent skill profiles for the BC Government: versioned, validated in CI, and published to GitHub Packages so any team can install the same skill into any compatible agent.</p>
-    <p style="font-size: 0.95rem; opacity: 0.9; max-width: 52rem; margin: 0.75rem auto 0;">Each skill is a <code style="background:rgba(255,255,255,0.18);color:#fff;">SKILL.md</code> manifest plus a <code style="background:rgba(255,255,255,0.18);color:#fff;">package.json</code>, bundled with any helper scripts, references, or assets it needs. Every change goes through a pull request, runs through the validator, and ships as a semver-tagged npm package under <code style="background:rgba(255,255,255,0.18);color:#fff;">@bcgov/skill-&lt;name&gt;</code>.</p>
+    <p style="font-size: 0.95rem; opacity: 0.9; max-width: 52rem; margin: 0.75rem auto 0;">Each skill is a <code style="background:rgba(255,255,255,0.18);color:#fff;">SKILL.md</code> manifest plus a <code style="background:rgba(255,255,255,0.18);color:#fff;">package.json</code>, bundled with any helper scripts, references, or assets it needs. Every change goes through a pull request, runs through the validator, and ships as a semver-tagged npm package under <code style="background:rgba(255,255,255,0.18);color:#fff;">@bcgov/&lt;name&gt;</code>.</p>
 
     <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
         <a href="consume.html" style="text-decoration: none;">
@@ -1074,7 +1074,7 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--bc-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
             </div>
             <h3 id="i-want-to-use-a-skill" style="margin-top: 0; color: var(--bc-blue);">I want to use a skill</h3>
-            <p style="font-size: 0.9rem; color: var(--text-secondary);">Install a published skill into your agent: <code>.npmrc</code>, GitHub CLI for auth, <code>npm install</code>. Works locally and from GitHub Actions.</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Install a published skill into Copilot, Claude, or any other agent that loads <code>SKILL.md</code>: <code>.npmrc</code>, GitHub CLI for auth, <code>npm install</code>, then symlink into your agent's skill folder. Works locally and from GitHub Actions.</p>
             <div class="card-arrow">Consume guide →</div>
         </div>
     </a>
@@ -1105,7 +1105,7 @@
 <div class="grid grid-2">
     <div class="card">
         <h3 id="published-skills" style="margin-top:0;">Published skills</h3>
-        <p>Published as versioned npm packages on <strong>GitHub Packages</strong> under the <code>@bcgov</code> scope. Install with <code>npm install @bcgov/skill-&lt;name&gt;@&lt;version&gt;</code>, or drop the version to track the <code>latest</code> dist-tag the publish workflow updates on every release.</p>
+        <p>Published as versioned npm packages on <strong>GitHub Packages</strong> under the <code>@bcgov</code> scope. Install with <code>npm install @bcgov/&lt;name&gt;@&lt;version&gt;</code>, or drop the version to track the <code>latest</code> dist-tag the publish workflow updates on every release.</p>
         <p>The live list — every package and every version — lives on GitHub Packages itself, so the catalogue scales as more skills ship.</p>
         <p style="margin-top: 1rem;"><a href="https://github.com/orgs/bcgov/packages?repo_name=agent-skills" target="_blank" rel="noopener"><strong>Browse published packages →</strong></a> &nbsp;·&nbsp; <a href="catalog.html#published">Catalogue page</a></p>
     </div>

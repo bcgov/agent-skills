@@ -113,12 +113,12 @@ include a `package.json` beside its `SKILL.md`. The repo's own meta-skills under
 
 | Field     | Type   | Notes                                                       |
 | --------- | ------ | ----------------------------------------------------------- |
-| `name`    | string | The package name, scoped — `@bcgov/skill-<skill-name>`.     |
+| `name`    | string | The package name, scoped — `@bcgov/<skill-name>`. Must match the manifest `name` so the install path doubles as the agent skill directory. |
 | `version` | string | Semver (`MAJOR.MINOR.PATCH`). The source of truth for releases. |
 
 ```json
 {
-  "name": "@bcgov/skill-example-skill",
+  "name": "@bcgov/example-skill",
   "version": "0.1.0",
   "publishConfig": { "registry": "https://npm.pkg.github.com" }
 }

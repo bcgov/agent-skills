@@ -47,7 +47,7 @@ See [references/REFERENCE.md](references/REFERENCE.md)
 """
 
 VALID_PKG = {
-  "name": "@bcgov/skill-demo",
+  "name": "@bcgov/demo",
   "version": "0.1.0",
 }
 

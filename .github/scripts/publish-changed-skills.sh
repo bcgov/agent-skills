@@ -13,7 +13,7 @@
 #   * Skips skill@version pairs already published to the registry.
 #   * Publishes with `--tag latest` so the `latest` dist-tag always points at
 #     the just-shipped version alongside the immutable version coordinate.
-#     Consumers can then `npm install @bcgov/skill-<name>` (no version) to
+#     Consumers can then `npm install @bcgov/<name>` (no version) to
 #     track the most recent release.
 #   * Keeps going after a per-skill failure and reports them all at the end,
 #     then exits non-zero so the workflow turns red. (One bad skill should not
