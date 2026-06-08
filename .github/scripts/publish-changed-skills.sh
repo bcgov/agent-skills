@@ -11,6 +11,10 @@
 #   * Skips directories without a package.json (validated-only meta-skills,
 #     or files outside any skill dir).
 #   * Skips skill@version pairs already published to the registry.
+#   * Publishes with `--tag latest` so the `latest` dist-tag always points at
+#     the just-shipped version alongside the immutable version coordinate.
+#     Consumers can then `npm install @bcgov/skill-<name>` (no version) to
+#     track the most recent release.
 #   * Keeps going after a per-skill failure and reports them all at the end,
 #     then exits non-zero so the workflow turns red. (One bad skill should not
 #     hide successful publishes of the others or stop them from running.)
@@ -48,8 +52,8 @@ for dir in "${changed[@]}"; do
     continue
   fi
 
-  echo "publishing $name@$version"
-  if ! (cd "$dir" && npm publish); then
+  echo "publishing $name@$version (tag: latest)"
+  if ! (cd "$dir" && npm publish --tag latest); then
     echo "::error::failed to publish $name@$version from $dir"
     failures+=("$name@$version ($dir)")
   fi

@@ -189,6 +189,13 @@ public packages, so `NODE_AUTH_TOKEN` needs a credential with the
 npm install @bcgov/skill-<name>@0.1.0
 ```
 
+Or omit the version to track the `latest` dist-tag, which the publish
+workflow updates on every release:
+
+```bash
+npm install @bcgov/skill-<name>
+```
+
 It installs to `node_modules/@bcgov/skill-<name>/` with `SKILL.md` plus
 whatever else the skill ships, exactly as it lives in this repo. Point your
 agent's skill loader at that directory; the on-disk layout is preserved, so
@@ -249,8 +256,10 @@ When a PR merges to `main`, [`publish.yml`](.github/workflows/publish.yml):
 1. Re-validates every skill.
 2. Finds the skills the merge changed (via git diff).
 3. Reads `name` + `version` from each one's `package.json` and runs
-   `npm publish` — **unless that exact version is already published**, in
-   which case it's skipped.
+   `npm publish --tag latest` — **unless that exact version is already
+   published**, in which case it's skipped. The `--tag latest` keeps the
+   `latest` dist-tag pointed at whatever this run shipped, so consumers who
+   `npm install @bcgov/skill-<name>` (no version) get the most recent release.
 
 Three things shape how this works:
 

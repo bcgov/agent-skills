@@ -87,6 +87,10 @@ export NODE_AUTH_TOKEN=$(gh auth token)</code></pre>
 
 <pre><code>npm install @bcgov/skill-&lt;name&gt;@&lt;version&gt;</code></pre>
 
+<p>Or omit the version to track the <code>latest</code> dist-tag, which the publish workflow updates on every release:</p>
+
+<pre><code>npm install @bcgov/skill-&lt;name&gt;</code></pre>
+
 <p>The package lands at <code>node_modules/@bcgov/skill-&lt;name&gt;/</code> with its <code>SKILL.md</code> plus any <code>references/</code>, <code>scripts/</code>, or <code>assets/</code> the skill ships. The on-disk layout matches the source repo exactly, so your agent's skills loader can point at the directory with no extra wiring.</p>
 
 <div class="alert alert-success">
