@@ -132,8 +132,14 @@ ensure_gh() {
         sudo apt-get update
         sudo apt-get install -y gh
       elif have dnf; then
-        sudo dnf install -y 'dnf-command(config-manager)'
-        sudo dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+        # Write the .repo file directly so this works on both dnf4 (RHEL 9,
+        # older Fedora) and dnf5 (Fedora 41+, RHEL 10+). dnf5 removed the
+        # `config-manager --add-repo` flag; the file-drop form is supported
+        # on every dnf version and matches the official gh install docs.
+        info "Detected dnf. Adding GitHub CLI repository (will prompt for sudo)..."
+        (type -p curl >/dev/null) || sudo dnf install -y curl
+        sudo curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo \
+          -o /etc/yum.repos.d/gh-cli.repo
         sudo dnf install -y gh
       elif have pacman; then
         sudo pacman -S --noconfirm github-cli
@@ -195,6 +201,12 @@ ensure_npmrc() {
 # ----- step 5: package.json bootstrap -----
 ensure_package_json() {
   if [ -f package.json ]; then return; fi
+  if [ "${NON_INTERACTIVE:-0}" = "1" ]; then
+    info "No package.json here; running 'npm init -y' (non-interactive)"
+    npm init -y >/dev/null
+    ok "Created package.json"
+    return
+  fi
   if confirm "No package.json here. Run 'npm init -y' first?" "y"; then
     npm init -y >/dev/null
     ok "Created package.json"
@@ -365,28 +377,36 @@ printf '%sbcgov/agent-skills installer%s\n' "$C_BOLD" "$C_RESET"
 printf '%sInstalls a skill from GitHub Packages with auth + registry setup in one pass.%s\n' "$C_DIM" "$C_RESET"
 echo
 
+# Capture original positional args BEFORE any function might mutate context.
+# When the caller supplied a positional skill arg they want hands-off scripted
+# behavior; ditto when there's no controlling terminal (plain CI). NON_INTERACTIVE=1
+# silences the npm-init / version / wire-up prompts and accepts sensible defaults.
+SKILL_ARG="${1:-}"
+VERSION_ARG="${2:-}"
+if [ -n "$SKILL_ARG" ] || { [ ! -r /dev/tty ] && [ ! -t 0 ]; }; then
+  NON_INTERACTIVE=1
+else
+  NON_INTERACTIVE=0
+fi
+export NON_INTERACTIVE
+
 require_npm
 ensure_gh
 ensure_gh_auth
 ensure_npmrc
 ensure_package_json
 
-# Capture original positional args BEFORE choose_skill might mutate context --
-# we use this to decide whether to run the interactive wire-up step.
-SKILL_ARG="${1:-}"
-VERSION_ARG="${2:-}"
-
-SKILL="$(choose_skill "${1:-}")"
-VERSION="${2:-}"
-if [ -z "$VERSION" ] && [ -z "${2-}" ]; then
+SKILL="$(choose_skill "$SKILL_ARG")"
+VERSION="$VERSION_ARG"
+if [ -z "$VERSION" ] && [ "$NON_INTERACTIVE" != "1" ]; then
   VERSION="$(prompt_default "Version (blank for latest)" "")"
 fi
 
 install_skill "$SKILL" "$VERSION"
 
-# Skip the interactive wire-up step when the user is scripting us (positional
-# skill arg supplied) or when there's no controlling terminal (plain CI).
-if [ -z "$SKILL_ARG" ] && { [ -r /dev/tty ] || [ -t 0 ]; }; then
+# Skip the interactive wire-up step in non-interactive mode (scripted invocation
+# or no TTY); reuse the same gate as the prompts above for consistency.
+if [ "$NON_INTERACTIVE" != "1" ]; then
   wire_up_agent
 fi
 

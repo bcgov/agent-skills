@@ -162,6 +162,12 @@ function Confirm-Npmrc {
 # ----- step 5: package.json bootstrap -----
 function Confirm-PackageJson {
     if (Test-Path 'package.json') { return }
+    if ($script:NonInteractive) {
+        Write-Info "No package.json here; running 'npm init -y' (non-interactive)"
+        npm init -y | Out-Null
+        Write-Ok 'Created package.json'
+        return
+    }
     if (Confirm-YesNo "No package.json here. Run 'npm init -y' first?" 'y') {
         npm init -y | Out-Null
         Write-Ok 'Created package.json'
@@ -350,22 +356,27 @@ Confirm-Npm
 Confirm-Gh
 Confirm-GhAuth
 Confirm-Npmrc
+
+# Capture original parameter binding BEFORE any function mutates $Skill /
+# $Version. When -Skill was supplied the caller wants hands-off scripted
+# behavior; ditto when running in a non-interactive host. $NonInteractive
+# silences the npm-init / version / wire-up prompts and accepts sensible defaults.
+$SkillProvided = $PSBoundParameters.ContainsKey('Skill')
+$VersionProvided = $PSBoundParameters.ContainsKey('Version')
+$script:NonInteractive = $SkillProvided -or -not [Environment]::UserInteractive -or [Console]::IsInputRedirected
+
 Confirm-PackageJson
 
-# Capture original parameter binding BEFORE Select-Skill / Read-WithDefault
-# might mutate $Skill -- used to decide whether to run interactive wire-up.
-$SkillProvided = $PSBoundParameters.ContainsKey('Skill')
-
 $Skill = Select-Skill $Skill
-if (-not $PSBoundParameters.ContainsKey('Version')) {
+if (-not $VersionProvided -and -not $script:NonInteractive) {
     $Version = Read-WithDefault 'Version (blank for latest)' ''
 }
 
 Install-Skill $Skill $Version
 
-# Skip the interactive wire-up step when the user is scripting us (-Skill
-# supplied) or when running in a non-interactive host.
-if (-not $SkillProvided -and [Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
+# Skip the interactive wire-up step in non-interactive mode (scripted
+# invocation or no TTY); reuse the same gate as the prompts above for consistency.
+if (-not $script:NonInteractive) {
     Invoke-WireUpAgent $Skill
 }
 
