@@ -1,6 +1,6 @@
 ---
 name: github-repo-setup
-description: Assess GitHub repository and application maturity against BC Gov DevOps & Dependency Security Standards, including mandatory branch protection, TypeScript settings, dependency age, vulnerability SLAs, and container security.
+description: Assess GitHub repository and application maturity against BC Gov DevOps & Dependency Security Standards, including mandatory branch protection, TypeScript settings, and container security. Dependency age and vulnerability SLAs are flagged for manual review.
 owner: bcgov
 tags: [github-repo-setup, devops, security, bcgov]
 ---
@@ -50,10 +50,10 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
 - **Test Coverage Baseline**: Maintain a minimum of 80% statement and branch test coverage. PRs that lower coverage below this threshold must be rejected.
 - **Dependency Management**:
   - Pinned Renovate configurations extending stable config (e.g. `github>bcgov/renovate-config#2026.4.0` CalVer style).
-  - Minimum release age of 7 days before adopting dependency updates.
+  - Minimum release age of 7 days before adopting dependency updates *(manual verification — the script confirms Renovate config exists but cannot verify the `minimumReleaseAge` setting value)*.
   - Zero-dependency policy for low-volume (< 20 lines) custom logic.
 - **OpenShift Security Context**: Default security contexts (`readOnlyRootFilesystem: true`, `runAsNonRoot: true`, `allowPrivilegeEscalation: false`) must not be bypassed or removed. Write operations must use memory-backed `emptyDir` volumes.
-- **Vulnerability SLAs**: Critical findings (24 hours), High (1 week), Medium (2 weeks), Low (next sprint).
+- **Vulnerability SLAs**: Critical findings (24 hours), High (1 week), Medium (2 weeks), Low (next sprint) *(manual verification — track via GitHub Security Advisories or your team's issue tracker)*.
 
 ## Examples
 - **Audit Request**: `"Is my repo ready for BC Gov production?"` -> Assess using `maturity-check.sh` and flag any missing branch protections or TypeScript strict flags.

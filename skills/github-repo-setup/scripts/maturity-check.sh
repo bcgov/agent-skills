@@ -264,7 +264,7 @@ check_ci_cd() {
         log_pass "CI/CD: PR sandbox environments via deployer"
     fi
 
-    # 5. Dependency updates (Level 2) - 3 pts
+    # 7. Dependency updates (Level 2) - 3 pts
     if check_file "renovate.json" "$dir" || \
        check_file ".github/dependabot.yml" "$dir" || \
        check_file ".github/dependabot.yaml" "$dir"; then
@@ -273,14 +273,14 @@ check_ci_cd() {
         log_pass "CI/CD: Dependabot/Renovate configured"
     fi
 
-    # 6. Deployment workflow (Level 3) - 4 pts (counts toward CI/CD)
+    # 8. Deployment workflow (Level 3) - 4 pts (counts toward CI/CD)
     if check_contains "deploy|oc|openshift" ".github/workflows" "$dir"; then
         score=$((score + 4))
         checks+=("Deployment workflow")
         log_pass "CI/CD: Deployment workflow"
     fi
 
-    # 7. Reusable workflow templates (Level 3) - 3 pts
+    # 9. Reusable workflow templates (Level 3) - 3 pts
     local wf_template_count=0
     wf_template_count=$(find "$dir/.github/workflows" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | wc -l)
     if [ "$wf_template_count" -ge 2 ]; then
@@ -289,7 +289,7 @@ check_ci_cd() {
         log_pass "CI/CD: Multiple reusable workflows"
     fi
 
-    # 8. bcgov shared actions (Level 4) - 4 pts
+    # 10. bcgov shared actions (Level 4) - 4 pts
     if check_contains "bcgov/action" ".github/workflows" "$dir"; then
         score=$((score + 4))
         checks+=("bcgov shared actions")
@@ -472,11 +472,6 @@ check_code_quality() {
                     log_fail "Code Quality: No test coverage configured or reports found"
                 fi
             fi
-        # Check for bcgov action-test-and-analyse
-        elif check_contains "action-test-and-analyse" ".github/workflows" "$dir"; then
-            score=$((score + 6))
-            checks+=("BCGov test & analyse action")
-            log_pass "Code Quality: bcgov action-test-and-analyse"
         fi
     # For Java
     elif [ "$is_java" = true ]; then
@@ -533,11 +528,11 @@ check_code_quality() {
         fi
     fi
 
-    # 7. Java detection bonus - if it's a Java project, give some credit
+    # 7. ESLint N/A compensation - Java projects cannot use ESLint, auto-grant those points
     if [ "$is_java" = true ]; then
         score=$((score + 3))
-        checks+=("Java project")
-        log_pass "Code Quality: Java project detected"
+        checks+=("ESLint N/A (Java)")
+        log_pass "Code Quality: ESLint not applicable for Java project (auto-granted)"
     fi
 
     SCORES[code_quality]=$score
@@ -618,30 +613,19 @@ check_security() {
     fi
 
 # 5. Supply chain (Level 4) - 5 pts
-    # Check for audit, depscan, OR bcgov action with supply_chain
-    if check_contains "auditable|audit" "package.json" "$dir"; then
+    # Check for npm audit script or explicit audit tooling in workflows
+    if check_contains "auditable|audit" "package.json" "$dir" || \
+       check_contains "audit" ".github/workflows" "$dir"; then
         score=$((score + 5))
         checks+=("Supply chain audit")
         log_pass "Security: Supply chain audit"
-    # bcgov action-test-and-analyse includes supply chain scanning
-    elif check_contains "action-test-and-analyse" ".github/workflows" "$dir"; then
-        score=$((score + 5))
-        checks+=("Supply chain (via action)")
-        log_pass "Security: bcgov action with supply chain scanning"
     fi
 
     # 6. Knip - unused dependency checker (Level 4) - 5 pts
-    if check_contains "knip" "package.json" "$dir"; then
+    if check_contains "knip" "package.json" "$dir" || \
+       check_contains "knip" ".github/workflows" "$dir"; then
         score=$((score + 5))
         checks+=("Knip unused dependency checker")
-        log_pass "Security: Knip unused dependency checker"
-    elif check_contains "knip" ".github/workflows" "$dir"; then
-        score=$((score + 5))
-        checks+=("Knip unused dependency checker")
-        log_pass "Security: Knip unused dependency checker"
-    elif check_contains "action-test-and-analyse" ".github/workflows" "$dir"; then
-        score=$((score + 5))
-        checks+=("Knip (via action-test-and-analyse)")
         log_pass "Security: Knip unused dependency checker"
     fi
 
@@ -951,20 +935,7 @@ check_deployment() {
         log_pass "Deployment: GitHub Action"
     fi
 
-    # 2. Rolling update strategy (Level 4) - 2 pts
-    # Check for rolling updates in charts OR compose
-    if check_contains "RollingUpdate|rollingUpdate" "charts" "$dir" 2>/dev/null; then
-        score=$((score + 2))
-        checks+=("Rolling updates")
-        log_pass "Deployment: Rolling update strategy"
-    elif check_contains "recreate|rolling" "docker-compose.yml" "$dir" 2>/dev/null || \
-         check_contains "recreate|rolling" "docker-compose.yaml" "$dir" 2>/dev/null; then
-        score=$((score + 2))
-        checks+=("Update strategy")
-        log_pass "Deployment: Update strategy defined"
-    fi
-
-    # 3. Environment values (Level 4) - 2 pts
+    # 2. Environment values (Level 4) - 2 pts
     # Check for multiple env values files (dev, test, prod)
     if [ -d "$dir/charts" ]; then
         local env_count
@@ -976,7 +947,7 @@ check_deployment() {
         fi
     fi
 
-    # 2. Rolling update strategy (Level 4) - 2 pts
+    # 3. Rolling update strategy (Level 4) - 2 pts
     local has_rolling=false
     if check_contains "RollingUpdate|rolling" ".github" "$dir"; then
         has_rolling=true
