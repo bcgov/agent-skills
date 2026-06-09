@@ -216,7 +216,11 @@ def validate_body(body: str) -> list:
   """Validate the markdown body against the structural spec.
 
   Confirms the body has an H1 title and that all seven required ``##`` sections
-  are present and non-empty.
+  are present and non-empty. Section titles are compared after normalising the
+  Unicode right-single-quote ``'`` (U+2019) to the ASCII apostrophe ``'``
+  (U+0027), so an editor that auto-converts the spec's canonical ``## Don't
+  Use When`` heading into a curly-quote variant does not produce a spurious
+  "missing required section" failure.
 
   Args:
     body: The markdown body that follows the frontmatter.
@@ -240,15 +244,19 @@ def validate_body(body: str) -> list:
     (m.start(), m.group(1).strip())
     for m in re.finditer(r"^##\s+(.+?)\s*$", body, re.MULTILINE)
   ]
-  present = {title.lower(): start for start, title in sections}
-  required_lower = {s.lower(): s for s in REQUIRED_SECTIONS}
+  # Normalise smart-quote apostrophe to ASCII before comparison so headings
+  # like "## Don\u2019t Use When" still match the spec's "## Don't Use When".
+  present = {title.replace("\u2019", "'").lower(): start for start, title in sections}
+  required_lower = {s.replace("\u2019", "'").lower(): s for s in REQUIRED_SECTIONS}
 
   for req in REQUIRED_SECTIONS:
-    if req.lower() not in present:
+    if req.replace("\u2019", "'").lower() not in present:
       errors.append(f"missing required section '## {req}'")
 
   for start, title in sections:
-    if title.lower() in required_lower and not _content_after(body, start, heads):
+    if title.replace("\u2019", "'").lower() in required_lower and not _content_after(
+      body, start, heads
+    ):
       errors.append(f"section '## {title}' is empty — add at least one line of content")
 
   return errors
@@ -384,6 +392,12 @@ def _manifest_for(path: str):
 def discover_all() -> list:
   """Find every skill manifest in the repository.
 
+  The spec fixes the layout at ``<root>/<skill>/SKILL.md`` (e.g.
+  ``skills/azure-networking/SKILL.md``), so the glob is intentionally
+  depth-one. A recursive glob would also pick up stray ``SKILL.md`` files
+  inside a skill's own ``references/`` or ``scripts/`` directory and treat
+  them as additional skills, which they aren't.
+
   Returns:
     A sorted list of ``SKILL.md`` paths found under every root in
     :data:`SKILL_ROOTS`. Paths use forward slashes on every platform so that
@@ -391,7 +405,7 @@ def discover_all() -> list:
   """
   found = []
   for root in SKILL_ROOTS:
-    matches = glob.glob(f"{root}/**/SKILL.md", recursive=True)
+    matches = glob.glob(f"{root}/*/SKILL.md")
     found.extend(m.replace(os.sep, "/") for m in matches)
   return sorted(found)
 

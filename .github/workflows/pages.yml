@@ -13,7 +13,10 @@ on:
       - ".github/workflows/pages.yml"
   workflow_dispatch:
   schedule:
-    - cron: "0 7 * * 0" # every Sunday at 7 AM UTC
+    # Weekly rebuild on a quiet hour keeps the published site, its Pages cache,
+    # and any CDN edges in sync even when nothing under docs/** has changed
+    # for a while. Sundays 07:00 UTC is off-peak for BC Gov maintainers.
+    - cron: "0 7 * * 0"
 
 # Pages deploys need pages:write + id-token:write (for the OIDC-signed
 # environment URL). Both jobs only read repo contents.
@@ -42,6 +45,7 @@ jobs:
 
       - name: Build documentation
         run: |
+          set -euo pipefail
           cd docs
           chmod +x build.sh
           ./build.sh

@@ -1,4 +1,4 @@
-.PHONY: setup validate test format lint
+.PHONY: setup validate validate-one test format lint
 
 # One-time (or after pulling new deps): install the Python tooling declared in
 # pyproject.toml into a uv-managed virtualenv. Running `uv run` also does this
@@ -9,6 +9,11 @@ setup:
 # Validate every skill profile against the spec.
 validate:
 	uv run python scripts/validate_skill.py --all
+
+# Validate a single skill profile. Usage: make validate-one SKILL=skills/azure-networking/SKILL.md
+validate-one:
+	@test -n "$(SKILL)" || (echo 'Usage: make validate-one SKILL=skills/<name>/SKILL.md' >&2; exit 2)
+	uv run python scripts/validate_skill.py $(SKILL)
 
 # Run the validator unit tests.
 test:

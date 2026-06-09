@@ -623,3 +623,39 @@ def test_main_no_duplicates_flag_skips_dup_check():
     finally:
       os.chdir(cwd)
     assert rc == 0
+
+
+# --- Regression: gotchas the docs call out -----------------------------------
+
+
+def test_description_with_colon_space_is_accepted_when_quoted():
+  """A description containing ': ' is accepted when wrapped in single quotes.
+
+  Documents the gotcha that PyYAML reads ``key: value`` as a mapping, so a
+  description like ``Use when: planning a deployment`` MUST be wrapped in
+  quotes in the frontmatter or the parse will produce a nested mapping.
+  """
+  text = (
+    "---\n"
+    "name: demo\n"
+    "description: 'Use when: planning a deployment for a new workload.'\n"
+    "---\n" + VALID.split("---\n", 2)[2]
+  )
+  data, _, parse_errs = v.parse_frontmatter(text)
+  assert parse_errs == []
+  assert isinstance(data, dict)
+  assert data["description"] == "Use when: planning a deployment for a new workload."
+  assert _errors(text) == []
+
+
+def test_smart_quote_apostrophe_in_section_heading_is_accepted():
+  """``## Don\u2019t Use When`` (curly apostrophe) is treated as the canonical heading.
+
+  Editors sometimes auto-convert ``'`` (U+0027) into ``\u2019`` (U+2019) inside
+  markdown headings. The validator normalises the two before comparison so a
+  smart-quote heading does not produce a spurious "missing required section"
+  error.
+  """
+  text = VALID.replace("## Don't Use When", "## Don\u2019t Use When")
+  errs = v.validate_body(v.parse_frontmatter(text)[1])
+  assert errs == []

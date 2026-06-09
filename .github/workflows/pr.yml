@@ -41,6 +41,7 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           BASE_REPO: ${{ github.repository }}
         run: |
+          set -euo pipefail
           if [ "$HEAD_REPO" != "$BASE_REPO" ]; then
             echo "PR opened from fork ($HEAD_REPO); maintainers must re-land it from a branch in $BASE_REPO."
             exit 1
@@ -104,6 +105,7 @@ jobs:
       - name: Fail if any required job failed or was cancelled
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |
+          set -euo pipefail
           echo "At least one required job failed or was cancelled."
           echo '${{ toJSON(needs) }}'
           exit 1

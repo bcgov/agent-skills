@@ -197,11 +197,12 @@ no manual virtualenv. uv reads `pyproject.toml` and builds the environment on
 demand, so these all work on a fresh checkout:
 
 ```bash
-make setup      # pre-warm the uv-managed virtualenv (optional)
-make format     # auto-format Python (2-space indent, double quotes)
-make lint       # lint Python (ruff) AND workflow YAML (yamllint)
-make test       # run the validator unit tests
-make validate   # validate every skill against the spec
+make setup                                     # pre-warm the uv-managed virtualenv (optional)
+make format                                    # auto-format Python (2-space indent, double quotes)
+make lint                                      # lint Python (ruff) AND workflow YAML (yamllint)
+make test                                      # run the validator unit tests
+make validate                                  # validate every skill against the spec
+make validate-one SKILL=skills/<name>/SKILL.md # validate a single skill
 ```
 
 Python style is enforced by [ruff](https://docs.astral.sh/ruff/) (2-space

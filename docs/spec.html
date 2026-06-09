@@ -1035,8 +1035,6 @@
     <main>
         <!-- Breadcrumb: injected by search.js when arriving from a search result -->
         <div id="search-breadcrumb" aria-label="Search breadcrumb"></div>
-<!-- TITLE: SKILL.md Spec -->
-<!-- NAV: spec -->
 
 <h1 id="skillmd-spec">SKILL.md Spec</h1>
 
@@ -1170,8 +1168,16 @@ See [references/REFERENCE.md](references/REFERENCE.md) for &lt;heavy detail&gt;<
         <li>None of those required sections is empty.</li>
         <li>The whole <code>SKILL.md</code> is at most 500 lines.</li>
         <li>Any bundled <code>scripts/</code>, <code>references/</code>, or <code>assets/</code> directory is flat (no nested subdirectories).</li>
+        <li><strong>No cross-skill duplicates.</strong> When more than one skill is being validated, the check refuses two skills sharing the same <code>name</code>, the same <code>description</code>, or the same normalised body (the part after the H1 title and one-line summary). Catches copy-pasted manifests before they ship. Skip with <code>--no-duplicates</code> when you intentionally want to compare a single file.</li>
     </ol>
 </div>
+
+<h3 id="gotchas" style="margin-top: 1.5rem;">Gotchas the validator can't always pinpoint</h3>
+
+<ul>
+    <li><strong>Colons inside <code>description</code>.</strong> YAML treats <code>key: value</code> as a mapping. If your description contains <code>: </code> (colon + space) — e.g. <code>"Use when: planning a deployment"</code> — wrap the whole value in single quotes so PyYAML doesn't try to split it. Double quotes also work but then you have to escape any literal <code>"</code>.</li>
+    <li><strong>Section headings use a straight ASCII apostrophe.</strong> Write <code>## Don't Use When</code> with <code>'</code> (U+0027), not the curly <code>'</code> (U+2019) that some editors auto-insert. The validator normalises smart quotes to straight in the heading-match step, so the canonical form in your file is the ASCII one.</li>
+</ul>
 
 <h3 id="run-it-locally" style="margin-top: 1.5rem;">Run it locally</h3>
 
@@ -1218,7 +1224,7 @@ make validate</code></pre>
             </div>
             <div class="footer-copyright">
                 <p>&copy; 2026 Province of British Columbia</p>
-                <p class="footer-meta">Built with zero dependencies</p>
+                <p class="footer-meta">Built with a zero-dependency Bash + Node template engine</p>
             </div>
         </div>
     </footer>
