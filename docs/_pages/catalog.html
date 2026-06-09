@@ -16,27 +16,64 @@
 
 <h2 id="published">Public skills</h2>
 
-<p>Public skills live under <a href="https://github.com/bcgov/agent-skills/tree/main/skills" target="_blank" rel="noopener"><code>skills/</code></a> in the repo. Browse the directory for the live list and each skill's <code>SKILL.md</code>. See <a href="consume.html">Consume a Skill</a> for the install workflow.</p>
+<p>Public skills live under <a href="https://github.com/bcgov/agent-skills/tree/main/skills" target="_blank" rel="noopener"><code>skills/</code></a> in the repo. Each card below is hand-listed from the skill's <code>SKILL.md</code> frontmatter so the catalogue reads at a glance; the live source is always the linked file. List the skills available from the CLI itself with:</p>
 
-<div class="card card-gold" id="published-skills">
-    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-        <h3 style="margin: 0; color: var(--bc-blue);">Browse the public catalogue on GitHub</h3>
-        <span class="badge badge-gold">live</span>
-    </div>
-    <p>The full catalogue is the <code>skills/</code> directory in this repo. List the skills available from the CLI itself with:</p>
 <pre><code>npx skills add bcgov/agent-skills --list</code></pre>
-    <p style="margin-top: 1rem;">
-        <a href="https://github.com/bcgov/agent-skills/tree/main/skills" target="_blank" rel="noopener"><strong>Open <code>skills/</code> on GitHub →</strong></a>
-    </p>
+
+<div id="published-skills">
+    <div class="card card-gold">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <h3 style="margin: 0; color: var(--bc-blue);">azure-networking</h3>
+            <span class="badge badge-gold">public</span>
+        </div>
+        <p>Azure subnet, NSG, and private-endpoint patterns for adding subnets inside an existing VNet — atomic NSG-at-creation, per-service delegation, PE subnet layout, ARM write serialization, and reference NSG layouts for PE, APIM, App Gateway, and Container Apps subnets. Tool-agnostic guidance with Terraform (<code>azapi_resource</code>), Bicep, and az CLI examples.</p>
+        <p><strong>Use when</strong> adding subnets, debugging delegation or PE errors, or sizing a PE subnet.</p>
+        <p style="margin-top: 1rem; margin-bottom: 0;"><a href="https://github.com/bcgov/agent-skills/blob/main/skills/azure-networking/SKILL.md" target="_blank" rel="noopener"><strong>Read <code>skills/azure-networking/SKILL.md</code> →</strong></a></p>
+    </div>
+
+    <div class="card card-gold">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <h3 style="margin: 0; color: var(--bc-blue);">github-actions</h3>
+            <span class="badge badge-gold">public</span>
+        </div>
+        <p>BC Gov hardening patterns for GitHub Actions workflows — deny-all <code>permissions: {}</code> baseline with per-job step-ups, first-party tag vs third-party SHA pinning, fork-gate, single results-aggregator required check, pinned <code>ubuntu-24.04</code> runners, script-injection-safe env handling, and signed-commit ruleset interaction. Covers <code>.github/workflows/*.yml</code>, <code>dependabot.yml</code>, and the branch-protection / repository-ruleset settings that pair with them.</p>
+        <p><strong>Use when</strong> authoring or reviewing a workflow in a BC Gov repo, debugging permission-denied errors, or onboarding Dependabot.</p>
+        <p style="margin-top: 1rem; margin-bottom: 0;"><a href="https://github.com/bcgov/agent-skills/blob/main/skills/github-actions/SKILL.md" target="_blank" rel="noopener"><strong>Read <code>skills/github-actions/SKILL.md</code> →</strong></a></p>
+    </div>
+
+    <div class="card card-gold">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <h3 style="margin: 0; color: var(--bc-blue);">openshift-deployment</h3>
+            <span class="badge badge-gold">public</span>
+        </div>
+        <p>BC Gov Private Cloud OpenShift workload-manifest guidance: picking the right controller (<code>Deployment</code>, <code>StatefulSet</code>, <code>DaemonSet</code>, <code>Job</code>, <code>CronJob</code>) and shaping it for the platform — container resources and QoS, namespace <code>LimitRange</code> defaults, liveness/readiness/startup probes, <code>terminationGracePeriod</code> and SIGTERM handling, PID-1 reaping with <code>tini</code> or <code>dumb-init</code>, <code>PodDisruptionBudget</code>s, horizontal scaling (HPA, VPA), and <code>CronJob</code> admission rules.</p>
+        <p><strong>Use when</strong> authoring or reviewing a workload manifest bound for a license-plate runtime namespace. <strong>Out of scope:</strong> NetworkPolicies, Vault/ESO, Argo CD/GitOps, Artifactory image pulls, Porter TCP exposure, storage class choice, Sysdig, ACS, security assessment.</p>
+        <p style="margin-top: 1rem; margin-bottom: 0;"><a href="https://github.com/bcgov/agent-skills/blob/main/skills/openshift-deployment/SKILL.md" target="_blank" rel="noopener"><strong>Read <code>skills/openshift-deployment/SKILL.md</code> →</strong></a></p>
+    </div>
 </div>
 
 <h2 id="meta-skills">Meta-skills</h2>
 
-<p>Skills the repo uses on itself: scaffolding a new skill and validating the spec. They live under <code>.github/skills/</code> and are validated by the same PR check, but they aren't part of the public catalogue; they're picked up by agents working in a checkout of this repo.</p>
+<p>Skills the repo uses on itself: scaffolding a new skill and validating the spec. They live under <a href="https://github.com/bcgov/agent-skills/tree/main/.github/skills" target="_blank" rel="noopener"><code>.github/skills/</code></a> and are validated by the same PR check, but they aren't part of the public catalogue; they're picked up by agents working in a checkout of this repo.</p>
 
-<div class="card">
-    <p>Each meta-skill is a self-contained <code>SKILL.md</code> with its own <em>Use When</em>, <em>Workflow</em>, and <em>Rules</em>. Open one in the repo to see exactly when it fires and what it does.</p>
-    <p style="margin-top: 1rem; margin-bottom: 0;"><a href="https://github.com/bcgov/agent-skills/tree/main/.github/skills" target="_blank" rel="noopener"><strong>Browse <code>.github/skills/</code> on GitHub →</strong></a></p>
+<div id="meta-skill-cards">
+    <div class="card">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <h3 style="margin: 0;">skill-author</h3>
+            <span class="badge">meta</span>
+        </div>
+        <p>Scaffolds a new skill profile in this repo and fills in the required <code>SKILL.md</code> structure when a contributor wants to add a skill.</p>
+        <p style="margin-top: 1rem; margin-bottom: 0;"><a href="https://github.com/bcgov/agent-skills/blob/main/.github/skills/skill-author/SKILL.md" target="_blank" rel="noopener"><strong>Read <code>.github/skills/skill-author/SKILL.md</code> →</strong></a></p>
+    </div>
+
+    <div class="card">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <h3 style="margin: 0;">skill-validator</h3>
+            <span class="badge">meta</span>
+        </div>
+        <p>Validates skill profiles against the spec and explains how to fix failures before a PR is opened or merged.</p>
+        <p style="margin-top: 1rem; margin-bottom: 0;"><a href="https://github.com/bcgov/agent-skills/blob/main/.github/skills/skill-validator/SKILL.md" target="_blank" rel="noopener"><strong>Read <code>.github/skills/skill-validator/SKILL.md</code> →</strong></a></p>
+    </div>
 </div>
 
 <h2>Don't see what you need?</h2>

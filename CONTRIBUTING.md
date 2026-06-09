@@ -169,7 +169,7 @@ enforces:
   one check means new jobs added to `pr.yml` are picked up automatically with
   no ruleset edit.
 - **Signed commits required** on every commit that lands on `main`.
-- **CodeQL** code scanning required at the high-or-higher severity threshold.
+- **Code scanning** (CodeQL via GitHub's default setup, configured in *Settings → Code security*) required at the high-or-higher severity threshold. There is no `codeql.yml` workflow in this repo — the scan is wired in at the repository level, not in `.github/workflows/`.
 - **Force-push blocked** (`non_fast_forward`) and **branch deletion blocked**.
 - **No bypass** — `bypass_actors` is empty and `current_user_can_bypass` is
   `never`, so even admins land changes through PRs.
@@ -179,8 +179,8 @@ If you want CODEOWNERS-based review on top of that, add ownership rules to
 on "Require review from Code Owners" in the ruleset.
 
 Dependabot is configured in [.github/dependabot.yml](.github/dependabot.yml)
-to open weekly PRs for GitHub Actions and Python dependencies. Those PRs run
-through the same PR workflow as any other change, and
+to open daily, grouped PRs for GitHub Actions and Python (uv) dependencies.
+Those PRs run through the same PR workflow as any other change, and
 [.github/workflows/dependabot-auto-merge.yml](.github/workflows/dependabot-auto-merge.yml)
 approves and enables auto-merge for them — so a green Dependabot PR merges
 itself once `results` passes, and a Dependabot bump that breaks the validator

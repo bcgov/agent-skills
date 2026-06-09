@@ -16,14 +16,17 @@ tags: [openshift, kubernetes, bcgov, deployment, statefulset, cronjob, hpa, pdb]
 - Diagnosing pod-level failures on a workload you own — `CrashLoopBackOff`, `OOMKilled`, `Evicted`, `TerminationGracePeriodExceeded`, or a defunct-PIDs platform alert.
 
 ## Don't Use When
-- Writing or debugging `NetworkPolicy` objects (default-deny, allow-from-router, allow-from-same-namespace, SDN-vs-NSX-T egress) — use the **`openshift-networking`** skill.
-- Sourcing secrets from Vault via External Secrets Operator, or rotating Vault data — use the **`openshift-secrets`** skill.
-- Choosing or configuring an image registry pull path, creating an `ArtifactoryServiceAccount`, or rotating Artifactory credentials — use the **`openshift-images`** skill.
-- Onboarding to Argo CD, authoring a `GitOpsTeam` CR, or designing a `bcgov-c/tenant-gitops-<licenseplate>` repo layout — use the **`openshift-gitops`** skill.
-- Picking a storage class, requesting a quota tier, or designing PVC backups — use the **`openshift-storage`** skill.
-- Onboarding to Sysdig Monitor, building dashboards, or producing the evidence for a quota-increase request — use the **`openshift-sysdig`** skill.
-- Configuring Red Hat Advanced Cluster Security (ACS) policies — use the **`openshift-acs`** skill.
-- Exposing a non-HTTPS TCP port via the Porter Operator (`TransportServerClaim`) — use the **`openshift-networking`** skill.
+
+The following concerns are each their own scope and belong in a sibling BC Gov OpenShift skill. Those siblings are **planned** — until they land in this repo, use the linked upstream Kubernetes / Red Hat docs or the BC Gov Private Cloud TechDocs:
+
+- Writing or debugging `NetworkPolicy` objects (default-deny, allow-from-router, allow-from-same-namespace, SDN-vs-NSX-T egress) — `openshift-networking` (planned).
+- Sourcing secrets from Vault via External Secrets Operator, or rotating Vault data — `openshift-secrets` (planned).
+- Choosing or configuring an image registry pull path, creating an `ArtifactoryServiceAccount`, or rotating Artifactory credentials — `openshift-images` (planned).
+- Onboarding to Argo CD, authoring a `GitOpsTeam` CR, or designing a `bcgov-c/tenant-gitops-<licenseplate>` repo layout — `openshift-gitops` (planned).
+- Picking a storage class, requesting a quota tier, or designing PVC backups — `openshift-storage` (planned).
+- Onboarding to Sysdig Monitor, building dashboards, or producing the evidence for a quota-increase request — `openshift-sysdig` (planned).
+- Configuring Red Hat Advanced Cluster Security (ACS) policies — `openshift-acs` (planned).
+- Exposing a non-HTTPS TCP port via the Porter Operator (`TransportServerClaim`) — `openshift-networking` (planned).
 - Designing CI workflows (GitHub Actions chassis, OIDC, fork-gate) — sibling [`github-actions`](../github-actions/SKILL.md) skill.
 - Anything on AKS, EKS, or vanilla Kubernetes outside the BC Gov Private Cloud.
 
@@ -81,7 +84,7 @@ tags: [openshift, kubernetes, bcgov, deployment, statefulset, cronjob, hpa, pdb]
 
 See [references/REFERENCE.md](./references/REFERENCE.md) for: the namespace `LimitRange` and quota objects that shape what your manifests are allowed to request; a worked Deployment / StatefulSet / DaemonSet / CronJob template set; the probe, lifecycle, and `preStop` recipe; PDB sizing tables; an HPA and VPA decision matrix; the Kyverno workload-admission policy list (`no-fast-cronjob`, `no-fast-cronjob-with-pvc`, `no-unsupported-timezone`, plus the Emerald-only `DataClass` label rule that affects pod templates); the defunct-PID + PID-1 init container recipe; and a manifest-level error cheat sheet (`OOMKilled`, `Evicted`, `CreateContainerConfigError`, `ImagePullBackOff`, `TerminationGracePeriodExceeded`).
 
-Sibling BC Gov OpenShift skills (each tightly scoped to one concern):
+Sibling BC Gov OpenShift skills (each tightly scoped to one concern — **planned**, not yet shipped in this repo; use upstream docs in the interim):
 - `openshift-networking` — `NetworkPolicy` starter kit, default-deny, allow-from-router, SDN-vs-NSX-T egress, Porter `TransportServerClaim` for direct TCP exposure.
 - `openshift-secrets` — Vault + External Secrets Operator, `SecretStore` and `ExternalSecret` patterns, hyphen-free key gotcha, rotation.
 - `openshift-images` — Artifactory remote/local repos, prebuilt platform images, `ArtifactoryServiceAccount` + paired `artifacts-*` Secrets, `npm login --auth-type=legacy`.

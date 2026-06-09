@@ -7,9 +7,10 @@ on:
       - reopened
       - synchronize
 
-permissions:
-  contents: write
-  pull-requests: write
+# Deny-all baseline at the workflow scope. The single job below opts in to the
+# narrower set of write tokens it actually needs, so any other job we add
+# later cannot accidentally inherit broader permissions.
+permissions: {}
 
 concurrency:
   group: dependabot-auto-merge-${{ github.event.pull_request.number }}
@@ -19,15 +20,24 @@ jobs:
   auto-approve-and-merge:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-24.04
+    # Only this job needs write access: gh pr review needs pull-requests:write,
+    # gh pr merge --auto needs contents:write to enable the auto-merge label.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Approve Dependabot PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr review --approve "$PR_URL"
+        run: |
+          set -euo pipefail
+          gh pr review --approve "$PR_URL"
 
       - name: Enable auto-merge for Dependabot PRs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        run: |
+          set -euo pipefail
+          gh pr merge --auto --squash --delete-branch "$PR_URL"

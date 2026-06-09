@@ -105,6 +105,6 @@ if [ -n "$NODE_BIN" ]; then
         $NODE_BIN "$SCRIPT_DIR/generate-search-index.js" "$SCRIPT_DIR"
     fi
 else
-    echo "  WARNING: Node.js not found or not executable – search index was NOT generated."
-    echo "           Heading id= attributes will be missing. Install Node.js to fix."
+    echo "ERROR: Node.js not found. The search index is required for client-side search and for deep-linkable heading anchors; refusing to build a broken site. Install Node.js (the Pages workflow uses node@24) and re-run docs/build.sh." >&2
+    exit 1
 fi

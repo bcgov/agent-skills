@@ -71,7 +71,7 @@ tags: [azure, networking, terraform, bicep, subnets, private-endpoints, nsg]
 
 See [references/REFERENCE.md](./references/REFERENCE.md) for the atomic subnet+NSG body shape in Terraform, Bicep, and az CLI; full NSG rule tables per subnet type; sibling-subnet serialization examples; App Gateway route-table requirements; PE subnet capacity math; and a failure playbook keyed by Azure error code.
 
-For broader Azure topics, prefer these upstream Microsoft skills (in the Microsoft `agent-skills` catalogue — install separately if not already in your agent environment) instead of duplicating their guidance here:
+For broader Azure topics, prefer these upstream Microsoft skills (browse the catalogue at <https://microsoft.github.io/skills/#agents> and install separately if not already in your agent environment) instead of duplicating their guidance here:
 - VNet, hub-spoke, and landing-zone design → `azure-enterprise-infra-planner`
 - Workload preparation (Bicep/Terraform scaffolding, azd) → `azure-prepare`
 - AKS-specific networking → `azure-kubernetes`

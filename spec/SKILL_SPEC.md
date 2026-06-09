@@ -117,6 +117,24 @@ For each **changed** skill the validator confirms:
 9. The whole `SKILL.md` is at most 500 lines.
 10. Any bundled `scripts/`, `references/`, or `assets/` directory is flat — no
     nested subdirectories.
+11. **No cross-skill duplicates.** When the validator runs over more than one
+    skill (e.g. `--all`, or a multi-skill diff in CI), it refuses two skills
+    that share the same `name`, the same `description`, or the same normalised
+    body (the part after the H1 title and the one-line summary). This catches
+    copy-pasted manifests before they ship. Pass `--no-duplicates` to skip the
+    check when you intentionally want to validate just one file in isolation.
+
+### Gotchas the validator can't always pinpoint
+
+- **Colons inside `description`.** YAML reads `key: value` as a mapping, so a
+  description containing `: ` (colon + space) — e.g.
+  `"Use when: planning a deployment"` — must be wrapped in single quotes so
+  PyYAML doesn't try to split it. Double quotes also work, but then you have to
+  escape any literal `"`.
+- **Section headings use a straight ASCII apostrophe.** Write `## Don't Use
+  When` with `'` (U+0027), not the curly `'` (U+2019) some editors insert
+  automatically. The validator normalises smart quotes before matching, so the
+  canonical form in your file is the ASCII one.
 
 Run the same check locally before opening a PR:
 

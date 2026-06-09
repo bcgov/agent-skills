@@ -249,7 +249,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: daily         # daily keeps the SHA pins fresh; group bumps below stop PR-spam
     groups:
       actions-minor-patch:
         update-types:
@@ -261,7 +261,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: daily
     groups:
       npm-minor-patch:
         update-types:
@@ -270,12 +270,12 @@ updates:
     commit-message:
       prefix: "deps(npm)"
 
-  - package-ecosystem: pip
+  - package-ecosystem: uv     # use 'uv' (not 'pip') when the repo locks deps in uv.lock
     directory: /
     schedule:
-      interval: weekly
+      interval: daily
     commit-message:
-      prefix: "deps(pip)"
+      prefix: "deps(uv)"
 ```
 
 `.github/workflows/dependabot-auto-merge.yml`:

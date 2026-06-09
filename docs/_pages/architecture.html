@@ -63,7 +63,7 @@ npx skills add bcgov/agent-skills --skill X    # just one</code></pre>
 
 <h2 id="dependabot">Dependabot auto-merge</h2>
 
-<p>Dependabot opens grouped upgrade PRs with Conventional Commit prefixes. Cadence and ecosystems are configured in <a href="https://github.com/bcgov/agent-skills/blob/main/.github/dependabot.yml" target="_blank" rel="noopener"><code>.github/dependabot.yml</code></a>. When the PR's author is <code>dependabot[bot]</code>, an in-repo workflow approves it and turns on auto-merge, so it squash-merges itself the moment the same <code>results</code> check goes green. If the upgrade breaks something, <code>results</code> stays red and the PR sits there until a human looks at it.</p>
+<p>Dependabot opens grouped upgrade PRs <strong>daily</strong> with Conventional Commit prefixes (<code>deps(actions)</code> for GitHub Actions, <code>deps(uv)</code> for Python). Cadence and ecosystems are configured in <a href="https://github.com/bcgov/agent-skills/blob/main/.github/dependabot.yml" target="_blank" rel="noopener"><code>.github/dependabot.yml</code></a>. When the PR's author is <code>dependabot[bot]</code>, an in-repo workflow approves it and turns on auto-merge, so it squash-merges itself the moment the same <code>results</code> check goes green. If the upgrade breaks something, <code>results</code> stays red and the PR sits there until a human looks at it.</p>
 
 <div class="card">
     <p style="margin: 0;">The auto-merge workflow lives alongside the rest of CI under <a href="https://github.com/bcgov/agent-skills/tree/main/.github/workflows" target="_blank" rel="noopener"><code>.github/workflows/</code></a>. The merge gate it has to clear is exactly the one humans clear: there is no special path around <code>results</code>, and the workflow itself only acts on PRs Dependabot opened.</p>
@@ -79,7 +79,7 @@ npx skills add bcgov/agent-skills --skill X    # just one</code></pre>
         <tr><td>Pull request required</td><td>Yes (no approval count enforced; reviewers weigh in by convention)</td></tr>
         <tr><td>Required status check</td><td><code>results</code>, strict (branch must be up to date with <code>main</code>)</td></tr>
         <tr><td>Signed commits</td><td>Required</td></tr>
-        <tr><td>Code scanning</td><td>CodeQL (fails on <code>high</code> or above)</td></tr>
+        <tr><td>Code scanning</td><td>CodeQL via GitHub's default code-scanning setup (fails on <code>high</code> or above). Configured in <em>Settings &rarr; Code security</em>; no <code>codeql.yml</code> in <code>.github/workflows/</code>.</td></tr>
         <tr><td>Force-push to <code>main</code></td><td>Blocked</td></tr>
         <tr><td>Delete <code>main</code></td><td>Blocked</td></tr>
         <tr><td>Bypass actors</td><td>None</td></tr>
