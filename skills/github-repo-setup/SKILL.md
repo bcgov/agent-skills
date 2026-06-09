@@ -23,7 +23,8 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
 1. **Analyze Project Structure**: Inspect root configuration files (`package.json`, `tsconfig.json`, `renovate.json`, `.github/workflows/`, and deployment templates).
 2. **Run Automated Script**: Execute the maturity tool to obtain a scorecard and check for strict settings:
    ```bash
-   ./scripts/maturity-check.sh /path/to/repo
+   # From the repo root:
+   bash skills/github-repo-setup/scripts/maturity-check.sh /path/to/repo
    ```
 3. **Audit Repository Configurations**: Manually verify GitHub repository and branch protection settings.
 4. **Scan for Credentials & Secrets**: Audit source code and configuration files for exposed secrets (API keys, committed `.env` files, connection strings).

@@ -113,13 +113,13 @@ check_file() {
 }
 
 check_file_any() {
-    local file="$1"
+    local pattern="$1"
     local dir="${2:-$REPO_DIR}"
-    # Check in multiple possible locations
-    [ -f "$dir/$file" ] || \
-    [ -f "$dir/.github/$file" ] || \
-    [ -f "$dir/backend/$file" ] || \
-    [ -f "$dir/frontend/$file" ]
+    # Check in multiple possible locations (supports globs)
+    compgen -G "$dir/$pattern" >/dev/null 2>&1 || \
+    compgen -G "$dir/.github/$pattern" >/dev/null 2>&1 || \
+    compgen -G "$dir/backend/$pattern" >/dev/null 2>&1 || \
+    compgen -G "$dir/frontend/$pattern" >/dev/null 2>&1
 }
 
 check_dir() {
@@ -226,7 +226,7 @@ check_ci_cd() {
             fi
 
             # 4. Workflow runs on push + checks (Level 4) - 4 pts
-            if check_contains "^\s+push:|push:\s+branches" ".github/workflows" "$dir"; then
+            if check_contains "^[[:space:]]*push:|push:[[:space:]]+branches" ".github/workflows" "$dir"; then
                 score=$((score + 4))
                 checks+=("Run on push to branches")
                 log_pass "CI/CD: Runs on push to branches"
@@ -249,7 +249,7 @@ check_ci_cd() {
     if [ -d "$dir/.devcontainer" ] || \
        [ -f "$dir/.devcontainer.json" ] || \
        [ -f "$dir/.vscode/devcontainer.json" ] || \
-       check_file ".github/codespaces*" "$dir" || \
+       check_file_any "codespaces*" "$dir" || \
        check_file "devcontainer.json" "$dir" || \
        check_file "docker-compose.yml" "$dir" || \
        check_file "docker-compose.yaml" "$dir"; then
@@ -281,7 +281,9 @@ check_ci_cd() {
     fi
 
     # 7. Reusable workflow templates (Level 3) - 3 pts
-    if ls "$dir/.github/workflows/"*.yml 2>/dev/null | wc -l | grep -q "^[2-9]$\|^[1-9][0-9]$"; then
+    local wf_template_count=0
+    wf_template_count=$(find "$dir/.github/workflows" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | wc -l)
+    if [ "$wf_template_count" -ge 2 ]; then
         score=$((score + 3))
         checks+=("Multiple workflows")
         log_pass "CI/CD: Multiple reusable workflows"
@@ -370,7 +372,7 @@ check_code_quality() {
     # Check if TypeScript is used
     local uses_ts=false
     if check_file_any "tsconfig.json" "$dir" || \
-       find "$dir" -maxdepth 5 -name "*.ts" -o -name "*.tsx" 2>/dev/null | grep -q .; then
+       find "$dir" -maxdepth 5 -type f \( -name "*.ts" -o -name "*.tsx" \) 2>/dev/null | grep -q .; then
         uses_ts=true
     fi
 
@@ -378,10 +380,10 @@ check_code_quality() {
     if [ "$uses_ts" = true ]; then
         local ts_ok=true
         # Check all three flags
-        for flag in '"strict":\s*true' '"noImplicitAny":\s*true' '"strictNullChecks":\s*true'; do
+        for flag in '"strict":[[:space:]]*true' '"noImplicitAny":[[:space:]]*true' '"strictNullChecks":[[:space:]]*true'; do
             if ! { check_contains "$flag" "tsconfig.json" "$dir" || \
-                   check_contains "$flag" "tsconfig.json" "$dir/backend" "$dir" || \
-                   check_contains "$flag" "tsconfig.json" "$dir/frontend" "$dir"; }; then
+                   check_contains "$flag" "backend/tsconfig.json" "$dir" || \
+                   check_contains "$flag" "frontend/tsconfig.json" "$dir"; }; then
                 ts_ok=false
             fi
         done
@@ -915,8 +917,14 @@ check_deployment() {
 
     # 1. Docker Compose (Level 3) - 3 pts - valid compose file with services
     if check_file "docker-compose.yml" "$dir" || check_file "docker-compose.yaml" "$dir"; then
+        local compose_file=""
+        if [ -f "$dir/docker-compose.yml" ]; then
+            compose_file="$dir/docker-compose.yml"
+        else
+            compose_file="$dir/docker-compose.yaml"
+        fi
         # Check if it's valid (has services)
-        if grep -q "services:" "$dir/docker-compose.yml" "$dir/docker-compose.yaml" 2>/dev/null; then
+        if grep -qE "^[[:space:]]*services:" "$compose_file" 2>/dev/null; then
             score=$((score + 3))
             checks+=("Docker Compose")
             log_pass "Deployment: Docker Compose with services"
@@ -949,7 +957,8 @@ check_deployment() {
         score=$((score + 2))
         checks+=("Rolling updates")
         log_pass "Deployment: Rolling update strategy"
-    elif check_contains "recreate|rolling" "docker-compose" "$dir" 2>/dev/null; then
+    elif check_contains "recreate|rolling" "docker-compose.yml" "$dir" 2>/dev/null || \
+         check_contains "recreate|rolling" "docker-compose.yaml" "$dir" 2>/dev/null; then
         score=$((score + 2))
         checks+=("Update strategy")
         log_pass "Deployment: Update strategy defined"
@@ -1008,16 +1017,16 @@ check_deployment() {
     local sec_context_ok=true
     for f in "${yaml_files[@]}"; do
         [[ "$f" == *"node_modules"* || "$f" == *".tmp"* || "$f" == *".github"* ]] && continue
-        if grep -qE "kind:\s*(Deployment|StatefulSet|DaemonSet|Job|CronJob|Pod)" "$f" 2>/dev/null; then
-            if grep -q "allowPrivilegeEscalation:\s*true" "$f" 2>/dev/null; then
+        if grep -qE "kind:[[:space:]]*(Deployment|StatefulSet|DaemonSet|Job|CronJob|Pod)" "$f" 2>/dev/null; then
+            if grep -qE "allowPrivilegeEscalation:[[:space:]]*true" "$f" 2>/dev/null; then
                 log_fail "CONTRACT VIOLATION: allowPrivilegeEscalation is set to true in $f"
                 sec_context_ok=false
             fi
-            if grep -q "readOnlyRootFilesystem:\s*false" "$f" 2>/dev/null; then
+            if grep -qE "readOnlyRootFilesystem:[[:space:]]*false" "$f" 2>/dev/null; then
                 log_fail "CONTRACT VIOLATION: readOnlyRootFilesystem is set to false in $f"
                 sec_context_ok=false
             fi
-            if grep -q "runAsNonRoot:\s*false" "$f" 2>/dev/null; then
+            if grep -qE "runAsNonRoot:[[:space:]]*false" "$f" 2>/dev/null; then
                 log_fail "CONTRACT VIOLATION: runAsNonRoot is set to false in $f"
                 sec_context_ok=false
             fi
@@ -1031,6 +1040,10 @@ check_deployment() {
     fi
 
     SCORES[deployment]=$score
+    # Cap at max
+    if [ "$score" -gt "$max" ]; then
+        score=$max
+    fi
     MAX_SCORE=$((MAX_SCORE + max))
     echo "$score/$max" > "$OUTPUT_DIR/deployment.txt"
     echo "$score" > "$OUTPUT_DIR/deployment_score.txt"
@@ -1129,11 +1142,11 @@ print_report() {
         local dim_pct=$((score * 100 / max))
         local bar_len=$((score * 20 / max))
         local bar=""
-        for i in $(seq 1 $bar_len); do
-            bar="${bar}#"
+        for ((i=0; i<bar_len; i++)); do
+            bar+="#"
         done
-        for i in $(seq $bar_len 20); do
-            bar="${bar} "
+        for ((i=bar_len; i<20; i++)); do
+            bar+=" "
         done
         local dim_name=$(echo "$dim" | tr '_' ' ' | sed 's/\b./\U&/g')
         printf "%-25s [%s] %d/%d (%d%%) - Level %d\n" "$dim_name" "$bar" "$score" "$max" "$dim_pct" "$((dim_pct >= 50 ? (dim_pct >= 75 ? (dim_pct >= 90 ? 5 : 4) : 3) : 2))"
