@@ -24,8 +24,9 @@ per machine — see [GitHub's docs](https://docs.github.com/en/authentication/ma
    are not supported by the PR workflow.)
 2. **Add or update a skill** — for a new skill, first confirm no [upstream
    catalog](#before-adding-a-new-skill-check-upstream-catalogs-first) already
-   covers it. Then follow [spec/SKILL_SPEC.md](spec/SKILL_SPEC.md) and start
-   from [templates/SKILL.md](templates/SKILL.md).
+   covers it. Then follow [spec/SKILL_SPEC.md](spec/SKILL_SPEC.md) and copy an
+   existing skill's `SKILL.md` as a starting point
+   (e.g. [`skills/azure-networking/SKILL.md`](skills/azure-networking/SKILL.md)).
 3. **Validate locally** — `uv run python scripts/validate_skill.py skills/<name>/SKILL.md`.
 4. **Open a pull request** — describe what the skill does and why it's useful.
 5. **Pass the checks** — the PR workflow validates the skills your branch
@@ -90,7 +91,7 @@ skills/<skill-name>/
 ├── SKILL.md        # required: the manifest
 ├── scripts/        # optional: executable helpers
 ├── references/     # optional: heavy detail
-└── assets/         # optional: templates & resources
+└── assets/         # optional: examples & resources
 ```
 
 `SKILL.md` needs mandatory `name` + `description` frontmatter, then a body with

@@ -1,6 +1,8 @@
 ---
 name: skill-validator
 description: Validates skill profiles against the spec and explains how to fix failures before a PR is opened or merged.
+metadata:
+  internal: true
 ---
 
 # Skill Validator

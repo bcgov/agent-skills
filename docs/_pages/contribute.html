@@ -53,7 +53,7 @@
 <div class="card">
     <ol>
         <li><strong>Branch.</strong> Create a feature branch in this repo for your change.</li>
-        <li><strong>Add or update a skill.</strong> For a new skill, follow <a href="spec.html">the spec</a> and start from <a href="https://github.com/bcgov/agent-skills/blob/main/templates/SKILL.md" target="_blank" rel="noopener"><code>templates/SKILL.md</code></a>.</li>
+        <li><strong>Add or update a skill.</strong> For a new skill, follow <a href="spec.html">the spec</a> and copy an existing skill's <code>SKILL.md</code> as a starting point (e.g. <a href="https://github.com/bcgov/agent-skills/blob/main/skills/azure-networking/SKILL.md" target="_blank" rel="noopener"><code>skills/azure-networking/SKILL.md</code></a>).</li>
         <li><strong>Validate locally:</strong> <code>uv run python scripts/validate_skill.py skills/&lt;name&gt;/SKILL.md</code>.</li>
         <li><strong>Open a pull request.</strong> Describe what the skill does and why it's useful.</li>
         <li><strong>Pass the checks.</strong> The PR workflow validates the skills your branch changed (diffed against the base branch).</li>
@@ -69,7 +69,7 @@
 ├── SKILL.md        # required: the manifest
 ├── scripts/        # optional: executable helpers
 ├── references/     # optional: heavy detail
-└── assets/         # optional: templates &amp; resources</code></pre>
+└── assets/         # optional: examples &amp; resources</code></pre>
 
 <div class="card">
     <h3 style="margin-top:0;"><code>SKILL.md</code></h3>

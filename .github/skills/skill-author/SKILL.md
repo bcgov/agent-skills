@@ -1,6 +1,8 @@
 ---
 name: skill-author
 description: Scaffolds a new skill profile in this repo and fills in the required SKILL.md structure when a contributor wants to add a skill.
+metadata:
+  internal: true
 ---
 
 # Skill Author
@@ -17,7 +19,7 @@ description: Scaffolds a new skill profile in this repo and fills in the require
 ## Workflow
 1. Before scaffolding, confirm no upstream catalogue already covers this use case. Search [The Agent Skills Directory](https://www.skills.sh/), the [Microsoft Agent Skills catalog](https://microsoft.github.io/skills/#agents), [`anthropics/skills`](https://github.com/anthropics/skills), and [`github/awesome-copilot`](https://github.com/github/awesome-copilot). If an upstream skill covers it, point the user there instead of scaffolding a duplicate; only proceed when the skill is genuinely BC Gov–specific (encodes BC Gov policies, internal services, regulatory requirements, or org-specific workflows).
 2. Pick a kebab-case `<skill-name>` and create `skills/<skill-name>/`.
-3. Copy `templates/SKILL.md` into that folder.
+3. Create `skills/<skill-name>/SKILL.md`. Either copy an existing skill's `SKILL.md` as a starting point (e.g. [`skills/azure-networking/SKILL.md`](../../../skills/azure-networking/SKILL.md)) and rewrite the content, or write from scratch using [`spec/SKILL_SPEC.md`](../../../spec/SKILL_SPEC.md) as the structural reference.
 4. Fill the frontmatter (`name`, `description`) and write the H1 title line.
 5. Complete all seven sections: Use When, Don't Use When, Workflow, Rules, Examples, Edge Cases, References.
 6. Run `uv run python scripts/validate_skill.py skills/<skill-name>/SKILL.md` and fix any errors.
@@ -38,4 +40,4 @@ description: Scaffolds a new skill profile in this repo and fills in the require
 ## References
 For the upstream-catalogue check in step 1, search [The Agent Skills Directory](https://www.skills.sh/), [Microsoft Agent Skills](https://microsoft.github.io/skills/#agents), [`anthropics/skills`](https://github.com/anthropics/skills), and [`github/awesome-copilot`](https://github.com/github/awesome-copilot); the "Before adding a new skill" section of [CONTRIBUTING.md](../../../CONTRIBUTING.md) explains the policy in full.
 
-See [spec/SKILL_SPEC.md](../../../spec/SKILL_SPEC.md) for the authoritative manifest spec and [templates/SKILL.md](../../../templates/SKILL.md) for the starting point.
+See [spec/SKILL_SPEC.md](../../../spec/SKILL_SPEC.md) for the authoritative manifest spec.

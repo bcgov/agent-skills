@@ -74,10 +74,6 @@ agent-skills/
 │
 ├── spec/
 │   └── SKILL_SPEC.md               # authoritative manifest spec
-├── templates/
-│   ├── SKILL.md                    # copy this to start a new skill
-│   └── references/
-│       └── REFERENCE.md            # template for an optional reference doc
 │
 ├── skills/                         # contributed skills — the shared catalogue
 │   └── <skill>/                    # one folder per skill (browse the live site)
@@ -151,13 +147,14 @@ scans for skills.
 
 Once you have access set up, the loop looks like this:
 
-1. **Copy the template** into a new folder:
+1. **Create your skill folder** and copy an existing `SKILL.md` as a starting point:
    ```bash
    mkdir -p skills/<your-skill>/references
-   cp templates/SKILL.md skills/<your-skill>/SKILL.md
+   cp skills/azure-networking/SKILL.md skills/<your-skill>/SKILL.md
    ```
-2. **Fill in** the `SKILL.md` frontmatter and all seven sections; see
-   [`spec/SKILL_SPEC.md`](spec/SKILL_SPEC.md).
+   Then rewrite the frontmatter and body for your skill. See
+   [`spec/SKILL_SPEC.md`](spec/SKILL_SPEC.md) for the required structure.
+2. **Fill in** the `SKILL.md` frontmatter and all seven sections.
 3. **Validate locally:**
    ```bash
    uv run python scripts/validate_skill.py skills/<your-skill>/SKILL.md
