@@ -6,9 +6,73 @@
 
 set -euo pipefail
 
-REPO_DIR="${1:-.}"
-MIN_LEVEL="${2:-1}"
-OUTPUT_DIR=".tmp/maturity"
+show_help() {
+    echo "Usage: $0 [options] [REPO_DIR]"
+    echo ""
+    echo "Options:"
+    echo "  -o, --output <dir>       Output directory for scorecard (default: \${TMPDIR:-/tmp}/maturity_[repo_name])"
+    echo "  -m, --min-level <level>   Minimum required maturity level (1-5, default: 1)"
+    echo "  -h, --help               Show this help message"
+    echo ""
+    echo "Positional Arguments:"
+    echo "  REPO_DIR                 Path to the repository to assess (default: .)"
+    exit 0
+}
+
+# Defaults
+REPO_DIR="."
+MIN_LEVEL="1"
+OUTPUT_DIR=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            show_help
+            ;;
+        -o|--output)
+            if [[ -z "${2:-}" ]]; then
+                echo "ERROR: --output requires an argument" >&2
+                exit 1
+            fi
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        -m|--min-level)
+            if [[ -z "${2:-}" ]]; then
+                echo "ERROR: --min-level requires an argument" >&2
+                exit 1
+            fi
+            MIN_LEVEL="$2"
+            shift 2
+            ;;
+        -*)
+            echo "ERROR: Unknown option $1" >&2
+            exit 1
+            ;;
+        *)
+            if [[ "$REPO_DIR" == "." ]]; then
+                REPO_DIR="$1"
+            elif [[ "$MIN_LEVEL" == "1" ]]; then
+                MIN_LEVEL="$1"
+            else
+                echo "ERROR: Too many arguments: $1" >&2
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Resolve absolute path for REPO_DIR
+REPO_DIR=$(realpath "$REPO_DIR" 2>/dev/null || echo "$REPO_DIR")
+
+# Determine default output directory if not specified
+if [[ -z "$OUTPUT_DIR" ]]; then
+    REPO_NAME=$(basename "$REPO_DIR")
+    REPO_NAME=${REPO_NAME//[^a-zA-Z0-9_-]/_}
+    OUTPUT_DIR="${TMPDIR:-/tmp}/maturity_$REPO_NAME"
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -39,7 +103,7 @@ log_warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 log_info() { echo -e "${BLUE}[i]${NC} $1"; }
 
 setup_output() {
-    mkdir -p "$REPO_DIR/$OUTPUT_DIR"
+    mkdir -p "$OUTPUT_DIR"
 }
 
 check_file() {
@@ -70,6 +134,59 @@ check_contains() {
     local base="${3:-$REPO_DIR}"
     # Works with files OR directories - search recursively
     [ -e "$base/$file" ] && grep -rqE "$pattern" "$base/$file" 2>/dev/null
+}
+
+# Get repo name or fallback to 'repo'
+get_github_repo() {
+    local dir="$1"
+    if ! command -v git >/dev/null 2>&1; then
+        return 1
+    fi
+    local remote_url
+    remote_url=$(git -C "$dir" config --get remote.origin.url 2>/dev/null || true)
+    if [ -z "$remote_url" ]; then
+        return 1
+    fi
+    echo "$remote_url" | sed -E 's/.*github\.com[:\/]([^\/]+\/[^\/\.]+)(\.git)?/\1/'
+}
+
+query_gh_api() {
+    local endpoint="$1"
+    local jq_filter="$2"
+    if ! command -v gh >/dev/null 2>&1; then
+        return 1
+    fi
+    if ! gh auth status >/dev/null 2>&1; then
+        return 1
+    fi
+    gh api "$endpoint" --jq "$jq_filter" 2>/dev/null
+}
+
+parse_jacoco_xml() {
+    local xml_file="$1"
+    local counter_type="$2" # "LINE" or "BRANCH"
+    
+    # Extract all counter tags, filter for the target type, and take the last one
+    local line
+    line=$(grep -oE "<counter [^>]+>" "$xml_file" 2>/dev/null | grep -E "type=\"$counter_type\"" | tail -n 1 || true)
+    if [ -z "$line" ]; then
+        echo "-1"
+        return 1
+    fi
+    
+    local missed
+    local covered
+    missed=$(echo "$line" | grep -oE 'missed="[0-9]+"' | cut -d'"' -f2 || echo "0")
+    covered=$(echo "$line" | grep -oE 'covered="[0-9]+"' | cut -d'"' -f2 || echo "0")
+    
+    local total=$((missed + covered))
+    if [ "$total" -eq 0 ]; then
+        echo "0"
+        return 0
+    fi
+    
+    local pct=$((covered * 100 / total))
+    echo "$pct"
 }
 
 # ============================================================================
@@ -183,8 +300,8 @@ check_ci_cd() {
         score=$max
     fi
     MAX_SCORE=$((MAX_SCORE + max))
-    echo "$score/$max" > "$REPO_DIR/$OUTPUT_DIR/ci_cd.txt"
-    echo "$score" > "$REPO_DIR/$OUTPUT_DIR/ci_cd_score.txt"
+    echo "$score/$max" > "$OUTPUT_DIR/ci_cd.txt"
+    echo "$score" > "$OUTPUT_DIR/ci_cd_score.txt"
 }
 
 # ============================================================================
@@ -298,25 +415,62 @@ check_code_quality() {
             checks+=("Test scripts")
             log_pass "Code Quality: Test scripts present"
 
-            # Check coverage in root OR subdirs
-            local has_coverage=false
-            if check_contains "coverage|cov" "package.json" "$dir" || \
-               check_contains "coverage|cov" "backend/package.json" "$dir" || \
-               check_contains "coverage|cov" "frontend/package.json" "$dir"; then
-                has_coverage=true
+            # Parse JSON coverage if exists
+            local coverage_summary=""
+            for loc in "coverage/coverage-summary.json" "backend/coverage/coverage-summary.json" "frontend/coverage/coverage-summary.json"; do
+                if [ -f "$dir/$loc" ]; then
+                    coverage_summary="$dir/$loc"
+                    break
+                fi
+            done
+
+            local coverage_verified=false
+            local coverage_checked=false
+            if [ -n "$coverage_summary" ] && command -v jq >/dev/null 2>&1; then
+                local coverage_pct_stmt
+                local coverage_pct_branch
+                coverage_pct_stmt=$(jq -r '.total.statements.pct' "$coverage_summary" 2>/dev/null || echo "0")
+                coverage_pct_branch=$(jq -r '.total.branches.pct' "$coverage_summary" 2>/dev/null || echo "0")
+                
+                if [[ "$coverage_pct_stmt" =~ ^[0-9]+(\.[0-9]+)?$ ]] && [[ "$coverage_pct_branch" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+                    coverage_checked=true
+                    local stmt_val
+                    local branch_val
+                    stmt_val=$(printf "%.0f" "$coverage_pct_stmt" 2>/dev/null || echo "0")
+                    branch_val=$(printf "%.0f" "$coverage_pct_branch" 2>/dev/null || echo "0")
+                    
+                    if [ "$stmt_val" -ge 80 ] && [ "$branch_val" -ge 80 ]; then
+                        coverage_verified=true
+                        score=$((score + 3))
+                        checks+=("Coverage verified (>=80%)")
+                        log_pass "Code Quality: Test coverage verified (Statements: ${stmt_val}%, Branches: ${branch_val}% - both >= 80%)"
+                    else
+                        log_fail "CONTRACT VIOLATION: Test coverage is below 80% (Statements: ${stmt_val}%, Branches: ${branch_val}%)"
+                    fi
+                fi
             fi
 
-            if [ "$has_coverage" = true ]; then
-                score=$((score + 3))
-                checks+=("Coverage configured")
-                log_pass "Code Quality: Coverage configured"
-            # Check for bcgov action-test-and-analyse
-            elif check_contains "action-test-and-analyse" ".github/workflows" "$dir"; then
-                score=$((score + 3))
-                checks+=("BCGov test & analyse action")
-                log_pass "Code Quality: bcgov action-test-and-analyse"
+            if [ "$coverage_checked" = false ]; then
+                local has_cov_dir=false
+                if [ -d "$dir/coverage" ] || [ -d "$dir/backend/coverage" ] || [ -d "$dir/frontend/coverage" ]; then
+                    has_cov_dir=true
+                fi
+                
+                if [ "$has_cov_dir" = true ]; then
+                    log_warn "MANUAL VERIFY: Coverage report found but coverage-summary.json is missing or invalid. Verify that statement/branch coverage is >= 80% (+1 pt)"
+                    score=$((score + 1))
+                    checks+=("Coverage config check")
+                elif check_contains "coverage|cov" "package.json" "$dir" || \
+                     check_contains "coverage|cov" "backend/package.json" "$dir" || \
+                     check_contains "coverage|cov" "frontend/package.json" "$dir"; then
+                    log_warn "MANUAL VERIFY: Test coverage is configured, but no coverage reports were found. Run tests with coverage to verify 80% threshold (+1 pt)"
+                    score=$((score + 1))
+                    checks+=("Coverage config check")
+                else
+                    log_fail "Code Quality: No test coverage configured or reports found"
+                fi
             fi
-        # Just the action without npm test scripts
+        # Check for bcgov action-test-and-analyse
         elif check_contains "action-test-and-analyse" ".github/workflows" "$dir"; then
             score=$((score + 6))
             checks+=("BCGov test & analyse action")
@@ -324,9 +478,57 @@ check_code_quality() {
         fi
     # For Java
     elif [ "$is_java" = true ]; then
+        # Check for maven test plugins/config
         score=$((score + 3))
         checks+=("Maven tests")
         log_pass "Code Quality: Maven tests configured"
+
+        # Locate JaCoCo report
+        local jacoco_xml=""
+        for loc in "target/site/jacoco/jacoco.xml" "backend/target/site/jacoco/jacoco.xml"; do
+            if [ -f "$dir/$loc" ]; then
+                jacoco_xml="$dir/$loc"
+                break
+            fi
+        done
+
+        local jacoco_verified=false
+        local jacoco_checked=false
+        if [ -n "$jacoco_xml" ]; then
+            # Parse LINE and BRANCH counters using custom parser
+            local line_pct
+            local branch_pct
+            line_pct=$(parse_jacoco_xml "$jacoco_xml" "LINE" || echo "-1")
+            branch_pct=$(parse_jacoco_xml "$jacoco_xml" "BRANCH" || echo "-1")
+
+            if [ "$line_pct" -ge 0 ] && [ "$branch_pct" -ge 0 ]; then
+                jacoco_checked=true
+                if [ "$line_pct" -ge 80 ] && [ "$branch_pct" -ge 80 ]; then
+                    jacoco_verified=true
+                    score=$((score + 3))
+                    checks+=("JaCoCo verified (>=80%)")
+                    log_pass "Code Quality: JaCoCo coverage verified (Lines: ${line_pct}%, Branches: ${branch_pct}% - both >= 80%)"
+                else
+                    log_fail "CONTRACT VIOLATION: JaCoCo test coverage is below 80% (Lines: ${line_pct}%, Branches: ${branch_pct}%)"
+                fi
+            fi
+        fi
+
+        if [ "$jacoco_checked" = false ]; then
+            if [ -n "$jacoco_xml" ]; then
+                log_warn "MANUAL VERIFY: JaCoCo XML exists but couldn't extract metrics. Verify coverage >= 80% (+1 pt)"
+                score=$((score + 1))
+                checks+=("JaCoCo config check")
+            elif [ -d "$dir/target/site/jacoco" ] || [ -d "$dir/backend/target/site/jacoco" ]; then
+                log_warn "MANUAL VERIFY: JaCoCo HTML reports found but XML report missing. Verify coverage >= 80% (+1 pt)"
+                score=$((score + 1))
+                checks+=("JaCoCo config check")
+            else
+                log_warn "MANUAL VERIFY: No JaCoCo coverage report found. Run maven tests with jacoco enabled to verify 80% threshold (+1 pt)"
+                score=$((score + 1))
+                checks+=("JaCoCo config check")
+            fi
+        fi
     fi
 
     # 7. Java detection bonus - if it's a Java project, give some credit
@@ -342,8 +544,8 @@ check_code_quality() {
         score=$max
     fi
     MAX_SCORE=$((MAX_SCORE + max))
-    echo "$score/$max" > "$REPO_DIR/$OUTPUT_DIR/code_quality.txt"
-    echo "$score" > "$REPO_DIR/$OUTPUT_DIR/code_quality_score.txt"
+    echo "$score/$max" > "$OUTPUT_DIR/code_quality.txt"
+    echo "$score" > "$OUTPUT_DIR/code_quality_score.txt"
 }
 
 # ============================================================================
@@ -356,10 +558,38 @@ check_security() {
     local checks=()
 
     # 1. GitHub secret scanning (Level 2) - 3 pts
-    # Check via API or assume enabled if no issues
-    score=$((score + 3))
-    checks+=("Secret scanning enabled")
-    log_pass "Security: GitHub secret scanning"
+    local has_secret_scanning=false
+    local repo_name
+    repo_name=$(get_github_repo "$dir" || true)
+    
+    if [ -n "$repo_name" ] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        local status
+        status=$(query_gh_api "repos/$repo_name" ".security_and_analysis.secret_scanning.status" || true)
+        if [ "$status" = "enabled" ]; then
+            has_secret_scanning=true
+        fi
+    else
+        # Fallback
+        if [ -t 0 ] && [ -z "${ANTIGRAVITY_AGENT:-}" ] && [ -z "${CI:-}" ]; then
+            local answer
+            read -r -p "Could not verify automatically. Is GitHub Secret Scanning enabled? [y/N] " answer
+            if [[ "$answer" =~ ^[yY]([eE][sS])?$ ]]; then
+                has_secret_scanning=true
+            fi
+        else
+            echo "ERROR: GitHub API access is unavailable or unauthenticated, and no interactive terminal is present to verify Secret Scanning." >&2
+            echo "Please authenticate using 'gh auth login' or ensure GITHUB_TOKEN is set in your environment." >&2
+            exit 1
+        fi
+    fi
+
+    if [ "$has_secret_scanning" = true ]; then
+        score=$((score + 3))
+        checks+=("Secret scanning enabled")
+        log_pass "Security: GitHub secret scanning"
+    else
+        log_warn "MANUAL VERIFY: Enable GitHub Secret Scanning in repository settings (+3 pts)"
+    fi
 
     # 2. Trivy config (Level 3) - 4 pts
     if check_file ".github/trivy.yaml" "$dir" || \
@@ -426,8 +656,8 @@ check_security() {
         score=$max
     fi
     MAX_SCORE=$((MAX_SCORE + max))
-    echo "$score/$max" > "$REPO_DIR/$OUTPUT_DIR/security.txt"
-    echo "$score" > "$REPO_DIR/$OUTPUT_DIR/security_score.txt"
+    echo "$score/$max" > "$OUTPUT_DIR/security.txt"
+    echo "$score" > "$OUTPUT_DIR/security_score.txt"
 }
 
 # ============================================================================
@@ -440,10 +670,43 @@ check_github_hygiene() {
     local checks=()
 
     # 1. Branch protection (Level 3) - 4 pts
-    # Note: This is configured in GitHub repo settings, not files - give credit
-    score=$((score + 4))
-    checks+=("Branch protection (GitHub settings)")
-    log_pass "GitHub Hygiene: Branch protection enabled in repo settings"
+    local has_branch_protection=false
+    local repo_name
+    repo_name=$(get_github_repo "$dir" || true)
+    
+    if [ -n "$repo_name" ] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        if query_gh_api "repos/$repo_name/branches/main/protection" "." >/dev/null 2>&1 || \
+           query_gh_api "repos/$repo_name/branches/master/protection" "." >/dev/null 2>&1; then
+              has_branch_protection=true
+        else
+            local rulesets_count
+            rulesets_count=$(query_gh_api "repos/$repo_name/rulesets" "length" || true)
+            if [ -n "$rulesets_count" ] && [ "$rulesets_count" -gt 0 ]; then
+                has_branch_protection=true
+            fi
+        fi
+    else
+        # Fallback
+        if [ -t 0 ] && [ -z "${ANTIGRAVITY_AGENT:-}" ] && [ -z "${CI:-}" ]; then
+            local answer
+            read -r -p "Could not verify automatically. Is Branch Protection or a Ruleset enabled on main/master? [y/N] " answer
+            if [[ "$answer" =~ ^[yY]([eE][sS])?$ ]]; then
+                has_branch_protection=true
+            fi
+        else
+            echo "ERROR: GitHub API access is unavailable or unauthenticated, and no interactive terminal is present to verify branch protection." >&2
+            echo "Please authenticate using 'gh auth login' or ensure GITHUB_TOKEN is set in your environment." >&2
+            exit 1
+        fi
+    fi
+
+    if [ "$has_branch_protection" = true ]; then
+        score=$((score + 4))
+        checks+=("Branch protection (GitHub settings)")
+        log_pass "GitHub Hygiene: Branch protection enabled in repo settings"
+    else
+        log_warn "MANUAL VERIFY: Configure Branch Protection or a Ruleset on main/master branch (+4 pts)"
+    fi
 
     # 2. PR template (Level 2) - 3 pts
     if check_file ".github/pull_request_template.md" "$dir" || \
@@ -499,8 +762,8 @@ check_github_hygiene() {
         score=$max
     fi
     MAX_SCORE=$((MAX_SCORE + max))
-    echo "$score/$max" > "$REPO_DIR/$OUTPUT_DIR/github_hygiene.txt"
-    echo "$score" > "$REPO_DIR/$OUTPUT_DIR/github_hygiene_score.txt"
+    echo "$score/$max" > "$OUTPUT_DIR/github_hygiene.txt"
+    echo "$score" > "$OUTPUT_DIR/github_hygiene_score.txt"
 }
 
 # ============================================================================
@@ -530,10 +793,39 @@ check_dependencies() {
             fi
         fi
 
-        # Note: Auto-merge is configured in GitHub settings, not files - give credit
-        score=$((score + 4))
-        checks+=("Auto-merge (GitHub settings)")
-        log_pass "Dependencies: Auto-merge enabled in GitHub settings"
+        # Auto-merge verification
+        local has_automerge=false
+        local repo_name
+        repo_name=$(get_github_repo "$dir" || true)
+        
+        if [ -n "$repo_name" ] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+            local allow_merge
+            allow_merge=$(query_gh_api "repos/$repo_name" ".allow_auto_merge" || true)
+            if [ "$allow_merge" = "true" ]; then
+                has_automerge=true
+            fi
+        else
+            # Fallback
+            if [ -t 0 ] && [ -z "${ANTIGRAVITY_AGENT:-}" ] && [ -z "${CI:-}" ]; then
+                local answer
+                read -r -p "Could not verify automatically. Is Auto-merge enabled in GitHub settings? [y/N] " answer
+                if [[ "$answer" =~ ^[yY]([eE][sS])?$ ]]; then
+                    has_automerge=true
+                fi
+            else
+                echo "ERROR: GitHub API access is unavailable or unauthenticated, and no interactive terminal is present to verify Auto-merge settings." >&2
+                echo "Please authenticate using 'gh auth login' or ensure GITHUB_TOKEN is set in your environment." >&2
+                exit 1
+            fi
+        fi
+
+        if [ "$has_automerge" = true ]; then
+            score=$((score + 4))
+            checks+=("Auto-merge (GitHub settings)")
+            log_pass "Dependencies: Auto-merge enabled in GitHub settings"
+        else
+            log_warn "MANUAL VERIFY: Enable Auto-merge in GitHub repository settings (+4 pts)"
+        fi
     fi
 
     # 3. Lockfile present (Level 2) - 3 pts (npm/yarn/pnpm - root OR subdirs)
@@ -564,8 +856,8 @@ check_dependencies() {
         score=$max
     fi
     MAX_SCORE=$((MAX_SCORE + max))
-    echo "$score/$max" > "$REPO_DIR/$OUTPUT_DIR/dependencies.txt"
-    echo "$score" > "$REPO_DIR/$OUTPUT_DIR/dependencies_score.txt"
+    echo "$score/$max" > "$OUTPUT_DIR/dependencies.txt"
+    echo "$score" > "$OUTPUT_DIR/dependencies_score.txt"
 }
 
 # ============================================================================
@@ -608,8 +900,8 @@ check_documentation() {
 
     SCORES[documentation]=$score
     MAX_SCORE=$((MAX_SCORE + max))
-    echo "$score/$max" > "$REPO_DIR/$OUTPUT_DIR/documentation.txt"
-    echo "$score" > "$REPO_DIR/$OUTPUT_DIR/documentation_score.txt"
+    echo "$score/$max" > "$OUTPUT_DIR/documentation.txt"
+    echo "$score" > "$OUTPUT_DIR/documentation_score.txt"
 }
 
 # ============================================================================
@@ -740,8 +1032,8 @@ check_deployment() {
 
     SCORES[deployment]=$score
     MAX_SCORE=$((MAX_SCORE + max))
-    echo "$score/$max" > "$REPO_DIR/$OUTPUT_DIR/deployment.txt"
-    echo "$score" > "$REPO_DIR/$OUTPUT_DIR/deployment_score.txt"
+    echo "$score/$max" > "$OUTPUT_DIR/deployment.txt"
+    echo "$score" > "$OUTPUT_DIR/deployment_score.txt"
 }
 
 # ============================================================================
@@ -782,9 +1074,9 @@ calculate_results() {
         level=2
     fi
     
-    echo "$percent" > "$REPO_DIR/$OUTPUT_DIR/score.txt"
-    echo "$level" > "$REPO_DIR/$OUTPUT_DIR/level.txt"
-    echo "$total/$MAX_SCORE" > "$REPO_DIR/$OUTPUT_DIR/total.txt"
+    echo "$percent" > "$OUTPUT_DIR/score.txt"
+    echo "$level" > "$OUTPUT_DIR/level.txt"
+    echo "$total/$MAX_SCORE" > "$OUTPUT_DIR/total.txt"
     
     # Check minimum
     if [ "$level" -lt "$MIN_LEVEL" ]; then
@@ -884,7 +1176,7 @@ main() {
     print_report
     
     echo ""
-    echo "Results saved to: $REPO_DIR/$OUTPUT_DIR/"
+    echo "Results saved to: $OUTPUT_DIR/"
 }
 
 main "$@"
