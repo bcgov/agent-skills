@@ -453,7 +453,7 @@ def _write_skill_for_dup(root, name, *, desc="A demo skill.", body_suffix=""):
     "## Don't Use When\n- other → other-skill\n\n"
     "## Workflow\n1. do a thing\n\n"
     "## Rules\n- Always be careful\n\n"
-    "## Examples\n- \"do it\" → does it\n\n"
+    '## Examples\n- "do it" → does it\n\n'
     "## Edge Cases\n- If empty → fall back\n\n"
     "## References\nSee REFERENCE.md\n"
     f"{body_suffix}"
