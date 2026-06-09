@@ -6,6 +6,11 @@ Usage:
   validate_skill.py --all                        # validate every skill
   validate_skill.py --base origin/main           # validate skills changed vs base
 
+All modes also flag cross-skill duplicates (name, description, and body
+content below the H1/summary) so that a copy-pasted SKILL.md cannot ship
+with another skill's metadata or body. Pass ``--no-duplicates`` to skip
+that check.
+
 Exit code 0 = all valid, 1 = one or more errors.
 
 Frontmatter is parsed with PyYAML so the validator has no hand-rolled parser to
@@ -427,6 +432,158 @@ def changed_modules(base: str) -> list:
   return sorted(m for m in modules if os.path.isfile(m))
 
 
+# --- Duplicate detection ---------------------------------------------------
+
+# Everything before the first '## ' heading (the H1 line plus any one-line
+# summary) is dropped from the body fingerprint. Contributors who copy an
+# existing skill almost always remember to update the H1, but often leave
+# the substantive sections (Use When, Workflow, Rules, ...) untouched; this
+# strip keeps the dedup focused on that substantive content.
+_PRE_H2_RE = re.compile(r"^.*?(?=^##\s)", re.DOTALL | re.MULTILINE)
+
+# Whitespace runs are collapsed and the text is lowercased so trivial diffs
+# (a stray blank line, a capitalised heading) do not hide a copy-paste.
+_WS_RE = re.compile(r"\s+")
+
+
+def _normalize_text(s: str) -> str:
+  """Return a comparable fingerprint: lowercased, whitespace-collapsed, stripped."""
+  return _WS_RE.sub(" ", s.lower()).strip()
+
+
+def _body_fingerprint(body: str) -> str:
+  """Return the body's '## section' content as a comparable fingerprint."""
+  return _normalize_text(_PRE_H2_RE.sub("", body, count=1))
+
+
+def _canonical_path(path: str) -> str:
+  """Canonical form for cross-platform path identity (handles case + symlinks)."""
+  return os.path.normcase(os.path.realpath(path))
+
+
+def _load_skill_entry(path: str):
+  """Read a SKILL.md and return its dedup fingerprints, or ``None`` on failure.
+
+  Args:
+    path: Path to a ``SKILL.md`` file.
+
+  Returns:
+    A mapping with the skill's normalized ``name``, ``desc_norm``, and
+    ``body_norm`` fingerprints, or ``None`` if the file cannot be read.
+  """
+  try:
+    with open(path, encoding="utf-8") as f:
+      text = f.read()
+  except OSError:
+    return None
+  data, body, _ = parse_frontmatter(text)
+  name = desc = ""
+  if isinstance(data, dict):
+    raw_name = data.get("name")
+    raw_desc = data.get("description")
+    if isinstance(raw_name, str):
+      name = raw_name.strip()
+    if isinstance(raw_desc, str):
+      desc = raw_desc.strip()
+  return {
+    "name": name,
+    "desc_norm": _normalize_text(desc),
+    "body_norm": _body_fingerprint(body),
+  }
+
+
+def check_duplicates(targets, corpus=None) -> dict:
+  """Find skills whose name, description, or body content duplicates another.
+
+  Catches copy-paste mistakes where a contributor cloned an existing skill
+  but forgot to rewrite the metadata or the body. The body comparison drops
+  the H1 and summary preamble (which contributors usually do update) and
+  only compares the substantive ``##`` sections, so a "renamed the title,
+  kept the rest verbatim" copy is still caught.
+
+  Args:
+    targets: SKILL.md paths to report duplicate errors against.
+    corpus: SKILL.md paths to compare ``targets`` against. Defaults to
+      ``targets``. When validating a subset (e.g. a single new skill), pass
+      the full repo set so the subset is also compared against the existing
+      manifests, not just the other targets in the same run.
+
+  Returns:
+    A mapping ``path -> list[error]`` for every target that duplicates one
+    or more skills in ``corpus``. Targets with no duplicates are omitted.
+  """
+  if corpus is None:
+    corpus = list(targets)
+
+  # Load each unique file once, keyed by canonical path. The first spelling
+  # we see for a given canonical path is kept so the report uses a path that
+  # matches what the caller would recognise.
+  by_canonical = {}
+  for path in list(corpus) + list(targets):
+    if not os.path.isfile(path):
+      continue
+    cp = _canonical_path(path)
+    if cp in by_canonical:
+      continue
+    entry = _load_skill_entry(path)
+    if entry is None:
+      continue
+    by_canonical[cp] = {"original": path, **entry}
+
+  # Group skills by each fingerprint. Empty fingerprints are skipped so that
+  # two files with missing metadata do not "duplicate" each other via the
+  # shared empty string.
+  by_name, by_desc, by_body = {}, {}, {}
+  for cp, e in by_canonical.items():
+    if e["name"]:
+      by_name.setdefault(e["name"], []).append(cp)
+    if e["desc_norm"]:
+      by_desc.setdefault(e["desc_norm"], []).append(cp)
+    if e["body_norm"]:
+      by_body.setdefault(e["body_norm"], []).append(cp)
+
+  errors = {}
+  for t in targets:
+    ct = _canonical_path(t)
+    e = by_canonical.get(ct)
+    if e is None:
+      continue
+    target_errs = []
+
+    name_dups = sorted(
+      by_canonical[d]["original"] for d in by_name.get(e["name"], []) if d != ct
+    )
+    if name_dups:
+      target_errs.append(
+        f"frontmatter 'name' duplicates: {', '.join(name_dups)} — "
+        "each skill must have a unique name"
+      )
+
+    desc_dups = sorted(
+      by_canonical[d]["original"] for d in by_desc.get(e["desc_norm"], []) if d != ct
+    )
+    if desc_dups:
+      target_errs.append(
+        f"frontmatter 'description' duplicates: {', '.join(desc_dups)} — "
+        "looks like a copy-paste; describe what makes this skill different"
+      )
+
+    body_dups = sorted(
+      by_canonical[d]["original"] for d in by_body.get(e["body_norm"], []) if d != ct
+    )
+    if body_dups:
+      target_errs.append(
+        f"SKILL.md body content duplicates (H1/summary ignored): "
+        f"{', '.join(body_dups)} — looks like a copy-paste; rewrite the "
+        "Workflow/Rules/Examples for this skill"
+      )
+
+    if target_errs:
+      errors[t] = target_errs
+
+  return errors
+
+
 # --- CLI --------------------------------------------------------------------
 
 
@@ -450,6 +607,11 @@ def main(argv=None) -> int:
   p.add_argument(
     "--base", help="validate skills changed vs this git ref (e.g. origin/main)"
   )
+  p.add_argument(
+    "--no-duplicates",
+    action="store_true",
+    help="skip cross-skill duplicate detection (name/description/body)",
+  )
   args = p.parse_args(argv)
 
   if args.all:
@@ -463,9 +625,19 @@ def main(argv=None) -> int:
     print("No skills to validate.")
     return 0
 
+  per_file = {t: validate_file(t) for t in targets}
+
+  if not args.no_duplicates:
+    # Always compare targets against the full repo so that validating a
+    # subset (e.g. one new skill) still catches duplicates of skills that
+    # were not in the explicit target list.
+    corpus = sorted(set(targets) | set(discover_all()))
+    for t, errs in check_duplicates(targets, corpus).items():
+      per_file.setdefault(t, []).extend(errs)
+
   failed = 0
   for t in targets:
-    errs = validate_file(t)
+    errs = per_file.get(t, [])
     if errs:
       failed += 1
       print(f"✗ {t}")

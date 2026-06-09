@@ -430,3 +430,196 @@ def test_main_invalid_path_returns_one():
     with open(path, "w", encoding="utf-8") as f:
       f.write("no frontmatter at all")
     assert v.main([path]) == 1
+
+
+# --- Duplicate-detection helpers --------------------------------------------
+
+
+def _write_skill_for_dup(root, name, *, desc="A demo skill.", body_suffix=""):
+  """Write a complete SKILL.md under ``root/<name>/`` for duplicate-detection tests.
+
+  The body is identical across calls except for the H1 line, the summary
+  line, and any caller-supplied ``body_suffix`` appended after the standard
+  ``## References`` section. That lets a single helper drive each scenario
+  (same name, same description, same body, all distinct) by varying just
+  the inputs that matter for the test.
+  """
+  skill_dir = os.path.join(root, name)
+  os.makedirs(skill_dir, exist_ok=True)
+  text = (
+    f"---\nname: {name}\ndescription: {desc}\n---\n\n"
+    f"# {name}\nSummary for {name}.\n\n"
+    "## Use When\n- something\n\n"
+    "## Don't Use When\n- other → other-skill\n\n"
+    "## Workflow\n1. do a thing\n\n"
+    "## Rules\n- Always be careful\n\n"
+    "## Examples\n- \"do it\" → does it\n\n"
+    "## Edge Cases\n- If empty → fall back\n\n"
+    "## References\nSee REFERENCE.md\n"
+    f"{body_suffix}"
+  )
+  path = os.path.join(skill_dir, "SKILL.md")
+  with open(path, "w", encoding="utf-8") as f:
+    f.write(text)
+  return path
+
+
+# --- _normalize_text / _body_fingerprint ------------------------------------
+
+
+def test_normalize_text_lowercases_and_collapses_whitespace():
+  """Mixed-case input with runs of whitespace collapses to a single comparable form."""
+  assert v._normalize_text("  Hello  WORLD\n\t") == "hello world"
+
+
+def test_normalize_text_empty_string():
+  """Empty input returns an empty fingerprint instead of raising."""
+  assert v._normalize_text("") == ""
+
+
+def test_body_fingerprint_drops_h1_and_summary_preamble():
+  """Everything before the first '## ' heading is dropped from the fingerprint."""
+  body = "# Title\nSummary line.\n\n## Use When\n- thing\n"
+  fp = v._body_fingerprint(body)
+  assert fp.startswith("## use when")
+  assert "title" not in fp
+  assert "summary" not in fp
+
+
+def test_body_fingerprint_without_h2_keeps_full_body():
+  """When there is no '## ' heading the regex finds nothing and the body is kept."""
+  body = "# Only an H1\nSome text.\n"
+  fp = v._body_fingerprint(body)
+  assert "only an h1" in fp
+  assert "some text" in fp
+
+
+# --- check_duplicates -------------------------------------------------------
+
+
+def test_check_duplicates_distinct_skills_pass():
+  """Two skills with distinct names, descriptions, and bodies produce no errors."""
+  with tempfile.TemporaryDirectory() as root:
+    a = _write_skill_for_dup(root, "alpha", desc="Alpha skill.")
+    b = _write_skill_for_dup(
+      root, "beta", desc="Beta skill.", body_suffix="\nExtra beta-only line.\n"
+    )
+    assert v.check_duplicates([a, b]) == {}
+
+
+def test_check_duplicates_same_description_flagged():
+  """A description copied verbatim from another skill is flagged on both sides."""
+  with tempfile.TemporaryDirectory() as root:
+    a = _write_skill_for_dup(root, "alpha", desc="Shared description text.")
+    b = _write_skill_for_dup(
+      root,
+      "beta",
+      desc="Shared description text.",
+      body_suffix="\nExtra beta-only line.\n",
+    )
+    errs = v.check_duplicates([a, b])
+    assert any("description" in e for e in errs[a])
+    assert any("description" in e for e in errs[b])
+
+
+def test_check_duplicates_same_body_with_different_h1_flagged():
+  """A body matching another skill's ``##`` sections is flagged when only H1 differs."""
+  with tempfile.TemporaryDirectory() as root:
+    a = _write_skill_for_dup(root, "alpha", desc="Alpha skill.")
+    b = _write_skill_for_dup(root, "beta", desc="Beta skill.")
+    errs = v.check_duplicates([a, b])
+    assert any("body content" in e for e in errs[a])
+    assert any("body content" in e for e in errs[b])
+
+
+def test_check_duplicates_same_name_in_different_dirs_flagged():
+  """Two skills that declare the same frontmatter ``name`` are flagged."""
+  with tempfile.TemporaryDirectory() as root:
+    base = (
+      "---\nname: shared\ndescription: {desc}\n---\n\n"
+      "# {h1}\nSummary.\n\n"
+      "## Use When\n- {body}\n\n"
+      "## Don't Use When\n- x\n\n## Workflow\n1. y\n\n"
+      "## Rules\n- z\n\n## Examples\n- q\n\n"
+      "## Edge Cases\n- w\n\n## References\n- r\n"
+    )
+    a_dir = os.path.join(root, "a-tree", "shared")
+    b_dir = os.path.join(root, "b-tree", "shared")
+    os.makedirs(a_dir)
+    os.makedirs(b_dir)
+    a = os.path.join(a_dir, "SKILL.md")
+    b = os.path.join(b_dir, "SKILL.md")
+    with open(a, "w", encoding="utf-8") as f:
+      f.write(base.format(desc="One.", h1="A", body="alpha-thing"))
+    with open(b, "w", encoding="utf-8") as f:
+      f.write(base.format(desc="Two.", h1="B", body="beta-thing"))
+    errs = v.check_duplicates([a, b])
+    assert any("name" in e for e in errs[a])
+    assert any("name" in e for e in errs[b])
+
+
+def test_check_duplicates_target_compared_against_corpus():
+  """A target is flagged when it duplicates a corpus skill not in the target list."""
+  with tempfile.TemporaryDirectory() as root:
+    a = _write_skill_for_dup(root, "alpha", desc="Same.")
+    b = _write_skill_for_dup(root, "beta", desc="Same.")
+    errs = v.check_duplicates([b], corpus=[a, b])
+    assert b in errs
+    assert any("alpha" in e for e in errs[b])
+    assert a not in errs  # alpha was not a target, so it gets no entry
+
+
+def test_check_duplicates_ignores_missing_files():
+  """A path that does not exist on disk is silently skipped, not raised on."""
+  assert v.check_duplicates(["/no/such/SKILL.md"]) == {}
+
+
+def test_check_duplicates_skips_empty_fingerprints():
+  """Skills with no parseable frontmatter do not match each other via empty strings."""
+  with tempfile.TemporaryDirectory() as root:
+    a_dir = os.path.join(root, "alpha")
+    b_dir = os.path.join(root, "beta")
+    os.makedirs(a_dir)
+    os.makedirs(b_dir)
+    a = os.path.join(a_dir, "SKILL.md")
+    b = os.path.join(b_dir, "SKILL.md")
+    with open(a, "w", encoding="utf-8") as f:
+      f.write("alpha body only, no frontmatter")
+    with open(b, "w", encoding="utf-8") as f:
+      f.write("beta body only, no frontmatter")
+    assert v.check_duplicates([a, b]) == {}
+
+
+# --- main with duplicate detection ------------------------------------------
+
+
+def test_main_flags_cross_skill_duplicates():
+  """`main` exits 1 when a target duplicates another skill discovered in the repo."""
+  with tempfile.TemporaryDirectory() as root:
+    skills = os.path.join(root, "skills")
+    os.makedirs(skills)
+    _write_skill_for_dup(skills, "alpha", desc="Shared description.")
+    b = _write_skill_for_dup(skills, "beta", desc="Shared description.")
+    cwd = os.getcwd()
+    try:
+      os.chdir(root)
+      rc = v.main([os.path.relpath(b, root)])
+    finally:
+      os.chdir(cwd)
+    assert rc == 1
+
+
+def test_main_no_duplicates_flag_skips_dup_check():
+  """`--no-duplicates` lets otherwise-duplicate skills pass."""
+  with tempfile.TemporaryDirectory() as root:
+    skills = os.path.join(root, "skills")
+    os.makedirs(skills)
+    _write_skill_for_dup(skills, "alpha", desc="Shared description.")
+    b = _write_skill_for_dup(skills, "beta", desc="Shared description.")
+    cwd = os.getcwd()
+    try:
+      os.chdir(root)
+      rc = v.main(["--no-duplicates", os.path.relpath(b, root)])
+    finally:
+      os.chdir(cwd)
+    assert rc == 0
