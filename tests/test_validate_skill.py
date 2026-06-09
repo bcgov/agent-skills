@@ -660,6 +660,7 @@ def test_smart_quote_apostrophe_in_section_heading_is_accepted():
   errs = v.validate_body(v.parse_frontmatter(text)[1])
   assert errs == []
 
+
 # --- _strip_code_fences -----------------------------------------------------
 
 
@@ -706,7 +707,7 @@ def test_headings_inside_code_fences_are_ignored():
   # whose comment line begins with ``## `` — the validator must ignore it.
   text = VALID.replace(
     '- "do it" \u2192 does it',
-    '- run the script:\n  ```bash\n  ## another section\n  echo hi\n  ```',
+    "- run the script:\n  ```bash\n  ## another section\n  echo hi\n  ```",
   )
   errs = v.validate_body(v.parse_frontmatter(text)[1])
   assert errs == [], f"unexpected errors: {errs}"
