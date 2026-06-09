@@ -147,7 +147,7 @@ ARM serializes writes against the same VNet — concurrent subnet PUTs fail with
 
 Each subnet must depend on **all** preceding siblings:
 
-```
+```text
 azapi_resource.pe_subnet                  # no deps (first)
 azapi_resource.apim_subnet                # depends_on: [pe_subnet]
 azapi_resource.appgw_subnet               # depends_on: [pe_subnet, apim_subnet]
@@ -223,7 +223,7 @@ Reserve a priority band (e.g. 400–499) for dynamic peer entries so adding or r
 | Priority | Direction | Source / Destination               | Port        | Purpose                       |
 |----------|-----------|------------------------------------|-------------|-------------------------------|
 | 100      | Inbound   | `Internet`                         | 443         | HTTPS ingress                 |
-| 120      | Inbound   | `GatewayManager` service tag       | 65200–65535 | AGW infrastructure control    |
+| 120      | Inbound   | `GatewayManager` service tag       | 65200–65535 (v2 SKU; v1 uses 65503–65534) | AGW infrastructure control    |
 | 130      | Inbound   | `AzureLoadBalancer` service tag    | *           | LB health probes              |
 
 Port 80 is intentionally not allowed — let App Gateway terminate HTTPS and skip an HTTP-to-HTTPS hop at the NSG layer.
@@ -273,4 +273,4 @@ App Gateway is one of the few subnets that often needs an explicit route table �
 | `NetworkSecurityGroupNotAssociated`                | Subnet created without an NSG in its body under an NSG-at-creation policy           | Attach the NSG inline at creation (Terraform `azapi_resource` with `networkSecurityGroup.id` in `body.properties`; Bicep `networkSecurityGroup` property on the subnet; CLI `--network-security-group`) |
 | `SubnetConflictWithOtherSubnet`                    | CIDR overlap within the same address space                                         | Re-check the allocation map; pick non-overlapping CIDRs                            |
 | `AnotherOperationInProgress`                       | Concurrent subnet PUTs to the same VNet                                            | Serialize subnet writes (Terraform `depends_on` chain + `locks`; Bicep `dependsOn` across modules; CLI — sequential calls) |
-| `PrivateEndpointCannotBeCreatedInSubnet`           | Subnet has a delegation, or `privateEndpointNetworkPolicies` is not `"Disabled"`   | Fix both on the subnet                                                             |
+| `PrivateEndpointCannotBeCreatedInSubnet`           | Subnet has a delegation incompatible with PEs, or `privateEndpointNetworkPolicies` is set to a value the PE provider's automation refuses | Set the property to `"Disabled"` and remove any delegation                          |

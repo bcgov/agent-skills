@@ -659,3 +659,75 @@ def test_smart_quote_apostrophe_in_section_heading_is_accepted():
   text = VALID.replace("## Don't Use When", "## Don\u2019t Use When")
   errs = v.validate_body(v.parse_frontmatter(text)[1])
   assert errs == []
+
+
+# --- _strip_code_fences -----------------------------------------------------
+
+
+def test_strip_code_fences_preserves_byte_offsets():
+  """Blanked fence content keeps the original character count per line."""
+  body = "before\n```yaml\n## fake heading inside fence\nkey: value\n```\nafter\n"
+  out = v._strip_code_fences(body)
+  assert len(out) == len(body)
+  assert out.count("\n") == body.count("\n")
+  # Outside-fence content is untouched.
+  assert out.startswith("before\n")
+  assert out.endswith("after\n")
+  # The opening/closing fence lines and the inner ``## fake heading`` line
+  # are masked, so a heading scan finds nothing inside the fence.
+  assert "## fake heading" not in out
+  assert "```" not in out
+
+
+def test_required_section_with_subheading_is_not_empty():
+  """A required H2 section that opens with a ``###`` sub-heading is non-empty.
+
+  Regression: the previous boundary logic treated every heading level as a
+  section end, so a ``## Workflow`` whose first line was ``### Step 1`` was
+  reported empty because the boundary fell on ``### Step 1`` with no content
+  in between.
+  """
+  text = VALID.replace(
+    "## Workflow\n1. do a thing",
+    "## Workflow\n### Step 1\n- do a thing\n### Step 2\n- do another",
+  )
+  errs = v.validate_body(v.parse_frontmatter(text)[1])
+  assert errs == [], f"unexpected errors: {errs}"
+
+
+def test_headings_inside_code_fences_are_ignored():
+  """A ``## ...`` line inside a fenced code block is not treated as a real section.
+
+  Regression: without fence-aware scanning, a YAML or shell sample that
+  contains a line beginning with ``## `` could either be mis-counted as a
+  section header (polluting the present-section set) or be picked up as the
+  boundary that makes a real required section look empty.
+  """
+  # The real ``## Examples`` section is followed by a fenced Bash sample
+  # whose comment line begins with ``## `` — the validator must ignore it.
+  text = VALID.replace(
+    '- "do it" \u2192 does it',
+    "- run the script:\n  ```bash\n  ## another section\n  echo hi\n  ```",
+  )
+  errs = v.validate_body(v.parse_frontmatter(text)[1])
+  assert errs == [], f"unexpected errors: {errs}"
+
+
+# --- UTF-8 BOM tolerance ----------------------------------------------------
+
+
+def test_validate_file_accepts_utf8_bom():
+  """A SKILL.md saved with a UTF-8 BOM still parses cleanly.
+
+  Some Windows editors prepend a UTF-8 BOM (U+FEFF) to text files.
+  ``utf-8-sig`` decoding strips it transparently so the ``startswith('---')``
+  frontmatter check still succeeds.
+  """
+  with tempfile.TemporaryDirectory() as root:
+    skill_dir = os.path.join(root, "demo")
+    os.makedirs(skill_dir)
+    path = os.path.join(skill_dir, "SKILL.md")
+    # Write the file as UTF-8 with an explicit BOM.
+    with open(path, "wb") as f:
+      f.write(b"\xef\xbb\xbf" + VALID.encode("utf-8"))
+    assert v.validate_file(path) == []

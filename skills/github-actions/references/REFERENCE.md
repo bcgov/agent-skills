@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write          # only escalation: needed for `npm publish` to GHCR npm
+      packages: write          # only escalation: needed for `npm publish` to GitHub Packages npm (npm.pkg.github.com)
     steps:
       - uses: actions/checkout@v6
         with:
@@ -246,37 +246,41 @@ Two files. Together they bump every action / runtime and auto-merge low-risk PRs
 ```yaml
 version: 2
 updates:
+  # GitHub Actions used by the workflows in .github/workflows. We pin
+  # third-party actions to a commit SHA with the version in a comment;
+  # Dependabot understands that pattern and will keep bumping the SHA.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily         # daily keeps the SHA pins fresh; group bumps below stop PR-spam
-    groups:
-      actions-minor-patch:
-        update-types:
-          - minor
-          - patch
+      interval: daily
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "deps(actions)"
-
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: daily
     groups:
-      npm-minor-patch:
-        update-types:
-          - minor
-          - patch
-    commit-message:
-      prefix: "deps(npm)"
+      # Roll every github-actions bump into a single PR per run so we review
+      # and merge them as one batch instead of N parallel PRs.
+      github-actions:
+        patterns:
+          - "*"
 
-  - package-ecosystem: uv     # use 'uv' (not 'pip') when the repo locks deps in uv.lock
+  # Python tooling (validator + tests). Declared in pyproject.toml and locked
+  # in uv.lock. Use the dedicated `uv` ecosystem (not `pip`) so Dependabot
+  # bumps both the manifest *and* the lockfile in the same PR — the `pip`
+  # ecosystem ignores uv.lock and would leave it drifting behind.
+  - package-ecosystem: uv
     directory: /
     schedule:
       interval: daily
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "deps(uv)"
+    groups:
+      python:
+        patterns:
+          - "*"
 ```
+
+> Swap in (or add) other ecosystems your repo actually uses — `npm`, `pip`, `docker`, `gradle`, `bundler`, etc. Keep the same shape: `package-ecosystem` + `directory` + `schedule` + `commit-message.prefix` + a single all-grouped batch so each Dependabot run is one reviewable PR per ecosystem.
 
 `.github/workflows/dependabot-auto-merge.yml`:
 
@@ -287,9 +291,10 @@ on:
   pull_request_target:        # required: pull_request from Dependabot has read-only token
     types: [opened, reopened, synchronize]
 
-permissions:
-  contents: write             # to merge
-  pull-requests: write        # to approve
+# Deny-all baseline at the workflow scope. The single job below opts in to
+# the narrower set of write tokens it actually needs, so any other job added
+# later cannot accidentally inherit broader permissions.
+permissions: {}
 
 concurrency:
   group: dependabot-auto-merge-${{ github.event.pull_request.number }}
@@ -299,18 +304,27 @@ jobs:
   auto-approve-and-merge:
     if: github.event.pull_request.user.login == 'dependabot[bot]'   # STRICT actor gate
     runs-on: ubuntu-24.04
+    # Only this job needs write access: gh pr review needs pull-requests:write,
+    # gh pr merge --auto needs contents:write to enable the auto-merge label.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Approve Dependabot PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr review --approve "$PR_URL"
+        run: |
+          set -euo pipefail
+          gh pr review --approve "$PR_URL"
 
-      - name: Enable auto-merge
+      - name: Enable auto-merge for Dependabot PRs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto "$PR_URL"
+        run: |
+          set -euo pipefail
+          gh pr merge --auto --squash --delete-branch "$PR_URL"
 ```
 
 **Why this shape — and why it's safe**:
@@ -334,8 +348,8 @@ Start with `permissions: {}` (deny-all) at workflow scope, or `contents: read` i
 | `contents: write`     | Push commits, create tags, create releases, write release assets            | Auto-merge, release-please, `git push` from CI.                             |
 | `pull-requests: write`| Open/edit PRs, post review approvals, set labels                            | Bot-comment workflows, auto-approve, auto-merge.                            |
 | `issues: write`       | Open/edit issues, comment, label                                            | Triage bots, "stale" actions.                                               |
-| `packages: write`     | `npm publish`, push container images to GHCR                                | The publish job only.                                                       |
-| `packages: read`      | `npm install` private GHCR packages                                         | Any job that consumes `@your-org/*` packages.                                  |
+| `packages: write`     | `npm publish` to GitHub Packages npm (`npm.pkg.github.com`); push container images to GHCR (`ghcr.io`) | The publish job only.                                                       |
+| `packages: read`      | `npm install` private packages from GitHub Packages npm (`npm.pkg.github.com`) | Any job that consumes `@your-org/*` packages.                                  |
 | `pages: write`        | Deploy to GitHub Pages via the official actions                             | Pages deploy job only.                                                      |
 | `id-token: write`     | Mint an OIDC token for federation (Pages, AWS, Azure, sigstore)             | OIDC-based deploys.                                                         |
 | `actions: read`       | Read other workflows' run metadata                                          | "Required workflows" reporting, run-skipping logic.                         |

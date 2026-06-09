@@ -1,6 +1,8 @@
 ---
 name: skill-author
 description: Scaffolds a new skill profile in this repo and fills in the required SKILL.md structure when a contributor wants to add a skill.
+owner: bcgov
+tags: [meta, skills]
 metadata:
   internal: true
 ---
