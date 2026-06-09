@@ -180,7 +180,7 @@ spec:
             matchLabels: { app: pg }
       containers:
         - name: pg
-          image: artifacts.developer.gov.bc.ca/bcgov-docker-local/patroni-postgres:12.4-2.0
+          image: artifacts.developer.gov.bc.ca/bcgov-docker-local/patroni-postgres:16.4-3.0
           ports:
             - { containerPort: 5432, name: pg }
           resources:
@@ -273,7 +273,7 @@ spec:
 | --- | --- | --- | --- |
 | `readinessProbe` | Pod is ready to serve traffic | Removed from Service endpoints | `periodSeconds: 5`, `failureThreshold: 3` |
 | `livenessProbe` | Pod is alive | Container restarted | `periodSeconds: 10`, `failureThreshold: 3`, `initialDelaySeconds` enough for boot **or** use a startupProbe |
-| `startupProbe` | Slow-boot apps | Disables liveness/readiness until it passes once | `periodSeconds: 5`, `failureThreshold: 30` (5-min budget) |
+| `startupProbe` | Slow-boot apps | Disables liveness/readiness until it passes once | `periodSeconds: 5`, `failureThreshold: 30` (150 s budget; raise `periodSeconds` to 10 for the 5-minute budget the slow-Java-boot example uses) |
 
 Gotchas:
 - A readiness probe that calls a downstream (DB, queue) cascades outages.

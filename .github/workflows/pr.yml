@@ -28,6 +28,15 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded runs on the same PR (a force-push or new commit makes the
+# in-flight run's results stale). The group key is keyed on the PR's head
+# ref so concurrent PRs don't cancel each other. Pushes to a branch outside a
+# PR (this workflow doesn't trigger on `push`, but the guard is defensive)
+# would fall back to ${{ github.ref }}.
+concurrency:
+  group: pr-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # 0. Hard gate: fail loudly on PRs opened from a fork. This produces a real
   #    failed status check (not a neutral "skipped") so branch protection can

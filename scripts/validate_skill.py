@@ -193,17 +193,54 @@ def _heading_positions(body: str):
   return [m.start() for m in re.finditer(r"^#{1,6}\s+.+$", body, re.MULTILINE)]
 
 
+# Fenced code blocks open with three or more backticks (or tildes) as the
+# first non-space content on a line. A `## ` inside such a fence is sample
+# text, not a real markdown heading — masking the fence content before any
+# regex scan keeps the structural checks from being fooled by it.
+_FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
+
+
+def _strip_code_fences(body: str) -> str:
+  """Return ``body`` with fenced-code-block lines blanked to spaces.
+
+  Byte offsets are preserved: every blanked line keeps its original length so
+  that ``re.finditer(...).start()`` matches the same character index in the
+  returned string and in the input body. The opening and closing fence lines
+  are also blanked so an interior ``## comment`` cannot be matched as a real
+  markdown heading by downstream regexes.
+
+  Args:
+    body: The markdown body of a SKILL.md file.
+
+  Returns:
+    A string of identical length and line count to ``body``, with every
+    character inside (and on) a fenced code block replaced by a space.
+  """
+  lines = body.split("\n")
+  in_fence = False
+  for i, line in enumerate(lines):
+    if _FENCE_RE.match(line):
+      in_fence = not in_fence
+      lines[i] = " " * len(line)
+    elif in_fence:
+      lines[i] = " " * len(line)
+  return "\n".join(lines)
+
+
 def _content_after(body: str, start: int, heads) -> str:
-  """Return the text between a heading and the next heading.
+  """Return the text between a heading and the next section boundary.
 
   Args:
     body: The markdown body being inspected.
     start: The character offset of the heading whose content is wanted.
-    heads: All heading offsets in ``body`` (from :func:`_heading_positions`).
+    heads: Section-boundary heading offsets in ``body``. Pass only the ``##``
+      positions when checking whether a required section is empty, so that a
+      sub-heading (``###`` and deeper) inside the section is treated as part
+      of the section's content rather than as the section's end.
 
   Returns:
-    The stripped text that follows the heading line up to the next heading, or
-    an empty string when the section has no content.
+    The stripped text that follows the heading line up to the next boundary,
+    or an empty string when the section has no content.
   """
   nxt = min([h for h in heads if h > start], default=len(body))
   line_end = body.find("\n", start)
@@ -233,17 +270,25 @@ def validate_body(body: str) -> list:
   if not body.strip():
     return ["body is empty — it must contain the required sections"]
 
-  heads = _heading_positions(body)
+  # Strip fenced-code-block content before scanning for headings so that a
+  # ``## comment`` inside a YAML / Bash / Terraform sample is not mistaken for
+  # a markdown heading. Byte offsets are preserved so `m.start()` lines up
+  # with the original `body` for content extraction below.
+  scan_body = _strip_code_fences(body)
 
   # H1 title
-  if not re.search(r"^#\s+(.+?)\s*$", body, re.MULTILINE):
+  if not re.search(r"^#\s+(.+?)\s*$", scan_body, re.MULTILINE):
     errors.append("missing H1 title line '# <Skill Name>'")
 
   # required sections present + non-empty
   sections = [
     (m.start(), m.group(1).strip())
-    for m in re.finditer(r"^##\s+(.+?)\s*$", body, re.MULTILINE)
+    for m in re.finditer(r"^##\s+(.+?)\s*$", scan_body, re.MULTILINE)
   ]
+  # Only the ``##`` positions count as section boundaries. A required section
+  # that opens with a ``###`` sub-heading (e.g. ``## Workflow`` followed by
+  # ``### Step 1``) is still non-empty — its content runs until the next H2.
+  section_starts = [s for s, _ in sections]
   # Normalise smart-quote apostrophe to ASCII before comparison so headings
   # like "## Don\u2019t Use When" still match the spec's "## Don't Use When".
   present = {title.replace("\u2019", "'").lower(): start for start, title in sections}
@@ -255,7 +300,7 @@ def validate_body(body: str) -> list:
 
   for start, title in sections:
     if title.replace("\u2019", "'").lower() in required_lower and not _content_after(
-      body, start, heads
+      body, start, section_starts
     ):
       errors.append(f"section '## {title}' is empty — add at least one line of content")
 
@@ -352,7 +397,9 @@ def validate_file(path: str) -> list:
   """
   if not os.path.isfile(path):
     return [f"file not found: {path}"]
-  with open(path, encoding="utf-8") as f:
+  # ``utf-8-sig`` transparently strips a leading BOM so editors that save
+  # SKILL.md with one don't trip the ``startswith('---')`` frontmatter check.
+  with open(path, encoding="utf-8-sig") as f:
     text = f.read()
   skill_dir = os.path.dirname(path)
   data, body, errors = parse_frontmatter(text)
@@ -430,11 +477,20 @@ def changed_modules(base: str) -> list:
       text=True,
     )
     if res.returncode != 0:
+      # Fall back to a plain two-dot diff when the three-dot form fails (e.g.
+      # because the merge-base cannot be found in a shallow clone).
       res = subprocess.run(
         ["git", "diff", "--name-only", base],
         capture_output=True,
         text=True,
       )
+      if res.returncode != 0:
+        print(
+          f"git diff vs '{base}' failed (exit {res.returncode}); "
+          f"validating no changed skills. stderr: {res.stderr.strip()}",
+          file=sys.stderr,
+        )
+        return []
   except FileNotFoundError:
     print("git not found on PATH; cannot compute changed skills.", file=sys.stderr)
     return []
@@ -486,7 +542,7 @@ def _load_skill_entry(path: str):
     ``body_norm`` fingerprints, or ``None`` if the file cannot be read.
   """
   try:
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8-sig") as f:
       text = f.read()
   except OSError:
     return None
@@ -615,6 +671,21 @@ def main(argv=None) -> int:
   Returns:
     ``0`` if every targeted skill passed, ``1`` if any skill failed validation.
   """
+  # The pass/fail report uses U+2713 / U+2717. On Windows the default console
+  # code page is cp1252, which can't encode those — Python raises
+  # UnicodeEncodeError mid-print and the whole run aborts. Reconfigure both
+  # stdio streams to UTF-8 with replacement so the script is portable.
+  for stream in (sys.stdout, sys.stderr):
+    reconfigure = getattr(stream, "reconfigure", None)
+    if callable(reconfigure):
+      try:
+        reconfigure(encoding="utf-8", errors="replace")
+      except (OSError, ValueError):
+        # Stream is detached, redirected to a non-TextIOWrapper, or otherwise
+        # not reconfigurable — fall through; the print() calls below will
+        # still work for ASCII output and only the check/cross glyphs may be
+        # mojibake'd. That's a strictly better failure mode than aborting.
+        pass
   p = argparse.ArgumentParser(description="Validate SKILL.md files against the spec.")
   p.add_argument("paths", nargs="*", help="specific SKILL.md files to validate")
   p.add_argument("--all", action="store_true", help="validate every skill in the repo")

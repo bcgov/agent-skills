@@ -73,7 +73,16 @@ tags: [github-actions, ci, cd, security, bcgov, devops]
 - **Signed-commit policy blocks a Dependabot or auto-merge PR** → either enable Dependabot's signed-commit support (it signs as `web-flow` via the GitHub API) or have the auto-merge workflow create a signed merge commit through `gh pr merge --auto --squash` so the merge itself is signed by GitHub even when the PR commits weren't.
 - **`pull_request_target` workflow needs the PR's code** (e.g. to read a config file the PR added) → check out the *base* ref, then read only the specific files you trust from the PR using `gh api` or `git show <pr-sha>:<path>` into a variable; never `actions/checkout` the head SHA with the default token still in scope.
 - **A third-party action requires a `GITHUB_TOKEN` with `write` you don't want to grant** → most of the time you don't actually need it; pass `with: token: ${{ github.token }}` only on the step that needs it, and prefer a minimal `permissions:` block on that job over expanding workflow-scope perms.
-- **OIDC cloud login fails with `AADSTS70021: No matching federated identity record found` (Azure) or `Not authorized to perform sts:AssumeRoleWithWebIdentity` (AWS)** → the cloud-side federated-credential subject claim doesn't match the workflow's actual `sub`. Print the runtime `sub` from inside the deploy job (decode `$ACTIONS_ID_TOKEN_REQUEST_TOKEN`, or check the provider action's debug output with `ACTIONS_STEP_DEBUG: true`) and update the Federated Identity Credential / IAM trust to match — typically `repo:OWNER/REPO:environment:NAME` for environment-gated deploys, `repo:OWNER/REPO:ref:refs/heads/main` for branch-gated, or `repo:OWNER/REPO:pull_request` for PR-time runs (rarely granted). **Never** unblock by adding a `client-secret` / `aws-access-key-id` — that silently regresses the deploy to a stored credential.
+- **OIDC cloud login fails with `AADSTS70021: No matching federated identity record found` (Azure) or `Not authorized to perform sts:AssumeRoleWithWebIdentity` (AWS)** — the cloud-side federated-credential subject claim doesn't match the workflow's actual `sub`. Fetch the OIDC token from inside the deploy job and decode its payload to see the live `sub` (the runner exposes the JWT-issuing endpoint via `$ACTIONS_ID_TOKEN_REQUEST_URL` and an opaque bearer in `$ACTIONS_ID_TOKEN_REQUEST_TOKEN`):
+  ```bash
+  curl -sSL -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+    "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" \
+    | jq -r .value \
+    | cut -d. -f2 \
+    | base64 -d 2>/dev/null \
+    | jq .sub
+  ```
+  Or enable `ACTIONS_STEP_DEBUG: true` and re-read the provider action's (`azure/login`, `aws-actions/configure-aws-credentials`) own debug output, which prints the subject it sent. Update the Federated Identity Credential / IAM trust to match — typically `repo:OWNER/REPO:environment:NAME` for environment-gated deploys, `repo:OWNER/REPO:ref:refs/heads/main` for branch-gated, or `repo:OWNER/REPO:pull_request` for PR-time runs (rarely granted). **Never** unblock by adding a `client-secret` / `aws-access-key-id` — that silently regresses the deploy to a stored credential.
 
 ## References
 **This repo is the canonical worked example.** Read `.github/workflows/pr.yml`, `.github/workflows/pages.yml`, and `.github/workflows/dependabot-auto-merge.yml` first — they implement every pattern above, fully commented.
