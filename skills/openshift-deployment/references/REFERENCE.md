@@ -339,12 +339,18 @@ What **never** to set in a license-plate namespace:
 - Language/runtime caches — e.g. `~/.cache`, `/.npm`, JVM temp, nginx `/var/cache/nginx` and `/var/run`.
 - Use `emptyDir.medium: Memory` + `sizeLimit` for small scratch; use a PVC for data that must persist.
 
-Inspect what the namespace grants:
+Inspect what the namespace grants (project-scoped — commands a normal namespace user can run):
 
 ```bash
-oc get scc restricted-v2 -o yaml
-oc get ns <licenseplate>-prod -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}{"\n"}'
+# The UID/GID range restricted-v2 will assign — read from your own namespace's annotations.
+oc get project <licenseplate>-prod -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}'
+oc describe project <licenseplate>-prod        # annotations include the uid-range / supplemental-groups
+
+# Which SCC actually admitted a running pod (no cluster-scope read needed).
+oc get pod <name> -o jsonpath='{.metadata.annotations.openshift\.io/scc}'
 ```
+
+> Reading the cluster `SecurityContextConstraints` object directly (`oc get scc restricted-v2 -o yaml`) is **cluster-scoped** and is normally `Forbidden` for project users (`cannot get resource "securitycontextconstraints" ... at the cluster scope`). You don't need it — the namespace annotations above tell you the range your pods get, and the `openshift.io/scc` pod annotation tells you which SCC admitted a pod. Ask the Platform team only if you suspect the SCC binding itself is wrong.
 
 ## 4. Probes — sane defaults and gotchas
 
