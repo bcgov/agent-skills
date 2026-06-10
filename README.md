@@ -117,15 +117,35 @@ repo, finds every `SKILL.md`, and copies the matching skill folders — plus
 their `scripts/`, `references/`, and `assets/` — into the right location for
 your agent.
 
+### Prerequisites
+
+**You need `npx` on your `PATH`.** `npx` is a command-line tool that ships with [Node.js](https://nodejs.org/). It runs JavaScript packages directly without requiring a global install.
+
+Check if you have it:
 ```bash
-# Install the whole catalogue into your current project (interactive picker
-# for the target agent: GitHub Copilot, Claude Code, Cursor, Cline, etc.).
+npx --version
+```
+
+If that prints a version number, you're ready. If you see `command not found` or
+`'npx' is not recognized`, install Node.js:
+
+- **Windows:** Download from [nodejs.org](https://nodejs.org/en/download) (pick LTS) or run `winget install OpenJS.NodeJS.LTS`
+- **macOS:** Run `brew install node` or download from [nodejs.org](https://nodejs.org/en/download)
+- **Linux:** Use your package manager: `apt install nodejs npm`, `dnf install nodejs npm`, `pacman -S nodejs npm`, etc.
+
+After install, **close and reopen your terminal**, then verify: `npx --version`
+
+### Install a skill
+
+```bash
+# Interactive: pick the target agent (Copilot, Claude Code, Cursor, etc.) and
+# choose which of the bcgov/agent-skills skills to install.
 npx skills add bcgov/agent-skills
 
-# Install just one skill, non-interactively, into GitHub Copilot.
+# Install just one skill, non-interactively, into GitHub Copilot for this project.
 npx skills add bcgov/agent-skills --skill azure-networking --agent github-copilot --yes
 
-# Install globally (skill is available across all of an agent's projects).
+# Install one skill globally for an agent (available across all that agent's projects).
 npx skills add bcgov/agent-skills --skill azure-networking --agent claude-code --global
 
 # List the skills available in this catalogue without installing anything.
@@ -137,9 +157,17 @@ The CLI handles everything: no `.npmrc`, no GitHub token, no registry config.
 `main`. Pin to a specific commit by using a GitHub URL:
 `npx skills add https://github.com/bcgov/agent-skills/tree/<SHA>`.
 
-For consumers who want to wire skills in manually, every skill is a self-
-contained folder under [`skills/`](skills/) — copy it anywhere your agent
-scans for skills.
+### Manual install (no CLI)
+
+If you can't use `npx` or prefer manual control, every skill is a self-
+contained folder under [`skills/`](skills/) — clone the repo and copy the skill folder into whichever location your agent scans for skills:
+
+```bash
+git clone https://github.com/bcgov/agent-skills.git
+cp -r agent-skills/skills/azure-networking .github/skills/azure-networking
+```
+
+The folder name must match the manifest's `name` field exactly.
 
 ---
 
