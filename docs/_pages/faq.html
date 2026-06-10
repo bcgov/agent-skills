@@ -5,7 +5,29 @@
 
 <p>If the answer you're looking for isn't here, the four pages it likely lives on are: <a href="consume.html">Consume a Skill</a>, <a href="contribute.html">Contribute a Skill</a>, <a href="spec.html">the spec</a>, and <a href="architecture.html">Pipeline &amp; governance</a>.</p>
 
-<h2 id="what-is-a-skill">What exactly is a "skill"?</h2>
+<h2 id="what-is-npx">What is <code>npx</code>?</h2>
+
+<div class="card">
+    <p><code>npx</code> is a command-line tool that runs npm packages without installing them globally. It ships with <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js</a> and the npm package manager.</p>
+    <p>When you run <code>npx skills add bcgov/agent-skills</code>, <code>npx</code> downloads and runs the <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">vercel-labs/skills</a> CLI in one step, then cleans up after itself. No global install needed.</p>
+    <p><strong>Do I already have <code>npx</code?</strong> Open a terminal and run <code>npx --version</code>. If it prints a number, you're good. If you see <code>command not found</code>, you need Node.js &mdash; see the prerequisites on the <a href="consume.html#install-nodejs">Consume a Skill</a> page.</p>
+    <p style="margin-bottom: 0;"><strong>Troubleshooting:</strong> See the full <a href="consume.html#troubleshooting">Troubleshooting section on Consume a Skill</a> for solutions to common <code>npx</code> errors.</p>
+</div>
+
+<h2 id="npx-not-working">What if I can't get <code>npx</code> to work?</h2>
+
+<div class="card">
+    <p>The most common issue is that Node.js isn't installed, or the terminal hasn't picked up the new <code>PATH</code> after install.</p>
+    <p><strong>Quick fix:</strong></p>
+    <ul>
+        <li>Close your terminal completely and open a fresh one.</li>
+        <li>Run <code>node --version</code>. If it prints a version, Node.js is installed and you should have <code>npx</code> too.</li>
+        <li>Run <code>npx --version</code>. If that works, try your skill install again.</li>
+    </ul>
+    <p><strong>If Node.js isn't installed:</strong> Head to <a href="consume.html#install-nodejs">Consume a Skill → Install Node.js</a> for platform-specific steps (Windows, macOS, Linux).</p>
+    <p><strong>Still stuck?</strong> See the full <a href="consume.html#troubleshooting">Troubleshooting section on Consume a Skill</a> for solutions to network errors, proxy issues, cache problems, and more. If you absolutely cannot use <code>npx</code>, you can <a href="consume.html#manual">manually install skills</a> by cloning the repo and copying the skill folder by hand.</p>
+    <p style="margin-bottom: 0;"><strong>Don't want to install Node.js?</strong> Use the <a href="consume.html#manual">manual install method</a> instead: just clone the repo and copy the skill folder to the right location for your agent.</p>
+</div>
 
 <div class="card">
     <p>A skill is a small, focused Markdown document — <code>SKILL.md</code> — that teaches an AI coding agent <strong>when</strong> to act, <strong>what</strong> to do, and <strong>what to avoid</strong>. Each skill targets one specific situation (e.g., "adding subnets inside an existing VNet") rather than trying to cover a whole topic.</p>
