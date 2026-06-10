@@ -87,6 +87,17 @@ spec:
         - name: api
           image: artifacts.developer.gov.bc.ca/bcgov-docker-local/api:1.4.2
           ports: [{ containerPort: 8080, name: http }]
+          # Hardened for the namespace's default restricted-v2 SCC. Declare the
+          # posture explicitly even though restricted-v2 enforces most of it.
+          # Do NOT add runAsUser/fsGroup here — OpenShift assigns them.
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             requests: { cpu: "500m", memory: "512Mi" }
             limits:   { cpu: "500m", memory: "512Mi" }   # Guaranteed QoS
@@ -105,6 +116,14 @@ spec:
           lifecycle:
             preStop:
               exec: { command: ["/bin/sleep", "10"] }   # let endpoint propagate
+          # readOnlyRootFilesystem: true means every writable path needs a mount.
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory      # small scratch space; counts against pod memory
+            sizeLimit: 64Mi
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -267,6 +286,66 @@ spec:
             limits:   { cpu: "200m", memory: "128Mi" }
 ```
 
+### 3.5 `securityContext` for the `restricted-v2` SCC
+
+Every license-plate namespace runs pods under the **`restricted-v2`** Security Context Constraint by default. It already drops all capabilities, forbids privilege escalation, blocks `privileged` / `hostNetwork` / `hostPath`, and assigns a random non-root UID/GID from the namespace's pre-allocated range. **Declare the posture in the manifest anyway** — it makes intent explicit, is portable to other clusters, and survives a future SCC change.
+
+Container-level block (drop this into every container in the templates above; the `api` container in §3.1 already shows it inline):
+
+```yaml
+        - name: <container>
+          # ...image, ports, resources, probes...
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            # readOnlyRootFilesystem: true → mount a writable volume for every
+            # path the process writes to (here: /tmp). Add more as needed.
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory     # in-RAM scratch; counts against pod memory, not node disk
+            sizeLimit: 64Mi
+```
+
+What to set and why:
+
+| Field | Set to | Why |
+| --- | --- | --- |
+| `allowPrivilegeEscalation` | `false` | No `setuid` escalation; `restricted-v2` requires it. |
+| `capabilities.drop` | `["ALL"]` | Start from zero Linux capabilities. Don't `add:` any — `restricted-v2` rejects additions. |
+| `runAsNonRoot` | `true` | Fail closed if the image's default user is root. |
+| `readOnlyRootFilesystem` | `true` | Immutable root fs blocks tamper-the-binary attacks; pair with writable `emptyDir` mounts. |
+| `seccompProfile.type` | `RuntimeDefault` | Apply the runtime's default seccomp filter (the platform default). |
+
+What **never** to set in a license-plate namespace:
+
+| Field | Why not |
+| --- | --- |
+| `runAsUser` / `runAsGroup` / `fsGroup` / `supplementalGroups` | OpenShift assigns these from the namespace's `openshift.io/sa.scc.uid-range`. A hard-coded value outside the range fails admission with `unable to validate against any security context constraint`; even an in-range value breaks when the range is reassigned. Build images to run as an arbitrary non-root UID (group `0`, group-writable) instead. |
+| `privileged: true` | Rejected outright. |
+| `capabilities.add` | Rejected — `restricted-v2` allows no additions, including `NET_BIND_SERVICE`. |
+| `hostNetwork` / `hostPID` / `hostIPC` / `hostPath` | Rejected. |
+
+`readOnlyRootFilesystem: true` consequences — find every path the app writes to and back it with a writable volume:
+- `/tmp` — almost always needed (temp files, framework caches).
+- `/var/run`, `/run` — PID files, sockets.
+- Language/runtime caches — e.g. `~/.cache`, `/.npm`, JVM temp, nginx `/var/cache/nginx` and `/var/run`.
+- Use `emptyDir.medium: Memory` + `sizeLimit` for small scratch; use a PVC for data that must persist.
+
+Inspect what the namespace grants:
+
+```bash
+oc get scc restricted-v2 -o yaml
+oc get ns <licenseplate>-prod -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}{"\n"}'
+```
+
 ## 4. Probes — sane defaults and gotchas
 
 | Probe | Purpose | Failure action | Typical settings |
@@ -410,5 +489,7 @@ oc get cronjob <name> -o yaml | grep -E 'lastScheduleTime|lastSuccessfulTime'
 - Platform Product Registry (contacts, quotas): <https://registry.developer.gov.bc.ca/>
 - BCDevOps/backup-container: <https://github.com/BCDevOps/backup-container>
 - Kubernetes upstream docs: <https://kubernetes.io/docs/>
+- Kubernetes securityContext task: <https://kubernetes.io/docs/tasks/configure-pod-container/security-context/>
 - Red Hat OpenShift Container Platform docs: <https://docs.openshift.com/>
+- OpenShift Managing Security Context Constraints: <https://docs.openshift.com/container-platform/latest/authentication/managing-security-context-constraints.html>
 - tini: <https://github.com/krallin/tini> · dumb-init: <https://github.com/Yelp/dumb-init> · s6-overlay: <https://github.com/just-containers/s6-overlay>
