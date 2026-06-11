@@ -28,8 +28,11 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
    - Read workflow files under `.github/workflows/` to verify CI/CD pipelines fail on warnings and test coverage gates are enforced.
    - Look at OpenShift deployment templates/manifests to verify security contexts (`runAsNonRoot: true`, `readOnlyRootFilesystem: true`).
    - **Trace Renovate configuration inheritance**: If `renovate.json` extends presets (e.g., `github>bcgov/renovate-config`), fetch and analyze the inherited configuration files to determine effective settings, particularly `automerge`, `schedule`, and `minimumReleaseAge`.
-3. **Assess Repo configuration (GitHub API/Git)**:
-   - Check local git configurations and repository parameters when querying. If online API tools are unavailable, perform manual reasoning on branch naming, rulesets, and pull requests.
+3. **Assess Repo configuration (GitHub API via `gh` CLI)**:
+   - Use `gh repo view --json branchProtectionRules` to inspect branch protection rulesets on the `main` branch. Verify that rulesets enforce PR requirement, approvals, linear history, and status checks.
+   - If `gh` CLI is unavailable, **stop and ask the user** to manually verify branch protection rules in GitHub settings → Branches. Do not assume or guess about ruleset configuration.
+   - Check `gh repo view --json defaultBranchRef` for default branch naming and permissions.
+   - Inspect pull request templates (`.github/pull_request_template.md`) for compliance checklist enforcement.
 4. **Draft the Compliance Scorecard**:
    - Compare the findings against the BC Gov DevOps & Dependency Security Standards (detailed in the **Rules** section below).
    - Use the reference template [REPORT_TEMPLATE.md](./resources/REPORT_TEMPLATE.md) as the format.
@@ -103,6 +106,7 @@ Always generate a `MATURITY_REPORT.md` file in the root of the audited repositor
 - **Non-TypeScript Repositories**: Skip TypeScript-specific rules (strict mode, `@ts-ignore`). Assess applicable language-specific linting (ESLint for JavaScript, Pylint for Python, etc.).
 - **Legacy Branch Names (`master`, `develop`)**: Audit still applies. Flag as a low-priority gap if org standards require `main`.
 - **Exempt Repositories**: Repositories that are documentation-only, archived, or experimental should be skipped with a clear note in the report.
+- **`gh` CLI Availability**: Branch protection rules cannot be reliably inspected without the GitHub CLI (`gh`). If `gh` is unavailable, explicitly note in the report: "Branch protection ruleset verification requires GitHub CLI (`gh repo view --json branchProtectionRules`). Manual inspection recommended." Do not report rulesets as missing or non-compliant without evidence.
 
 ## References
 
@@ -113,3 +117,4 @@ Always generate a `MATURITY_REPORT.md` file in the root of the audited repositor
 - [Renovate Documentation](https://docs.renovatebot.com/) – Preset inheritance, extends chains, and configuration best practices.
 - [MATURITY_REPORT.md Template](./resources/REPORT_TEMPLATE.md) – Structured report template for compliance scoring and remediation tracking.
 - [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/) – Pod security standards, security contexts, and RBAC.
+- [GitHub CLI Reference](https://cli.github.com/manual/gh_repo_view) – `gh repo view`, `gh repo list`, branch protection queries.
