@@ -67,3 +67,49 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
 
 ## Output Format
 Always generate a `MATURITY_REPORT.md` file in the root of the audited repository following the schema defined in `resources/REPORT_TEMPLATE.md`. Ensure that check boxes are marked with `[x]` (Met) or `[ ]` (Not Met/Missing) and a clear, descriptive breakdown of recommendations is presented.
+
+## Examples
+
+### Example 1: Assessment of a Production Microservice
+**Input**: Repository URL: `bcgov/my-api-service`  
+**Process**:
+1. Walk repository: Find `package.json` with TypeScript, `tsconfig.json`, `renovate.json`, `.github/workflows/`, and `openshift.deploy.yml`.
+2. Check TypeScript strictness: Verify `strict: true` in `tsconfig.json`.
+3. Run `npm audit` and check for bypasses (`@ts-ignore`, `eslint-disable`).
+4. Inspect Renovate config: Local `renovate.json` extends `github>bcgov/renovate-config#2026.04`. Fetch inherited preset and verify effective automerge, schedule, and minimumReleaseAge.
+5. Examine OpenShift manifest: Confirm `readOnlyRootFilesystem: true`, `runAsNonRoot: true` in security contexts.
+6. Draft scorecard: 85/100 (gaps: missing PodDisruptionBudget, test coverage at 78%).
+7. Write report: Generate `MATURITY_REPORT.md` with actionable remediation items.
+
+**Output**: `MATURITY_REPORT.md` with 9-dimension compliance checklist and Renovate inheritance analysis.
+
+### Example 2: Onboarding a New Repository
+**Input**: Repository URL: `bcgov/experimental-frontend`  
+**Process**:
+1. Analyze structure: Find React app with Jest tests, but missing `renovate.json`.
+2. Check TypeScript: `tsconfig.json` lacks strict mode settings.
+3. Inspect branch protection: No ruleset on `main` branch.
+4. Assess GitHub settings: Merge/rebase commits enabled (should be squash-only).
+5. Draft scorecard: 60/100 (high-priority gaps: branch protection, Renovate, TypeScript strictness).
+6. Write report with 5–7 remediation items.
+
+**Output**: `MATURITY_REPORT.md` with clear Tier 1 (blocking) and Tier 2 (recommended) actions.
+
+## Edge Cases
+
+- **Monorepos with Multiple `tsconfig.json` Files**: Inspect root `tsconfig.json` and any workspace-level configurations. Flag inconsistencies in strictness across packages.
+- **Renovate Config Missing Extends**: If `renovate.json` exists but has no `extends`, note that default Renovate behavior applies (no inherited presets). Verify manual configuration is comprehensive.
+- **GitHub API Unavailable**: Use manual inspection (cloning repo, reading workflows, grepping code) when GitHub API tools are unavailable. Document limitations in the report.
+- **Non-TypeScript Repositories**: Skip TypeScript-specific rules (strict mode, `@ts-ignore`). Assess applicable language-specific linting (ESLint for JavaScript, Pylint for Python, etc.).
+- **Legacy Branch Names (`master`, `develop`)**: Audit still applies. Flag as a low-priority gap if org standards require `main`.
+- **Exempt Repositories**: Repositories that are documentation-only, archived, or experimental should be skipped with a clear note in the report.
+
+## References
+
+- [BC Gov DevOps Standards](https://github.com/bcgov/agent-skills/blob/main/TEAM_CHECKLIST.md) – Baseline compliance requirements.
+- [BC Gov Renovate Config](https://github.com/bcgov/renovate-config) – Inherited preset configurations for dependency updates.
+- [GitHub Branch Protection Rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) – GitHub documentation on branch rulesets.
+- [TypeScript Strict Mode](https://www.typescriptlang.org/tsconfig#strict) – TypeScript compiler documentation for strict checking.
+- [Renovate Documentation](https://docs.renovatebot.com/) – Preset inheritance, extends chains, and configuration best practices.
+- [MATURITY_REPORT.md Template](./resources/REPORT_TEMPLATE.md) – Structured report template for compliance scoring and remediation tracking.
+- [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/) – Pod security standards, security contexts, and RBAC.
