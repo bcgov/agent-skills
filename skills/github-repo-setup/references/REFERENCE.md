@@ -369,3 +369,83 @@ Code committed to main
       Recommend: `gh auth login` and re-run, or manually inspect GitHub → Settings → Rules.
 ```
 
+---
+
+## Report Template
+
+Use the following template when generating `MATURITY_REPORT.md` in the audited repository root.
+
+### Executive Summary
+
+```markdown
+# Repository Compliance & Maturity Assessment
+
+## Executive Summary
+
+- **Repository:** `{REPO_NAME}`
+- **Assessment Date:** `{YYYY-MM-DD}`
+- **Overall Compliance Score:** `{SCORE}%`
+- **Maturity Level:** `Level {1-5} - {Maturity Name}`
+- **Report Prepared By:** {Agent Name} | **Next Review:** {Date, typically 30 days}
+
+> **Maturity Scale:** Level 1 (Initial: <25%) | Level 2 (Developing: 25-49%) | Level 3 (Defined: 50-74%) | Level 4 (Managed: 75-89%) | Level 5 (Optimizing: >=90%)
+
+> **Dimension Status:** Met | Partial | Not Met | **Unverified** (API/data unavailable; not a failure)
+```
+
+### Dimension Breakdown Table
+
+```markdown
+## Dimension Breakdown
+
+| Dimension | Status | Findings & Notes |
+| :--- | :---: | :--- |
+| **1. GitHub Repo Settings** | `{Status}` | Squash merging, auto-delete, package visibility. |
+| **2. Branch Protection Rules** | `{Status}` | Main branch rulesets, PR/approval/linear history/status checks. |
+| **3. Language Code Hygiene** | `{Status}` | TS config strictness, linting, no diagnostic escapes, test coverage. |
+| **4. OpenShift & Secrets** | `{Status}` | Token/password separation per environment, password strength. |
+| **5. Dependency Update Automation** | `{Status}` | Renovate/Dependabot, BC Gov preset, release age, automerge. |
+| **6. Vulnerability SLAs & Triage** | `{Status}` | Documented triage workflow, CISA KEV, EPSS, SLA enforcement. |
+| **7. CI/CD & Deployments** | `{Status}` | PR preview envs, image promotion, SHA-based refs, health probes. |
+| **8. CI-Enforced Quality Gates** | `{Status}` | TS/lint/test/coverage/scan failures block merge. |
+| **9. OpenShift Security Contexts** | `{Status}` | Pod security contexts, capabilities, seccomp, probes. |
+```
+
+### Detailed Checklist
+
+For each dimension, use checkbox format:
+- `[x]` — Met
+- `[ ]` — Not Met
+- `[?]` — Unverified (data source unavailable)
+
+Include per-dimension subsections with individual checks. For Dimension 5, include a **Renovate Configuration Inheritance Analysis** subsection documenting: local config, inherited preset settings, local overrides, effective configuration, and any conflicts.
+
+### Scoring Formula
+
+```markdown
+## Scoring Formula
+
+**Compliance Score (%)** = (Dimensions Met / Total Dimensions Scored) × 100
+
+- **Met**: count as 1.0
+- **Partial**: count as 0.5
+- **Not Met**: count as 0.0
+- **Unverified**: exclude from denominator
+- **N/A**: exclude from denominator
+```
+
+### Key Actions Required
+
+```markdown
+## Key Actions Required
+
+**Tier 1 (Blocking — Complete Before Merge/Release):**
+1. ...
+
+**Tier 2 (Recommended — Complete Within 1 Sprint):**
+1. ...
+
+**Tier 3 (Optional — Backlog/Future Improvements):**
+1. ...
+```
+
