@@ -1,8 +1,8 @@
 ---
 name: github-repo-setup
-description: Assess GitHub repository and application maturity against BC Gov DevOps & Dependency Security Standards, including mandatory branch protection, TypeScript settings, and container security. Writes a structured compliance report.
+description: "Audit GitHub repository compliance: maturity scorecard, conformance to BC Gov DevOps & security standards, TypeScript strictness, Renovate preset tracing, container security posture. Generates reproducible MATURITY_REPORT.md. Use when onboarding repos, compliance reviews, or evaluating vendor conformance."
 owner: bcgov
-tags: [github-repo-setup, devops, security, bcgov]
+tags: [github-repo-setup, devops, security, bcgov, audit, compliance, maturity, scorecard]
 ---
 
 # GitHub Repository Setup Validation
@@ -20,56 +20,76 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
 - Reviewing documentation-only or basic scripting repositories that do not deploy software.
 
 ## Workflow
-1. **Analyze Project Structure**: Walk the repository root and list configuration files (`package.json`, `tsconfig.json`, `renovate.json`, `.github/workflows/`, and OpenShift/kubernetes manifests).
-2. **Inspect Files & Run Commands**: Auditing agent must directly examine code files and execute CLI tools where available:
-   - Check `tsconfig.json` for strict TypeScript compiler options.
-   - Run `npm audit` or security checks if dependencies need audit verification.
-   - Search the codebase using grep to detect any diagnostic bypasses (`@ts-ignore`, `eslint-disable`).
-   - Read workflow files under `.github/workflows/` to verify CI/CD pipelines fail on warnings and test coverage gates are enforced.
-   - Look at OpenShift deployment templates/manifests to verify security contexts (`runAsNonRoot: true`, `readOnlyRootFilesystem: true`).
-   - **Trace Renovate configuration inheritance**: If `renovate.json` extends presets (e.g., `github>bcgov/renovate-config`), fetch and analyze the inherited configuration files to determine effective settings, particularly `automerge`, `schedule`, and `minimumReleaseAge`.
-3. **Assess Repo configuration (GitHub API via `gh` CLI)**:
-   - Use `gh api graphql` to query repository rulesets on the `main` branch (not deprecated `branchProtectionRules`). Check for rule types: `PULL_REQUEST`, `REQUIRED_STATUS_CHECKS`, `NON_FAST_FORWARD` (force push protection), `REQUIRED_REVIEWS`.
-   - If `gh` CLI is unavailable, **stop and ask the user** to manually verify rulesets in GitHub settings → Rules. Do not assume or guess about ruleset configuration.
-   - Verify enforcement is `ACTIVE` for the `main` branch.
-   - Inspect pull request templates (`.github/pull_request_template.md`) for compliance checklist enforcement.
-4. **Draft the Compliance Scorecard**:
-   - Compare the findings against the BC Gov DevOps & Dependency Security Standards (detailed in the **Rules** section below).
-   - Use the reference template [REPORT_TEMPLATE.md](./resources/REPORT_TEMPLATE.md) as the format.
-5. **Write Report**: Generate `MATURITY_REPORT.md` in the target repository's root directory. The report must be thorough, precise, and state clear, actionable remediation items.
+
+The audit follows a 5-step inspection process mapped to the 9 compliance dimensions (see [references/REFERENCE.md](./references/REFERENCE.md) for detailed definitions):
+
+1. **Analyze Project Structure** (Dims 1–2, 5, 7–9)
+   - Walk repo root; list: `package.json`, `tsconfig.json`, `renovate.json`, `.github/workflows/`, OpenShift/Kubernetes manifests, `.github/ISSUE_TEMPLATE/`, SECURITY.md
+
+2. **Inspect Server-side Config via GitHub API** (Dims 1–2)
+   - **Dimension 1** (Repo Settings): Use `gh api graphql` or GitHub web UI (Settings → General) to verify squash merge, auto-cleanup, suggest updates
+   - **Dimension 2** (Branch Rulesets): Query `repository.rulesets` for `main` branch; verify rule types (`PULL_REQUEST`, `REQUIRED_STATUS_CHECKS`, `NON_FAST_FORWARD`), enforcement = `ACTIVE`
+   - **If gh CLI unavailable**: **Stop and ask user** to manually verify or note as **Unverified** (distinct from Not Met). See [references/REFERENCE.md](./references/REFERENCE.md#2-branch-protection-rulesets) for query example.
+
+3. **Inspect Code & File-based Config** (Dims 3–5, 8–9)
+   - **Dimension 3** (Code Hygiene): Read `tsconfig.json` (strict: true?); grep for `@ts-ignore`, `@ts-nocheck`, `eslint-disable`; measure test coverage
+   - **Dimension 4** (Secrets): Review SECURITY.md, workflow config for token/password separation per environment
+   - **Dimension 5** (Dependency Updates): Read `renovate.json` or `dependabot.yml`; **trace Renovate preset inheritance** to verify effective settings (automerge, schedule, minimumReleaseAge)
+   - **Dimension 8** (Quality Gates): Read `.github/workflows/` for test/coverage/scan gate failures
+   - **Dimension 9** (OpenShift Security): Read `*.deploy.yml` manifests; verify `runAsNonRoot: true`, `readOnlyRootFilesystem: true`, startup/readiness/liveness probes
+
+4. **Assess Processes & Docs** (Dims 6–7)
+   - **Dimension 6** (Vulnerability SLAs): Read `.github/ISSUE_TEMPLATE/security-*.md`, SECURITY.md for documented triage workflow; check for CISA KEV / EPSS mentions (see [REFERENCE.md SLA workflow](./references/REFERENCE.md#3-vulnerability-sla-response-workflow))
+   - **Dimension 7** (CI/CD & Deployments): Read workflow files for PR preview env deployment, image SHA promotion pattern; check manifests for health probes (see [REFERENCE.md image promotion](./references/REFERENCE.md#4-image-promotion-workflow-definition))
+
+5. **Draft & Write Report**
+   - Score each dimension (Met / Partial / Not Met / Unverified) using rubric in [references/REFERENCE.md](./references/REFERENCE.md#1-scoring-rubric)
+   - Calculate overall compliance % (equal-weight dimensions, exclude N/A from denominator)
+   - Map % to Maturity Level 1–5
+   - Generate `MATURITY_REPORT.md` in repo root using [REPORT_TEMPLATE.md](./resources/REPORT_TEMPLATE.md)
+   - Include specific remediation items (Tier 1: blocking, Tier 2: recommended, Tier 3: optional)
 
 ## Rules
+
+All compliance rules are defined in detail in [references/REFERENCE.md](./references/REFERENCE.md#2-nine-compliance-dimensions--detailed-rules).
+
+### Summary & Quick Reference
+
+- **Dimension 1 – Repo Settings**: Squash merging, auto-cleanup, suggest updates; **query via GitHub API**
+- **Dimension 2 – Branch Rulesets**: PR requirement, approvals, linear history, status checks; **query via `gh api graphql rulesets`**; mark **Unverified** if API unavailable
+- **Dimension 3 – Code Hygiene**: TS strict mode, linting enforced, no diagnostic escapes, 80%+ test coverage
+- **Dimension 4 – Secrets**: Token/password separation per environment, 32+ char passwords
+- **Dimension 5 – Dependency Updates**: Renovate/Dependabot, BC Gov preset preferred, 7-day minimum release age, automerge enabled; **trace preset inheritance** to verify effective settings
+- **Dimension 6 – Vulnerability SLAs**: Documented triage workflow, CISA KEV monitoring, EPSS scoring; Critical (24h) / High (1w) / Medium (2w) / Low (next sprint)
+- **Dimension 7 – CI/CD & Deployments**: PR preview envs, image promotion (no rebuilds), SHA-based image references, startup/readiness/liveness probes
+- **Dimension 8 – Quality Gates**: TS/lint/test/coverage/scan failures block merge
+- **Dimension 9 – OpenShift Security**: Pod security contexts (runAsNonRoot, readOnlyFS), capabilities dropped, seccomp runtime default, health probes; for remediation, see [openshift-deployment SKILL](../openshift-deployment/SKILL.md)
+
+### Critical Definitions
+
 - **No-Exemption Policy**: All security vulnerabilities must be remediated regardless of justifications like "trusted environments," "internal access," or "unreachable paths."
-- **GitHub Repository Settings**: Enforce Squash Merging Only (uncheck merge/rebase commits). Enable Branch Auto-Cleanup and Always Suggest Updating PR branches.
-- **Branch Protection Ruleset**: The `main` branch ruleset must require a PR, at least 1 approval, conversation resolution, linear history, and a required status check. Require a single aggregated results check (per [github-actions SKILL](../github-actions/SKILL.md)) and block force pushes.
-- **TypeScript Hygiene**: For TypeScript projects, compiler options must enforce strictness:
-   ```json
-   {
-     "compilerOptions": {
-       "strict": true,
-       "noImplicitAny": true,
-       "strictNullChecks": true
-     }
-   }
-   ```
-- **Linter & Diagnostic Escapes**: Use of `@ts-ignore`, `@ts-nocheck`, `any` type escapes, or `eslint-disable` is strictly prohibited. Linter warnings or TS compiler diagnostics must fail build pipelines.
-- **Test Coverage Baseline**: Maintain a minimum of 80% statement and branch test coverage. PRs that lower coverage below this threshold must be rejected.
-- **Dependency Management & Automation**:
-  - Automated dependency updates must be enabled via **Renovate** or **Dependabot**.
-  - **Renovate** is strongly preferred and scores higher if it extends an upstream BC Gov configuration (e.g., extending `github>bcgov/renovate-config` or using rules similar to `bcgov/copilot-instructions`).
-  - **Renovate Preset Tracing**: When assessing Renovate configuration, trace all inherited presets to determine the effective configuration:
-    1. Identify all `extends` entries in `renovate.json` (local and in any extended configs).
-    2. For `github>org/repo#version` presets, fetch the referenced repository version and read its config files.
-    3. Merge local overrides with inherited settings using Renovate's precedence rules (local > later extends > earlier extends).
-    4. Report the **effective settings** for automerge, schedule, minimumReleaseAge, and dependency grouping rules.
-    5. Flag conflicts or overrides that may weaken security or automation posture.
-  - Minimum release age of 7 days before adopting dependency updates.
-  - Zero-dependency policy for low-volume (< 20 lines) custom logic.
-- **OpenShift Security Context**: Default security contexts (`readOnlyRootFilesystem: true`, `runAsNonRoot: true`, `allowPrivilegeEscalation: false`) must not be bypassed or removed. Write operations must use memory-backed `emptyDir` volumes.
-- **Vulnerability SLAs**: Critical findings (24 hours), High (1 week), Medium (2 weeks), Low (next sprint).
+- **GitHub API Requirement for Dims 1–2**: Repository settings and branch rulesets are server-side config. Use `gh api graphql` or GitHub web UI. If unavailable, mark as **Unverified** (not "Not Met").
+- **Unverified State**: Distinct from "Not Met". Use when data source (GitHub API, gh CLI, etc.) is unavailable. Do not fabricate findings.
+- **Renovate Preset Tracing**: When assessing Renovate configuration, trace all inherited presets to determine effective settings:
+  1. Identify all `extends` entries in `renovate.json` (local and extended configs).
+  2. For `github>org/repo#version` presets, fetch the referenced repository version and read its config files.
+  3. Merge local overrides with inherited settings using Renovate's precedence rules (local > later extends > earlier extends).
+  4. Report the **effective settings** for automerge, schedule, minimumReleaseAge, dependency grouping rules.
+  5. Flag conflicts or overrides that weaken security or automation posture.
+- **Cross-Reference**: For OpenShift remediation & manifest authoring, defer to [openshift-deployment SKILL](../openshift-deployment/SKILL.md) (canonical source)
 
 ## Output Format
-Always generate a `MATURITY_REPORT.md` file in the root of the audited repository following the schema defined in `resources/REPORT_TEMPLATE.md`. Ensure that check boxes are marked with `[x]` (Met) or `[ ]` (Not Met/Missing) and a clear, descriptive breakdown of recommendations is presented.
+
+Generate `MATURITY_REPORT.md` in the audited repository root following [REPORT_TEMPLATE.md](./resources/REPORT_TEMPLATE.md).
+
+**Report Structure:**
+- **Executive Summary**: Score, Maturity Level (1–5), assessment date
+- **Dimension Breakdown**: 9-row table (Met / Partial / Not Met / Unverified) with findings
+- **Detailed Checklist**: Checkbox format per dimension; mark items `[x]` or `[ ]` or `[?]` (Unverified)
+- **Scoring Rubric**: Reference [REFERENCE.md](./references/REFERENCE.md#1-scoring-rubric) formula; note any weighting applied
+- **Key Actions Required**: Prioritized by Tier (Tier 1: blocking, Tier 2: recommended, Tier 3: optional)
+- **Compliance Summary**: High-level table of status per category
+- **Next Review Date**: Typically 30 days after report generation
 
 ## Examples
 
@@ -102,20 +122,20 @@ Always generate a `MATURITY_REPORT.md` file in the root of the audited repositor
 
 - **Monorepos with Multiple `tsconfig.json` Files**: Inspect root `tsconfig.json` and any workspace-level configurations. Flag inconsistencies in strictness across packages.
 - **Renovate Config Missing Extends**: If `renovate.json` exists but has no `extends`, note that default Renovate behavior applies (no inherited presets). Verify manual configuration is comprehensive.
-- **GitHub API Unavailable**: Use manual inspection (cloning repo, reading workflows, grepping code) when GitHub API tools are unavailable. Document limitations in the report.
+- **GitHub API Unavailable** (Dims 1–2): If `gh` CLI or GitHub web access is unavailable, mark server-side findings as **Unverified** (not "Not Met"). Example: "⚠️ Unverified (GitHub API access required). Recommend: `gh auth login` and re-run."
 - **Non-TypeScript Repositories**: Skip TypeScript-specific rules (strict mode, `@ts-ignore`). Assess applicable language-specific linting (ESLint for JavaScript, Pylint for Python, etc.).
 - **Legacy Branch Names (`master`, `develop`)**: Audit still applies. Flag as a low-priority gap if org standards require `main`.
-- **Exempt Repositories**: Repositories that are documentation-only, archived, or experimental should be skipped with a clear note in the report.
-- **`gh` CLI & Rulesets API**: Query `rulesets` (not deprecated `branchProtectionRules`) using `gh api graphql`. GitHub moved to the newer API, which returns rule types like `PULL_REQUEST`, `REQUIRED_STATUS_CHECKS`, `NON_FAST_FORWARD`. If `gh` CLI is unavailable, explicitly note: "Ruleset verification requires GitHub CLI (`gh api graphql`). Manual inspection in GitHub → Settings → Rules recommended." Do not report rulesets as missing without attempting the query.
+- **Exempt Repositories**: Documentation-only, archived, or experimental repositories should be marked N/A. Document the reason in the report.
+- **Reproducibility**: Two audit runs on the same repo should produce identical scores. Use explicit rubric (equal-weight dimensions, N/A handling). If API unavailable, mark Unverified rather than fabricating data.
 
 ## References
 
-- [BC Gov DevOps Standards](#rules) – Baseline compliance requirements defined in this skill.
+- [references/REFERENCE.md](./references/REFERENCE.md) – Complete scoring rubric, nine dimension definitions, SLA workflow, image promotion pattern, EPSS guidance, Unverified state definition, GraphQL query examples.
+- [REPORT_TEMPLATE.md](./resources/REPORT_TEMPLATE.md) – Report template for compliance scorecards.
+- [github-actions SKILL](../github-actions/SKILL.md) – Canonical source for status check aggregator pattern and CI/CD best practices.
+- [openshift-deployment SKILL](../openshift-deployment/SKILL.md) – Canonical source for OpenShift pod security contexts and manifest authoring.
 - [BC Gov Renovate Config](https://github.com/bcgov/renovate-config) – Inherited preset configurations for dependency updates.
-- [GitHub Branch Protection Rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) – GitHub documentation on branch rulesets.
-- [TypeScript Strict Mode](https://www.typescriptlang.org/tsconfig#strict) – TypeScript compiler documentation for strict checking.
-- [Renovate Documentation](https://docs.renovatebot.com/) – Preset inheritance, extends chains, and configuration best practices.
-- [MATURITY_REPORT.md Template](./resources/REPORT_TEMPLATE.md) – Structured report template for compliance scoring and remediation tracking.
-- [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/) – Pod security standards, security contexts, and RBAC.
 - [GitHub CLI Reference](https://cli.github.com/manual/gh_api) – `gh api` for GraphQL queries; rulesets API documentation.
 - [GitHub GraphQL API - Repository Rulesets](https://docs.github.com/en/graphql/reference/objects#repository) – Query `rulesets` for branch protection configuration.
+- [CISA Known Exploited Vulnerabilities (KEV)](https://www.cisa.gov/known-exploited-vulnerabilities) – Actively exploited CVE tracking.
+- [NIST EPSS](https://www.first.org/epss/) – Exploit Prediction Scoring System for vulnerability prioritization.
