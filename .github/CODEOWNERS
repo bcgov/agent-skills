@@ -1,6 +1,4 @@
-# Code owners for agent-skills.
-#
-# A code owner is auto-requested as a reviewer on PRs touching the matching
-# paths. Combined with branch protection ("require review from code owners"),
-# this guarantees a maintainer eyeballs every change before merge.
-#
+# Matched against repo root (asterisk)
+*                         @mishraomp @DerekRoberts
+
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners

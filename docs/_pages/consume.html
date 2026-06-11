@@ -17,8 +17,49 @@
 <h2 id="prerequisites">Prerequisites</h2>
 
 <div class="card">
-    <p>You need <code>npx</code> on your <code>PATH</code>. Any recent Node.js LTS provides it; <code>npx --version</code> should print a version number.</p>
-    <p style="margin-bottom:0;">No GitHub CLI, personal access token, or <code>.npmrc</code> setup is required.</p>
+    <h3 style="margin-top: 0;">What you need</h3>
+    <p>You need <code>npx</code> on your <code>PATH</code>. <code>npx</code> is a command-line tool that ships with <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js</a> and <code>npm</code> (the Node Package Manager). It lets you run JavaScript packages directly without installing them globally.</p>
+    <p style="margin-bottom:0;"><strong>No GitHub CLI, personal access token, or <code>.npmrc</code> setup is required.</strong> You only need Node.js.</p>
+</div>
+
+<h2 id="check-npx">Check if you have npx</h2>
+
+<div class="card">
+    <p>Open a terminal and run:</p>
+    <pre><code>npx --version</code></pre>
+    <p>If that prints a version number (e.g., <code>10.2.4</code>), you're ready. If you see <code>command not found</code>, <code>'npx' is not recognized</code>, or a similar error, you need to install Node.js &mdash; see the next section.</p>
+</div>
+
+<h2 id="install-nodejs">Install Node.js (if you don't have it)</h2>
+
+<div class="card">
+    <p><strong>Pick your operating system:</strong></p>
+
+    <h3>Windows</h3>
+    <ul>
+        <li><strong>Easiest:</strong> Download the <a href="https://nodejs.org/en/download" target="_blank" rel="noopener">LTS installer</a> (currently Node.js 22.x LTS) and run it. Accept all defaults.</li>
+        <li><strong>Or via winget:</strong> Open PowerShell or Command Prompt and run: <code>winget install OpenJS.NodeJS.LTS</code></li>
+        <li><strong>Or via Chocolatey:</strong> <code>choco install nodejs-lts</code></li>
+    </ul>
+    <p>After install, <strong>close and reopen your terminal</strong> so it picks up the new <code>PATH</code>. Then verify: <code>npx --version</code></p>
+
+    <h3>macOS</h3>
+    <ul>
+        <li><strong>Easiest:</strong> Use <a href="https://brew.sh/" target="_blank" rel="noopener">Homebrew</a>: <code>brew install node</code></li>
+        <li><strong>Or download:</strong> Visit the <a href="https://nodejs.org/en/download" target="_blank" rel="noopener">Node.js site</a> and run the LTS macOS installer.</li>
+    </ul>
+    <p>After install, open a fresh terminal and verify: <code>npx --version</code></p>
+
+    <h3>Linux</h3>
+    <ul>
+        <li><strong>Ubuntu/Debian:</strong> <code>sudo apt update && sudo apt install nodejs npm</code></li>
+        <li><strong>Fedora/RHEL:</strong> <code>sudo dnf install nodejs npm</code></li>
+        <li><strong>Arch:</strong> <code>sudo pacman -S nodejs npm</code></li>
+        <li><strong>Or use a version manager:</strong> <a href="https://github.com/nvm-sh/nvm" target="_blank" rel="noopener">nvm</a> or <a href="https://github.com/volta-cli/volta" target="_blank" rel="noopener">volta</a> let you switch Node versions per project.</li>
+    </ul>
+    <p>After install, open a fresh terminal and verify: <code>npx --version</code></p>
+
+    <p><strong>Need a specific version?</strong> The <a href="https://nodejs.org/en/download/package-manager/" target="_blank" rel="noopener">Node.js package manager guide</a> covers each OS in detail.</p>
 </div>
 
 <h2 id="install">Install</h2>
@@ -77,9 +118,80 @@ cp -r agent-skills/skills/azure-networking .github/skills/azure-networking</code
 
 <div class="accordion-group">
     <details>
-        <summary><code>npx: command not found</code></summary>
+        <summary><code>npx: command not found</code> or <code>'npx' is not recognized</code></summary>
         <div class="accordion-content">
-            <p>Install Node.js (any current LTS). <code>npx</code> ships with <code>npm</code>, so once <code>node --version</code> works <code>npx --version</code> will too.</p>
+            <p><strong>You don't have Node.js installed.</strong> <code>npx</code> is bundled with Node.js, so when <code>npx</code> isn't found, <code>node</code> won't be either.</p>
+            <p><strong>To fix:</strong></p>
+            <ul>
+                <li>Install Node.js from <a href="https://nodejs.org/en/download" target="_blank" rel="noopener">nodejs.org</a> (pick the LTS version) or via your system's package manager. See the <a href="#install-nodejs">Install Node.js section above</a> for platform-specific steps.</li>
+                <li><strong>Important:</strong> After installing Node.js, <strong>close and reopen your terminal</strong> so the shell picks up the new <code>PATH</code>.</li>
+                <li>Verify the install: <code>node --version</code> and <code>npx --version</code> should both print version numbers.</li>
+            </ul>
+            <p style="margin-bottom: 0;">If you're still seeing the error after install and restart, check that your terminal is using the right shell (not a stale environment). On macOS, if you use <code>.zshrc</code> or <code>.bash_profile</code>, Node.js installation may only update <code>.bashrc</code> — try opening a new login shell or manually sourcing the config file.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary><code>npx</code> exists but is slow or times out</summary>
+        <div class="accordion-content">
+            <p><code>npx</code> downloads and caches packages on first run. If you have a slow internet connection or are behind a corporate proxy, it may take a while or fail.</p>
+            <p><strong>To diagnose:</strong></p>
+            <ul>
+                <li>Run <code>npx --version</code> first to confirm <code>npx</code> itself works.</li>
+                <li>Try <code>npx skills add bcgov/agent-skills --list</code> with a longer timeout: the first run may take 30–60 seconds as it clones the repo and indexes the skills.</li>
+            </ul>
+            <p><strong>To speed it up:</strong></p>
+            <ul>
+                <li>If behind a proxy, configure npm to use it: <code>npm config set proxy http://proxy.example.com:8080</code> (and <code>https-proxy</code> if needed).</li>
+                <li>If your ISP or network is slow, consider running the command again later, or check your internet connection.</li>
+                <li>On Windows or Linux, a local firewall or antivirus may be slowing package downloads — check your system's network settings.</li>
+            </ul>
+            <p style="margin-bottom: 0;">By default, <code>npx</code> caches downloaded packages in <code>~/.npm</code>. Subsequent runs will be much faster.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary><code>npm ERR!</code> or other npm-related errors</summary>
+        <div class="accordion-content">
+            <p>Sometimes <code>npx</code> encounters issues with the npm cache or registry.</p>
+            <p><strong>To fix:</strong></p>
+            <ul>
+                <li>Clear the npm cache: <code>npm cache clean --force</code></li>
+                <li>Try the command again: <code>npx skills add bcgov/agent-skills --list</code></li>
+            </ul>
+            <p style="margin-bottom: 0;">If errors persist, check your internet connection and confirm <code>npm --version</code> works. If you're behind a corporate proxy or firewall, you may need to configure npm's proxy settings (see above).</p>
+        </div>
+    </details>
+
+    <details>
+        <summary><code>npx: command not found</code> only happens in VS Code's integrated terminal</summary>
+        <div class="accordion-content">
+            <p>VS Code's integrated terminal sometimes inherits a stale environment, especially after a Node.js install.</p>
+            <p><strong>To fix:</strong></p>
+            <ul>
+                <li>Close VS Code completely (not just the terminal pane).</li>
+                <li>Open a new terminal outside VS Code (Command Prompt, PowerShell, Terminal.app, etc.) and verify <code>npx --version</code> works.</li>
+                <li>Reopen VS Code. The integrated terminal should now have the updated <code>PATH</code>.</li>
+            </ul>
+            <p style="margin-bottom: 0;">Alternatively, you can manually update VS Code's terminal shell environment. See <a href="https://code.visualstudio.com/docs/editor/integrated-terminal" target="_blank" rel="noopener">VS Code's terminal docs</a> for details.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary><code>npx skills add</code> fails with a Git or network error</summary>
+        <div class="accordion-content">
+            <p>The <code>skills</code> CLI clones the <code>bcgov/agent-skills</code> GitHub repository to read the skill manifests. If it can't reach GitHub or clone the repo, the command will fail.</p>
+            <p><strong>To diagnose:</strong></p>
+            <ul>
+                <li>Check your internet connection: <code>ping github.com</code></li>
+                <li>Try cloning the repo manually: <code>git clone https://github.com/bcgov/agent-skills.git</code> (if you have Git installed)</li>
+            </ul>
+            <p><strong>If GitHub is unreachable:</strong></p>
+            <ul>
+                <li>You may be behind a firewall or proxy. Try running the command from a different network (e.g., a personal mobile hotspot) to confirm.</li>
+                <li>Check GitHub's status at <a href="https://www.githubstatus.com/" target="_blank" rel="noopener">githubstatus.com</a>.</li>
+            </ul>
+            <p style="margin-bottom: 0;">If <code>git clone</code> fails but the network is OK, see the <a href="#manual">Manual install</a> section below for an alternative approach.</p>
         </div>
     </details>
 
