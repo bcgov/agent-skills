@@ -1,13 +1,13 @@
 ---
 name: github-repo-setup
-description: Assess GitHub repository and application maturity against BC Gov DevOps & Dependency Security Standards, including mandatory branch protection, TypeScript settings, and container security. Dependency age and vulnerability SLAs are flagged for manual review.
+description: Assess GitHub repository and application maturity against BC Gov DevOps & Dependency Security Standards, including mandatory branch protection, TypeScript settings, and container security. Writes a structured compliance report.
 owner: bcgov
 tags: [github-repo-setup, devops, security, bcgov]
 ---
 
 # GitHub Repository Setup Validation
 
-Evaluate repository compliance against contractually mandated BC Gov DevOps and security standards.
+Evaluate repository compliance against contractually mandated BC Gov DevOps and security standards by reading config files, running commands, and generating a detailed executive compliance report (`MATURITY_REPORT.md`).
 
 ## Use When
 - Onboarding a new repository to a BC Gov GitHub organization.
@@ -20,17 +20,20 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
 - Reviewing documentation-only or basic scripting repositories that do not deploy software.
 
 ## Workflow
-1. **Analyze Project Structure**: Inspect root configuration files (`package.json`, `tsconfig.json`, `renovate.json`, `.github/workflows/`, and deployment templates).
-2. **Run Automated Script**: Execute the maturity tool to obtain a scorecard and check for strict settings:
-   ```bash
-   # From the repo root:
-   bash skills/github-repo-setup/scripts/maturity-check.sh /path/to/repo
-   ```
-3. **Audit Repository Configurations**: Manually verify GitHub repository and branch protection settings.
-4. **Scan for Credentials & Secrets**: Audit source code and configuration files for exposed secrets (API keys, committed `.env` files, connection strings).
-5. **Trace Data Flow & Sinks**: Perform a data flow check on user inputs (e.g. API parameters, headers, file uploads) tracing them to critical sinks (e.g. database queries, command execution).
-6. **Apply Exploitation Triage**: Query the CISA KEV catalog and EPSS (score >= 0.1) for flagged CVEs to prioritize remediation.
-7. **Report Findings**: Output the scorecard and generate a prioritized checklist of findings. Highlight any contract violations immediately.
+1. **Analyze Project Structure**: Walk the repository root and list configuration files (`package.json`, `tsconfig.json`, `renovate.json`, `.github/workflows/`, and OpenShift/kubernetes manifests).
+2. **Inspect Files & Run Commands**: Auditing agent must directly examine code files and execute CLI tools where available:
+   - Check `tsconfig.json` for strict TypeScript compiler options.
+   - Run `npm audit` or security checks if dependencies need audit verification.
+   - Search the codebase using grep to detect any diagnostic bypasses (`@ts-ignore`, `eslint-disable`).
+   - Read workflow files under `.github/workflows/` to verify CI/CD pipelines fail on warnings and test coverage gates are enforced.
+   - Look at OpenShift deployment templates/manifests to verify security contexts (`runAsNonRoot: true`, `readOnlyRootFilesystem: true`).
+   - **Trace Renovate configuration inheritance**: If `renovate.json` extends presets (e.g., `github>bcgov/renovate-config`), fetch and analyze the inherited configuration files to determine effective settings, particularly `automerge`, `schedule`, and `minimumReleaseAge`.
+3. **Assess Repo configuration (GitHub API/Git)**:
+   - Check local git configurations and repository parameters when querying. If online API tools are unavailable, perform manual reasoning on branch naming, rulesets, and pull requests.
+4. **Draft the Compliance Scorecard**:
+   - Compare the findings against the [BCGov DevOps & Dependency Security Standards](https://github.com/bcgov/agent-skills/blob/main/TEAM_CHECKLIST.md) (or `TEAM_CHECKLIST.md`).
+   - Use the reference template `skills/github-repo-setup/resources/REPORT_TEMPLATE.md` as the format.
+5. **Write Report**: Generate `MATURITY_REPORT.md` in the target repository's root directory. The report must be thorough, precise, and state clear, actionable remediation items.
 
 ## Rules
 - **No-Exemption Policy**: All security vulnerabilities must be remediated regardless of justifications like "trusted environments," "internal access," or "unreachable paths."
@@ -48,24 +51,19 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
    ```
 - **Linter & Diagnostic Escapes**: Use of `@ts-ignore`, `@ts-nocheck`, `any` type escapes, or `eslint-disable` is strictly prohibited. Linter warnings or TS compiler diagnostics must fail build pipelines.
 - **Test Coverage Baseline**: Maintain a minimum of 80% statement and branch test coverage. PRs that lower coverage below this threshold must be rejected.
-- **Dependency Management**:
-  - Pinned Renovate configurations extending stable config (e.g. `github>bcgov/renovate-config#2026.4.0` CalVer style).
-  - Minimum release age of 7 days before adopting dependency updates *(manual verification — the script confirms Renovate config exists but cannot verify the `minimumReleaseAge` setting value)*.
+- **Dependency Management & Automation**:
+  - Automated dependency updates must be enabled via **Renovate** or **Dependabot**.
+  - **Renovate** is strongly preferred and scores higher if it extends an upstream BC Gov configuration (e.g., extending `github>bcgov/renovate-config` or using rules similar to `bcgov/copilot-instructions`).
+  - **Renovate Preset Tracing**: When assessing Renovate configuration, trace all inherited presets to determine the effective configuration:
+    1. Identify all `extends` entries in `renovate.json` (local and in any extended configs).
+    2. For `github>org/repo#version` presets, fetch the referenced repository version and read its config files.
+    3. Merge local overrides with inherited settings using Renovate's precedence rules (local > later extends > earlier extends).
+    4. Report the **effective settings** for automerge, schedule, minimumReleaseAge, and dependency grouping rules.
+    5. Flag conflicts or overrides that may weaken security or automation posture.
+  - Minimum release age of 7 days before adopting dependency updates.
   - Zero-dependency policy for low-volume (< 20 lines) custom logic.
 - **OpenShift Security Context**: Default security contexts (`readOnlyRootFilesystem: true`, `runAsNonRoot: true`, `allowPrivilegeEscalation: false`) must not be bypassed or removed. Write operations must use memory-backed `emptyDir` volumes.
-- **Vulnerability SLAs**: Critical findings (24 hours), High (1 week), Medium (2 weeks), Low (next sprint) *(manual verification — track via GitHub Security Advisories or your team's issue tracker)*.
+- **Vulnerability SLAs**: Critical findings (24 hours), High (1 week), Medium (2 weeks), Low (next sprint).
 
-## Examples
-- **Audit Request**: `"Is my repo ready for BC Gov production?"` -> Assess using `maturity-check.sh` and flag any missing branch protections or TypeScript strict flags.
-- **Maintenance Readiness**: `"Can we move this app into maintenance mode?"` -> Verify 80% test coverage, sandbox preview environments, and deep health check endpoints (Terminus/Caddy) are implemented.
-
-## Edge Cases
-- **Non-TypeScript Projects**: Do not dock points or flag failures for TypeScript compiler settings if the codebase is written in Java, Python, or Go.
-- **Monorepos**: Run the maturity checker on individual subdirectories (e.g. `frontend/` and `backend/`) to avoid overlooking configuration flags.
-- **Offline / No API Access**: When GitHub API access is unavailable, manually audit repo branch rulesets and settings.
-
-## References
-- **Target Skill Catalog**: [bcgov/agent-skills](https://github.com/bcgov/agent-skills)
-- **Local Assessment Tool**: [maturity-check.sh](scripts/maturity-check.sh)
-- **Vulnerability Databases**: CISA KEV Catalog, Exploit Prediction Scoring System (EPSS)
-- **BC Gov Platform Docs**: OpenShift and Azure Landing Zone Design Specifications
+## Output Format
+Always generate a `MATURITY_REPORT.md` file in the root of the audited repository following the schema defined in `resources/REPORT_TEMPLATE.md`. Ensure that check boxes are marked with `[x]` (Met) or `[ ]` (Not Met/Missing) and a clear, descriptive breakdown of recommendations is presented.
