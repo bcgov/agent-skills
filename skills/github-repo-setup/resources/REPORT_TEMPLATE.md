@@ -1,6 +1,6 @@
 # Repository Compliance & Maturity Assessment
 
-This report evaluates compliance against the [BCGov DevOps & Dependency Security Standards](https://github.com/bcgov/agent-skills/blob/main/TEAM_CHECKLIST.md).
+This report evaluates compliance against BC Gov DevOps & Dependency Security Standards (see [skill documentation](../SKILL.md) for detailed requirements).
 
 ## Executive Summary
 
@@ -62,7 +62,7 @@ This report evaluates compliance against the [BCGov DevOps & Dependency Security
 
 ### 5. Dependency Update Automation
 - [ ] **Renovate / Dependabot Configured:**
-- [ ] **Pinned Config / Upstream BCGov Configuration extended:**
+- [ ] **Pinned Config / Upstream BC Gov Configuration extended:**
 - [ ] **Minimum Release Age (7 days):**
 - [ ] **Automerge Policies:**
 - [ ] **Dependency Dashboard active:**

@@ -31,14 +31,14 @@ Evaluate repository compliance against contractually mandated BC Gov DevOps and 
 3. **Assess Repo configuration (GitHub API/Git)**:
    - Check local git configurations and repository parameters when querying. If online API tools are unavailable, perform manual reasoning on branch naming, rulesets, and pull requests.
 4. **Draft the Compliance Scorecard**:
-   - Compare the findings against the [BCGov DevOps & Dependency Security Standards](https://github.com/bcgov/agent-skills/blob/main/TEAM_CHECKLIST.md) (or `TEAM_CHECKLIST.md`).
-   - Use the reference template `skills/github-repo-setup/resources/REPORT_TEMPLATE.md` as the format.
+   - Compare the findings against the BC Gov DevOps & Dependency Security Standards (detailed in the **Rules** section below).
+   - Use the reference template [REPORT_TEMPLATE.md](./resources/REPORT_TEMPLATE.md) as the format.
 5. **Write Report**: Generate `MATURITY_REPORT.md` in the target repository's root directory. The report must be thorough, precise, and state clear, actionable remediation items.
 
 ## Rules
 - **No-Exemption Policy**: All security vulnerabilities must be remediated regardless of justifications like "trusted environments," "internal access," or "unreachable paths."
 - **GitHub Repository Settings**: Enforce Squash Merging Only (uncheck merge/rebase commits). Enable Branch Auto-Cleanup and Always Suggest Updating PR branches.
-- **Branch Protection Ruleset**: The `main` branch ruleset must require a PR, at least 1 approval, conversation resolution, linear history, and strict status checks (`Analysis Results`, `PR Results`, `Validate Results`). Block force pushes.
+- **Branch Protection Ruleset**: The `main` branch ruleset must require a PR, at least 1 approval, conversation resolution, linear history, and a required status check. Require a single aggregated results check (per [github-actions SKILL](../github-actions/SKILL.md)) and block force pushes.
 - **TypeScript Hygiene**: For TypeScript projects, compiler options must enforce strictness:
    ```json
    {
@@ -106,7 +106,7 @@ Always generate a `MATURITY_REPORT.md` file in the root of the audited repositor
 
 ## References
 
-- [BC Gov DevOps Standards](https://github.com/bcgov/agent-skills/blob/main/TEAM_CHECKLIST.md) – Baseline compliance requirements.
+- [BC Gov DevOps Standards](#rules) – Baseline compliance requirements defined in this skill.
 - [BC Gov Renovate Config](https://github.com/bcgov/renovate-config) – Inherited preset configurations for dependency updates.
 - [GitHub Branch Protection Rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) – GitHub documentation on branch rulesets.
 - [TypeScript Strict Mode](https://www.typescriptlang.org/tsconfig#strict) – TypeScript compiler documentation for strict checking.
