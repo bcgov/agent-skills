@@ -187,7 +187,8 @@ gh api graphql -f query='query {
 - [ ] **SHA-based Image References**: Deployments reference immutable image SHAs, not floating tags (e.g., `image@sha256:abc123...` not `image:latest`)
 - [ ] **Health Checks (Startup / Readiness / Liveness)**: Kubernetes/OpenShift manifests include all three probe types with appropriate intervals
 
-**Rationale:** Preview envs reduce integration risk; image promotion ensures audit trail (same artifact → all envs); SHA pinning prevents tag hijack; health checks prevent premature Pod termination.
+**Rationale:** Preview envs reduce integration risk; image promotion ensures audit trail (same artifact → all envs); SHA pinning prevents tag hijack; health checks prevent premature Pod termination. If unique stable tags (e.g., git commit SHAs, PR numbers) are used instead of digests, score the check as **Partial** (not Met), as they prevent general tag mix-ups but still fail registry-level immutability checks.
+
 
 **Data Source:** `.github/workflows/` files and OpenShift/Kubernetes manifests (e.g., `*.deploy.yml`).
 

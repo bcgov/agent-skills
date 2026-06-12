@@ -85,6 +85,8 @@ Generate `MATURITY_REPORT.md` in the audited repo root using the [report templat
 - **Legacy Branch Names** (`master`, `develop`): Audit still applies. Flag as low-priority gap.
 - **Exempt Repos**: Documentation-only or archived repos — mark dimensions N/A with documented reason.
 - **Reproducibility**: Two runs on the same repo must produce identical scores. Use explicit rubric; mark Unverified rather than guessing.
+- **Stable Tags vs. Cryptographic Digests**: Using unique stable tags (e.g. Git commit SHAs, PR numbers) solves basic config drift but lacks registry-level immutability. Score the SHA-based image references check as **Partial** (not Met). Only true container image digests (`@sha256:...`) qualify for **Met**.
+
 
 ## References
 
