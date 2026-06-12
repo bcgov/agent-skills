@@ -6,33 +6,33 @@
 
 **Formula:**
 ```
-Compliance Score (%) = (Dimensions Met / Total Dimensions Scored) × 100
+Compliance Score (%) = (Sum of Weighted Dimension Scores / Total Scored Dimensions) × 100
 ```
 
-**Rules for Dimension Scoring:**
-
-- **Met**: All checks for the dimension pass; zero exceptions or waivers.
-- **Partial**: Most checks pass, but one or two gaps exist (e.g., 2 moderate vulnerabilities with known fix, missing triage workflow).
-- **Not Met**: Majority of checks fail or dimension is fundamentally absent.
-- **Not Applicable (N/A)**: Dimension does not apply to this repository type (e.g., N/A for "CI/CD & Deployments" on a documentation-only repo).
+**Dimension Point Values:**
+- **Met** (`[x]`): 1.0 points. All checks for the dimension pass; zero exceptions or waivers.
+- **Partial** (`[~]`): 0.5 points. Deterministic rule: at least one check passes, and at least one check fails.
+- **Not Met** (`[ ]`): 0.0 points. All checks fail, or the dimension is fundamentally absent.
+- **Unverified** (`[?]`): Excluded from both numerator and denominator (not counted as a failure; data source was unavailable).
+- **Not Applicable (N/A)** (`[-]`): Excluded from both numerator and denominator (applies to documentation-only or basic scripting repos where specific dimensions do not apply).
 
 ### N/A Handling
 
 - **Excludes from denominator**: N/A dimensions do not reduce the score.
-  - Example: If a documentation-only repo marks "Dependency Management" as N/A, score = (7 Met / 8 Scorable) × 100 = 87.5%
-- **Document the reason**: Always note why N/A is applied in the report's findings.
+  - Example: If a documentation-only repo marks "CI/CD & Deployments" as N/A, the score is calculated over 8 dimensions: `Score = (7 Met / 8 Scorable) × 100 = 87.5%`.
+- **Document the reason**: Always note why N/A is applied in the report's findings (using the `[-]` marker).
 
 ### Dimension Weighting
 
-By default, all 9 dimensions are equally weighted (1/9 each). 
+By default, all 9 dimensions are equally weighted (1.0 each) with 2x weighting turned OFF. 
 
-**Exception: Contract-Violation Dimensions** (weight 2x if org policy):
-- Dimension 2 (Branch Protection Rulesets) — enforces CI/CD gates
-- Dimension 6 (Vulnerability SLAs) — enforces security response
+**Conditional Weighting**: 2x weighting is only applied if explicitly specified by organization policy via a config file or user prompt input.
+- Dimension 2 (Branch Protection Rulesets) — enforces CI/CD gates (weight 2.0)
+- Dimension 6 (Vulnerability SLAs) — enforces security response (weight 2.0)
 
-If weighting is applied, explicitly note the weights in the report. Example:
+If 2x weighting is active, the agent must report both the default equally-weighted score and the weighted score. Example weighted calculation:
 ```
-Score = [(7 × 1 + 1 × 2 + 1 × 2) / (8 × 1 + 1 × 2 + 1 × 2)] × 100 = 87%
+Score = [(7 × 1.0 + 1 × 2.0 + 1 × 2.0) / (8 × 1.0 + 1 × 2.0 + 1 × 2.0)] × 100 = 87%
 ```
 
 ### Maturity Level Mapping
@@ -164,12 +164,12 @@ gh api graphql -f query='query {
 **Checks:**
 - [ ] **Documented Triage Workflow**: GitHub issue template or security policy defines response process (who responds, escalation, remediation timeline)
 - [ ] **CISA KEV Monitoring**: Repository subscribes to CISA Known Exploited Vulnerabilities list; flagged vulns trigger immediate response
-- [ ] **EPSS Scoring Integration**: Vulnerabilities triaged by EPSS score when available (Exploit Prediction Scoring System; prioritizes exploitability)
+- [ ] **FIRST EPSS Scoring Integration**: Vulnerabilities triaged by EPSS score when available (Exploit Prediction Scoring System; prioritizes exploitability)
 - [ ] **SLAs Enforced**:
-  - [ ] **Critical** (CVSS 9–10 or CISA KEV): Fix within 24 hours or accept risk in writing
-  - [ ] **High** (CVSS 7–8.9): Fix within 1 week or document exception
-  - [ ] **Medium** (CVSS 4–6.9): Fix within 2 weeks or schedule for next sprint
-  - [ ] **Low** (CVSS 0–3.9): Fix in next scheduled release or backlog
+  - [ ] **Critical** (CVSS 9.0–10.0 or CISA KEV): Fix within 24 hours or accept risk in writing
+  - [ ] **High** (CVSS 7.0–8.9): Fix within 1 week or document exception
+  - [ ] **Medium** (CVSS 4.0–6.9): Fix within 2 weeks or schedule for next sprint
+  - [ ] **Low** (CVSS 0.0–3.9): Fix in next scheduled release
 
 **Rationale:** SLAs enforce consistent security response; CISA KEV escalates actively-exploited vulns; EPSS prioritizes by exploitability, not just severity; documented workflow ensures accountability.
 
@@ -185,9 +185,9 @@ gh api graphql -f query='query {
 - [ ] **PR-based Preview/Sandbox Deployments**: Workflow spins up preview environment on PR open; torn down on close
 - [ ] **Image Promotion Workflow**: Container images built once in CI, then promoted through dev → staging → prod (no rebuild of same code)
 - [ ] **SHA-based Image References**: Deployments reference immutable image SHAs, not floating tags (e.g., `image@sha256:abc123...` not `image:latest`)
-- [ ] **Health Checks (Startup / Readiness / Liveness)**: Kubernetes/OpenShift manifests include all three probe types with appropriate intervals
+- [ ] **Deployment Health Gating**: Workflow enforces rollout success gating or traffic routing checks before promoting images (manifest-level probe configurations are scored under Dimension 9, not here. Do not double-count).
 
-**Rationale:** Preview envs reduce integration risk; image promotion ensures audit trail (same artifact → all envs); SHA pinning prevents tag hijack; health checks prevent premature Pod termination. If unique stable tags (e.g., git commit SHAs, PR numbers) are used instead of digests, score the check as **Partial** (not Met), as they prevent general tag mix-ups but still fail registry-level immutability checks.
+**Rationale:** Preview envs reduce integration risk; image promotion ensures audit trail (same artifact → all envs); SHA pinning prevents tag hijack; deployment health gating checks prevent premature routing switch. If unique stable tags (e.g., git commit SHAs, PR numbers) are used instead of digests, score the check as **Partial** (not Met), as they prevent general tag mix-ups but still fail registry-level immutability checks.
 
 
 **Data Source:** `.github/workflows/` files and OpenShift/Kubernetes manifests (e.g., `*.deploy.yml`).
@@ -220,7 +220,7 @@ gh api graphql -f query='query {
 - [ ] **Pod Security Context (`allowPrivilegeEscalation: false`)**: Containers cannot escalate privileges
 - [ ] **Capabilities Dropped**: All Linux capabilities dropped (`capabilities: drop: ["ALL"]`)
 - [ ] **seccomp Profile**: Runtime security profile enforced (`seccompProfile.type: RuntimeDefault`)
-- [ ] **Startup / Readiness / Liveness Probes**: All three probe types configured; startup grace period ≥ 150 seconds (prevents premature liveness failure during slow init)
+- [ ] **Startup / Readiness / Liveness Probes**: All three probe types configured; startup grace period sized generously per openshift-deployment skill sizing guidance (e.g., failureThreshold × periodSeconds) to prevent premature liveness failure during slow initialization.
 
 **Rationale:** Pod security contexts limit container blast radius; dropped capabilities reduce syscall surface; probes detect and restart unhealthy Pods.
 
@@ -240,16 +240,16 @@ gh api graphql -f query='query {
    └─ NO → Check CVSS & EPSS score (next step)
    ↓
 3. Determine CVSS score; if available, also check EPSS (exploitability score 0–1)
-   ├─ CVSS 9–10 or EPSS > 0.8 → Critical (24h SLA)
-   ├─ CVSS 7–8.9 or EPSS 0.5–0.8 → High (1w SLA)
-   ├─ CVSS 4–6.9 or EPSS 0.1–0.5 → Medium (2w SLA)
-   └─ CVSS 0–3.9 or EPSS < 0.1 → Low (next sprint SLA)
+   ├─ CVSS 9.0–10.0 or EPSS > 0.8 → Critical (24h SLA)
+   ├─ CVSS 7.0–8.9 or EPSS 0.5–0.8 → High (1w SLA)
+   ├─ CVSS 4.0–6.9 or EPSS 0.1–0.5 → Medium (2w SLA)
+   └─ CVSS 0.0–3.9 or EPSS < 0.1 → Low (next scheduled release SLA)
    ↓
 4. Create GitHub issue with template:
    - Title: "[SECURITY] ${CVE-ID}: ${package}@${version} — ${CVSS} ${SLA}"
    - Labels: "security", "cvss-${level}", "cisa-kev" (if applicable)
    - Assignee: On-call security contact
-   - Deadline: Based on SLA (24h → 1w → 2w → next sprint)
+   - Deadline: Based on SLA (24h → 1w → 2w → next scheduled release)
    ↓
 5. Remediation:
    - Upgrade to patched version, or
@@ -261,7 +261,7 @@ gh api graphql -f query='query {
 
 **EPSS Integration:**
 
-- EPSS score available at [NVD EPSS API](https://www.first.org/epss/) or embedded in vulnerability scanner output.
+- EPSS score available at [FIRST EPSS API](https://www.first.org/epss/) or embedded in vulnerability scanner output.
 - Score 0–1: Higher values = higher likelihood of active exploitation.
 - **Decision**: EPSS + CVSS together provide both exploitability (EPSS) and impact (CVSS). A low-CVSS but high-EPSS vuln (e.g., RCE in test dependency) may warrant faster fix than high-CVSS but low-EPSS (e.g., theoretical overflow with no known exploit).
 
@@ -356,17 +356,18 @@ Code committed to main
 
 | State | Meaning | When to Use |
 | :--- | :--- | :--- |
-| **Met** | All checks pass; comprehensive evidence | Standard pass |
-| **Partial** | Most checks pass; 1–2 gaps identified | Known vulns with fix schedule; one missing workflow |
-| **Not Met** | Majority of checks fail; dimension absent | No branch protection configured; no Renovate at all |
-| **Unverified** | Data source unavailable; cannot assess | GitHub API inaccessible; cannot query rulesets; marked distinct from Not Met |
+| **Met** (`[x]`) | All checks pass; comprehensive evidence | Standard pass |
+| **Partial** (`[~]`) | At least one check passes, and at least one fails | 1–2 gaps identified (e.g., known vulns with scheduled fix) |
+| **Not Met** (`[ ]`) | All checks fail; dimension is fundamentally absent | No branch protection configured; no dependency updates config |
+| **Unverified** (`[?]`) | Data source unavailable; cannot assess | GitHub API inaccessible; cannot query rulesets |
+| **N/A** (`[-]`) | Dimension does not apply to this repository type | Document-only or basic scripting repos with no software build/deploy |
 
 **Rationale:** "Not Met" implies a **security gap**. "Unverified" means **inconclusive**, not a failure. Reporting "Not Met" when data source is unavailable invites fabricated findings and false negatives.
 
 **Example:**
 ```markdown
 ### 2. Branch Protection Rulesets
-- [ ] **Unverified** ⚠️ (GitHub API access required)
+- [?] **Unverified** ⚠️ (GitHub API access required)
       Unable to query rulesets without gh CLI authentication.
       Recommend: `gh auth login` and re-run, or manually inspect GitHub → Settings → Rules.
 ```
@@ -417,8 +418,10 @@ Use the following template when generating `MATURITY_REPORT.md` in the audited r
 
 For each dimension, use checkbox format:
 - `[x]` — Met
-- `[ ]` — Not Met
+- `[~]` — Partial (at least one pass, at least one fail)
+- `[ ]` — Not Met (all fail or fundamentally absent)
 - `[?]` — Unverified (data source unavailable)
+- `[-]` — Not Applicable (N/A)
 
 Include per-dimension subsections with individual checks. For Dimension 5, include a **Renovate Configuration Inheritance Analysis** subsection documenting: local config, inherited preset settings, local overrides, effective configuration, and any conflicts.
 
@@ -427,13 +430,13 @@ Include per-dimension subsections with individual checks. For Dimension 5, inclu
 ```markdown
 ## Scoring Formula
 
-**Compliance Score (%)** = (Dimensions Met / Total Dimensions Scored) × 100
+**Compliance Score (%)** = (Sum of Weighted Dimension Scores / Total Scored Dimensions) × 100
 
-- **Met**: count as 1.0
-- **Partial**: count as 0.5
-- **Not Met**: count as 0.0
-- **Unverified**: exclude from denominator
-- **N/A**: exclude from denominator
+- **Met** (`[x]`): 1.0 points
+- **Partial** (`[~]`): 0.5 points
+- **Not Met** (`[ ]`): 0.0 points
+- **Unverified** (`[?]`): Excluded from both numerator and denominator
+- **N/A** (`[-]`): Excluded from both numerator and denominator
 ```
 
 ### Key Actions Required

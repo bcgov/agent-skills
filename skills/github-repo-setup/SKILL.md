@@ -16,8 +16,8 @@ Evaluate repository compliance against BC Gov DevOps and security standards by i
 - Validating vendor compliance with BC Gov digital standards.
 
 ## Don't Use When
-- Auditing personal, experimental, or toy repositories not bound for a BC Gov environment.
-- Reviewing documentation-only or basic scripting repositories that do not deploy software.
+- Auditing personal, experimental, or toy repositories, or repository templates/scaffolding not containing production content. (BC Gov documentation-only or basic scripting repositories ARE in scope; assess them with inapplicable dimensions marked N/A).
+- Performing actual resource provisioning, template setup, or automated repository scaffolding (this skill is purely an assessment and compliance validation auditor).
 
 ## Workflow
 
@@ -33,7 +33,7 @@ Evaluate repository compliance against BC Gov DevOps and security standards by i
 
 4. **Assess Processes and Docs** (Dimensions 6–7) — Read `SECURITY.md` and issue templates for documented triage workflow and SLAs. Read workflows for image promotion patterns.
 
-5. **Draft and Write Report** — Score each of the 9 dimensions (Met / Partial / Not Met / Unverified) using the rubric in [REFERENCE.md](./references/REFERENCE.md#1-scoring-rubric). Calculate compliance percentage, map to Maturity Level 1–5, and generate `MATURITY_REPORT.md` in the audited repo root using the [report template](./references/REFERENCE.md#report-template).
+5. **Draft and Write Report** — Score each of the 9 dimensions using the formula: `Compliance Score (%) = (Sum of Weighted Dimension Scores / Total Scored Dimensions) × 100` (where Met = 1.0, Partial = 0.5, Not Met = 0.0, and Unverified/N/A are excluded from both numerator and denominator). Calculate compliance percentage, map to Maturity Level 1–5, and generate `MATURITY_REPORT.md` in the audited repo root using the [report template](./references/REFERENCE.md#report-template).
 
 ## Rules
 
@@ -46,8 +46,8 @@ All dimension definitions and scoring details are in [REFERENCE.md](./references
 - **Dim 3 – Code Hygiene**: TS strict mode, linting enforced, no diagnostic escapes, 80%+ test coverage.
 - **Dim 4 – Secrets**: Token/password separation per environment, 32+ char passwords.
 - **Dim 5 – Dependency Updates**: Renovate/Dependabot configured, BC Gov preset preferred, 7-day minimum release age, automerge enabled. **Trace preset inheritance.**
-- **Dim 6 – Vulnerability SLAs**: Documented triage workflow, CISA KEV monitoring, EPSS scoring. Critical 24h / High 1w / Medium 2w / Low next sprint.
-- **Dim 7 – CI/CD and Deployments**: PR preview envs, image promotion (no rebuilds), SHA-based image references, health probes.
+- **Dim 6 – Vulnerability SLAs**: Documented triage workflow, CISA KEV monitoring, FIRST EPSS scoring. Critical 24h / High 1w / Medium 2w / Low next scheduled release.
+- **Dim 7 – CI/CD and Deployments**: PR preview envs, image promotion (no rebuilds), SHA-based image references, deployment health gating.
 - **Dim 8 – Quality Gates**: TS/lint/test/coverage/scan failures block merge.
 - **Dim 9 – OpenShift Security**: Pod security contexts (runAsNonRoot, readOnlyFS), capabilities dropped, seccomp, probes. For remediation, defer to [openshift-deployment SKILL](../openshift-deployment/SKILL.md).
 
@@ -62,7 +62,7 @@ All dimension definitions and scoring details are in [REFERENCE.md](./references
 
 Generate `MATURITY_REPORT.md` in the audited repo root using the [report template in REFERENCE.md](./references/REFERENCE.md#report-template).
 
-**Report includes:** Executive Summary (score, level, date), 9-dimension breakdown table, detailed checklist with `[x]`/`[ ]`/`[?]` markers, scoring formula, and prioritized remediation (Tier 1 blocking, Tier 2 recommended, Tier 3 optional).
+**Report includes:** Executive Summary (score, level, date), 9-dimension breakdown table, detailed checklist with legend markers (`[x]` Met, `[~]` Partial, `[ ]` Not Met, `[?]` Unverified, `[-]` N/A), scoring formula, and prioritized remediation (Tier 1 blocking, Tier 2 recommended, Tier 3 optional).
 
 ## Examples
 
@@ -96,4 +96,4 @@ Generate `MATURITY_REPORT.md` in the audited repo root using the [report templat
 - [BC Gov Renovate Config](https://github.com/bcgov/renovate-config) — Inherited preset configurations.
 - [GitHub CLI Reference](https://cli.github.com/manual/gh_api) — `gh api` for GraphQL queries.
 - [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities) — Actively exploited CVE tracking.
-- [NIST EPSS](https://www.first.org/epss/) — Exploit Prediction Scoring System.
+- [FIRST EPSS](https://www.first.org/epss/) — Exploit Prediction Scoring System.
