@@ -203,7 +203,8 @@ gh api graphql -f query='query {
 - [ ] **Test Failures Block Merge**: CI exits non-zero if tests fail
 - [ ] **Test Coverage Gate Enforced**: CI fails if coverage drops below 80% threshold
 - [ ] **Transitive Dependency Budgeting**: `npm audit --production` or equivalent runs; high/critical vulns block merge
-- [ ] **Security Scans Block Merge**: Trivy, SonarCloud, or SAST tool failures prevent merge
+- [ ] **Security Scans Block Merge**: Trivy, SonarCloud, or SAST tool failures prevent merge (Note: This check refers to filesystem/repository scans, secret detection, or static code scanners. Container image-mode scans are optional and must NOT dock points.)
+
 
 **Rationale:** Automated gates prevent broken code and unvetted dependencies from reaching prod; gates are objective and enforce consistently.
 
