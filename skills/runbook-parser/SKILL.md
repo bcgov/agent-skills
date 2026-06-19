@@ -48,7 +48,8 @@ helper is `tools/n8n/render.sh`.
 
 Forward (doc to raw snippets to cleaned blocks):
 
-1. Locate or create `config.yaml`; confirm `root`, `destination`, `working_dir`.
+1. Locate or create `config.yaml` (start a new one from `assets/config.template.yaml`); confirm
+   `root`, `destination`, `working_dir`.
 2. For each source set exactly one of `url:` / `file:`, a `description`, and an optional
    `doc:`; group related sources by a shared `name`.
 3. `python scripts/parser.py ingest --dry-run` — review the planned files.
@@ -169,6 +170,8 @@ Reverse (back-port a fix — `check`/`diff` flag it via the seal):
   rules, inline-code harvest, linters, and the `render.sh` placeholder syntax.
 - `references/BACKPORT.md` — the back-port flow: `diff` surfaces a dev's cleaned change and the
   agent proposes the doc edit.
+- `assets/config.template.yaml` — a base `RunbookParser` `config.yaml` (annotated `spec`, no
+  `status`) to copy to the tree root and fill when starting a new parser. Schema: `references/CONFIG.md`.
 - `assets/snippet-template.sh` / `assets/report-template.md` — the standard header for
   cleaned bash / markdown report snippets.
 - `assets/validator-template.sh` — the standard validator: a read-only check over collected JSON

@@ -30,14 +30,12 @@ NAME="<name>"                                  # <-- page name (/tmp/n8n-report/
 # Optionally require one up front, e.g.:   : "${NAMESPACE:?set NAMESPACE}"
 
 # The lib scripts (merge.sh/report.sh/render.sh/view.sh/utils.sh) are owned by the workflow-builder
-# skill; sync the copies deployed here from the (installed) skill so a stale or missing one can't
-# silently change the result. Set WORKFLOW_BUILDER_SKILL to the installed skill (default: co-located).
-SKILL="${WORKFLOW_BUILDER_SKILL:-$N8N/skills/workflow-builder}"
-if [ -x "$SKILL/scripts/sync.sh" ]; then
-  bash "$SKILL/scripts/sync.sh" "$N8N"
-else
-  echo "warning: workflow-builder skill not found at $SKILL — using the deployed lib scripts as-is" >&2
-fi
+# skill and must ALREADY be deployed beside this tree. This script does NOT self-sync — the agent
+# checks/refreshes them with `scripts/sync.sh --config <config.yaml>` before a local run (or you can
+# run that yourself). See the skill's SKILL.md. Fail fast if a required script is missing.
+for lib in merge.sh report.sh view.sh; do
+  [ -x "$N8N/$lib" ] || { echo "error: $N8N/$lib missing — run: workflow-builder/scripts/sync.sh --config $N8N/config.yaml" >&2; exit 1; }
+done
 
 # Run snippet/validator $1 (validators take the merged JSON on stdin); `|| true` so a failing step
 # is simply absent — its data drops out and the conditional report renders whatever arrived.

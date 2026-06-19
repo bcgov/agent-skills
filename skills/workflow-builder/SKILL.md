@@ -31,7 +31,7 @@ Shape of every workflow this skill builds:
 ```
 
 It writes the JSON to `tools/n8n/workflows/<name>.json`. It does **not** POST it —
-`tools/n8n/push.sh` does that.
+`push.sh` does that (this skill owns it; see below).
 
 Alongside the JSON it emits a **local equivalent** — `tools/n8n/workflows/<name>.local.sh`, the
 same chain as a shell script (collect snippets -> merge -> `render.sh` -> `view.sh`) so a
@@ -39,15 +39,19 @@ developer can run the triage locally and read the HTML report in a browser, no n
 `references/LOCAL_WORKFLOW.md`.
 
 The chain's lib scripts — `merge.sh`, `report.sh`, `render.sh`, `view.sh`, `utils.sh`,
-`n8n-entrypoint.sh` — live in this skill under `scripts/` (it owns them; both the n8n image and the
-local workflow call them). They self-locate via `$0` and resolve `utils.sh` / `render.sh` /
+`n8n-entrypoint.sh` — plus the n8n API client `push.sh` / `pull.sh` live in this skill under
+`scripts/` (it owns them; the n8n image, the local workflow, and devs syncing workflows to/from
+n8n all call them). They self-locate via `$0` and resolve `utils.sh` / `render.sh` /
 `snippets/<group>` relative to that location, so they must run from the **triage tree root, alongside
-`snippets/`**. `scripts/sync.sh <tree-root>` does exactly that — copies the canonical scripts to the
-root (idempotent; `--check` verifies without writing). **When building an n8n image, run it so the
+`snippets/`**. `scripts/sync.sh --config <config.yaml>` does exactly that — copies every canonical
+script (lib scripts and push/pull) to the tree root, which it derives from the config's directory
+(idempotent; `--check` verifies without writing). **When building an n8n image, run it so the
 scripts sit beside the Dockerfile** — as committed here in `tools/n8n/`, which the Dockerfile bakes
 into `/opt/triage` and `n8n-entrypoint.sh` puts on `PATH`. `scripts/` is canonical (the skill is
-installed separately); the local workflow runs `sync.sh` on startup, so a dev always runs the
-installed skill's current scripts.
+installed separately). The local workflow does **not** self-sync — before a local run (or a
+push/pull), **the agent** runs `sync.sh --check` and, if it reports drift, `sync.sh` to refresh the
+deployed copies, so the dev always runs the installed skill's current scripts (unless the dev syncs
+themselves). See "Keeping the deployed scripts current" below.
 
 ## Use When
 
@@ -58,7 +62,10 @@ installed skill's current scripts.
 ## Don't Use When
 
 - Cleaning raw snippets into cleaned blocks → use the `runbook-parser` skill (`references/CLEANING.md`).
-- Posting or pulling workflow JSON to/from n8n → use `tools/n8n/push.sh` / `pull.sh`.
+- Posting or pulling workflow JSON to/from n8n → use this skill's `push.sh` / `pull.sh`. Set
+  `N8N_API_KEY` and point them at the project's config (`--config <tree-root>/config.yaml` or
+  `N8N_CONFIG=...`); they read `workflows/` beside it. The copy deployed at the tree root finds its
+  sibling `config.yaml` automatically, so a synced/dev run needs no flag.
 - Any mutating or non-triage automation → this skill only emits read-only, idempotent triage.
 
 ## Workflow
@@ -124,9 +131,25 @@ installed skill's current scripts.
   just works — no per-group Dockerfile edit. (`local-workflow.sh` calls the same scripts as
   `bash "$N8N/…"` from its own location — dev machines have nothing on `PATH`.)
 - The lib scripts live in `scripts/` (canonical) and must be deployed to the triage tree root
-  alongside `snippets/` to run. `scripts/sync.sh <tree-root>` deploys/verifies them (the local
-  workflow runs it on startup; `--check` guards CI). For an n8n image build, run it so the scripts
-  sit beside the Dockerfile (committed here as `tools/n8n/*.sh`).
+  alongside `snippets/` to run. `scripts/sync.sh --config <config.yaml>` deploys/verifies them
+  (`--check` guards CI). For an n8n image build, run it so the scripts sit beside the Dockerfile
+  (committed here as `tools/n8n/*.sh`).
+
+### Keeping the deployed scripts current
+
+The deployed copies under the tree root are produced by `sync.sh`; nothing self-syncs. **Locate the
+dev's RunbookParser config** — the `--config`/`N8N_CONFIG` pointer all three scripts share — then act
+on it:
+
+- **Find the config:** honor `N8N_CONFIG` if set, else the RunbookParser default `tools/n8n/config.yaml`
+  (the parser's default; its directory is the triage tree root). That one path drives everything —
+  `sync.sh` deploys into its directory; `push.sh`/`pull.sh` read `workflows/` beside it.
+- **Before a local run, a push, or a pull:** run `bash <skill>/scripts/sync.sh --check --config <config>`.
+  If it reports drift (exit 1), run it without `--check` to refresh — unless the dev says they sync
+  themselves. The dev only ever needs to set `N8N_API_KEY`; the agent supplies `--config`.
+- **Then run the tool** with the same pointer, e.g. `N8N_API_KEY=… push.sh --config <config>` (or
+  `pull.sh --config <config>`), or invoke the deployed copy from the tree root where `config.yaml` is
+  its sibling and no flag is needed.
 - Emit the `local-workflow.sh` equivalent too — it runs the SAME `merge.sh` / `report.sh`, so local
   and n8n stay in lockstep; it must pass `shellcheck`.
 - Shellcheck every `.sh` this skill produces (the `local-workflow.sh`) before signing off; fall
@@ -164,8 +187,10 @@ installed skill's current scripts.
 - `assets/local-workflow.sh` — the local-workflow skeleton (the shell equivalent) to copy to
   `tools/n8n/workflows/<name>.local.sh` and fill.
 - `scripts/` — the chain's lib scripts (`merge.sh`, `report.sh`, `render.sh`, `view.sh`, `utils.sh`,
-  `n8n-entrypoint.sh`) plus `sync.sh`, which deploys/verifies them into a triage tree root alongside
-  `snippets/` (the local workflow runs it on startup; `--check` for CI; committed here as `tools/n8n/*.sh`).
+  `n8n-entrypoint.sh`) and the n8n API client (`push.sh`, `pull.sh`), plus `sync.sh`, which
+  deploys/verifies them all into the triage tree root (derived from `--config <config.yaml>`)
+  alongside `snippets/` (`--check` for CI; committed there as `tools/n8n/*.sh`). The agent runs
+  `sync.sh` before a local run / push / pull — nothing self-syncs.
 - `references/LOCAL_WORKFLOW.md` — the local-workflow mapping (n8n node -> shell stage),
   merging, and the `view.sh` helper.
 - `scripts/view.sh` — builds the marked.js + github-markdown-css page for the local workflow; the
