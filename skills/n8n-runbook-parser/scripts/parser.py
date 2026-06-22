@@ -10,7 +10,7 @@
 #   2. Install dependencies (runs locally / in CI, not in the n8n container):
 #        pip install pyyaml markdown-it-py
 #   3. Run from the repo root, e.g.:
-#        python tools/n8n/skills/runbook-parser/scripts/parser.py ingest
+#        python tools/n8n/skills/n8n-runbook-parser/scripts/parser.py ingest
 #
 # It reads a `RunbookParser` config (default tools/n8n/config.yaml), decomposes
 # each source document into ordered, typed raw snippets under `working_dir/<group>/`

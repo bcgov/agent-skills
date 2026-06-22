@@ -4,7 +4,7 @@ Python 3.9+ with PyYAML and markdown-it-py (`pip install pyyaml markdown-it-py`)
 locally or in CI (not inside the n8n container). Run from the repo root.
 
 ```
-python tools/n8n/skills/runbook-parser/scripts/parser.py <command> [options]
+python tools/n8n/skills/n8n-runbook-parser/scripts/parser.py <command> [options]
 ```
 
 ## Commands
@@ -41,7 +41,7 @@ files and status entries are left intact). `--group NAME` picks a whole group by
 source when several share a `group`. Example — regenerate just the wiki:
 
 ```bash
-python tools/n8n/skills/runbook-parser/scripts/parser.py ingest --source crunchy-dr-wiki
+python tools/n8n/skills/n8n-runbook-parser/scripts/parser.py ingest --source crunchy-dr-wiki
 ```
 
 ## Cache
@@ -108,7 +108,7 @@ spec:
   sources:
     - { name: crunchy-triage, description: scratch, file: crunchy-notes.md }
 YAML
-P="python tools/n8n/skills/runbook-parser/scripts/parser.py --config /tmp/scratch.yaml"
+P="python tools/n8n/skills/n8n-runbook-parser/scripts/parser.py --config /tmp/scratch.yaml"
 $P ingest            # writes snippets + status
 $P ingest            # idempotent: no further writes
 $P check            # in_sync (exit 0) — reconstruction matches the source

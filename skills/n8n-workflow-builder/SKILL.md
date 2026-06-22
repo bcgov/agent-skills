@@ -1,5 +1,5 @@
 ---
-name: workflow-builder
+name: n8n-workflow-builder
 description: Compose and chain cleaned snippets into n8n operational triage workflows — a webhook trigger, read-only idempotent triage steps in order, and a markdown-to-HTML response served back to the caller. Produces n8n workflow JSON in tools/n8n/workflows/ ready to POST to the n8n API (you post it, not the skill), plus a local_workflow.sh equivalent a developer can run without n8n. Use when building or iterating a triage workflow from cleaned snippets.
 owner: Compliance and Enforcement
 tags: [n8n, workflow, triage, webhook, automation]

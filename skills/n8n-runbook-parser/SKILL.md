@@ -1,5 +1,5 @@
 ---
-name: runbook-parser
+name: n8n-runbook-parser
 description: Tangle code out of prose runbooks and wikis into version-controlled snippets, per source and losslessly, and detect doc/code drift. Use it to author or extend a RunbookParser config.yaml, run the parser (ingest, check, seal, diff), turn raw snippets into safe parameterized building blocks for n8n, or backport a snippet fix to the source doc.
 owner: Compliance and Enforcement
 tags: [n8n, runbook, parser, drift, docs-as-code]
