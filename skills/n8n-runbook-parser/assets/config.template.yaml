@@ -1,0 +1,33 @@
+---
+# config.yaml — the manifest for a RunbookParser. Copy this to your tree root (by convention
+# tools/n8n/config.yaml — the parser's default) and fill in `spec`. Shaped like a Kubernetes CRD:
+# you author `spec:` (its comments are preserved); the parser OWNS `status:` and appends it on
+# `ingest`/`seal` — do not hand-write `status:`. Full schema + field docs: references/CONFIG.md.
+kind: RunbookParser # required — must be exactly this
+metadata:
+  name: <parser-name> # e.g. n8n-parser
+  labels:
+    owner: <team>
+spec:
+  root: tools/n8n/ # required — repo-relative tree root (holds snippets/, workflows/, this file)
+  destination: tools/n8n/snippets/ # required — where cleaned snippet-* land (under <group>/)
+  working_dir: /tmp # where raws + a verbatim doc copy + the url cache materialize
+  # The n8n deployment the workflow-builder targets. base_url is the production host: each built
+  # workflow's production webhook is <base_url>/webhook/<workflow-name>, embedded in its sticky note.
+  # push.sh/pull.sh resolve workflows/ from THIS file's directory — point them at it with the
+  # --config flag or N8N_CONFIG env var. (push.sh can also target base_url directly via N8N_URL.)
+  n8n:
+    base_url: https://<n8n-host>
+  sources:
+    # Each source has a unique `name` (targets it, e.g. for cleaning; prefixes its raw files) and a
+    # `group` (sources sharing a group merge into one snippet group). `description` guides cleaning —
+    # what cleaned snippets to produce, and what to skip. Set EXACTLY ONE of `url`/`file`; neither is
+    # a placeholder slot for hand-authored snippets. Optional `doc` (root-relative) is the drift
+    # target the source recombines into. Repeat this block per source. See references/CONFIG.md.
+    - name: <source-name>
+      group: <group-name>
+      description: <what these snippets collect; what to skip>
+      doc: null
+      url: https://<runbook-or-wiki-url>
+      file: null
+# The parser writes `status:` below this line on `ingest` — leave it off in a fresh config.
