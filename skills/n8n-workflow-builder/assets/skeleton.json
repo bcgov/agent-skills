@@ -1,0 +1,153 @@
+{
+  "connections": {
+    "Collect": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge snippets",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge snippets": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Report": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Respond to Webhook (HTML)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Collect",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "name": "triage-skeleton",
+  "nodes": [
+    {
+      "id": "note-prod-url",
+      "name": "Production URL",
+      "parameters": {
+        "color": 4,
+        "content": "## <TITLE> — production URL\n\nClick to run this triage — read-only and idempotent, safe to fire any time:\n\n**<BASE_URL>/webhook/<PATH>?<QUERY>**\n\nBuilt from cleaned snippets by the workflow-builder skill.",
+        "height": 240,
+        "width": 380
+      },
+      "position": [
+        180,
+        60
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "id": "webhook",
+      "name": "Webhook",
+      "parameters": {
+        "httpMethod": "GET",
+        "options": {},
+        "path": "triage",
+        "responseMode": "responseNode"
+      },
+      "position": [
+        260,
+        320
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "webhookId": "webhook"
+    },
+    {
+      "id": "step-1",
+      "name": "Collect",
+      "notes": "What this collection snippet fetches.",
+      "parameters": {
+        "command": "=NAMESPACE={{ ($('Webhook').item.json.query||{}).namespace }} <snippet>.sh"
+      },
+      "position": [
+        480,
+        320
+      ],
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1
+    },
+    {
+      "id": "merge-snippets",
+      "name": "Merge snippets",
+      "notes": "Flat-merge the collection snippets — one `export MERGE_<KEY>=...` line per collect node.",
+      "parameters": {
+        "command": "=export MERGE_ONE={{ $('Collect').item.json.stdout.base64Encode() }}\nmerge.sh --b64"
+      },
+      "position": [
+        720,
+        320
+      ],
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1
+    },
+    {
+      "id": "report",
+      "name": "Report",
+      "notes": "report.sh assembles merged + {validations} and renders the report markdown. With validators, add a 'Merge validations' node (merge.sh -k --b64) and `export VALS={{ $('Merge validations')...base64Encode() }}` here.",
+      "parameters": {
+        "command": "=export DATA={{ $('Merge snippets').item.json.stdout.base64Encode() }}\nexport NAMESPACE={{ ($('Webhook').item.json.query||{}).namespace }}\nreport.sh <group> <report>.md"
+      },
+      "position": [
+        960,
+        320
+      ],
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1
+    },
+    {
+      "id": "respond",
+      "name": "Respond to Webhook (HTML)",
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        },
+        "respondWith": "text",
+        "responseBody": "=<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>triage</title><link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown-light.css'><script src='https://cdn.jsdelivr.net/npm/marked/marked.min.js'></script><style>body{margin:0;background:#fff}.markdown-body{box-sizing:border-box;max-width:880px;margin:0 auto;padding:32px}</style></head><body><article class='markdown-body' id='out'>Rendering report...</article><script>var b64='{{ $('Report').item.json.stdout.base64Encode() }}';var md=new TextDecoder().decode(Uint8Array.from(atob(b64),function(c){return c.charCodeAt(0)}));document.getElementById('out').innerHTML=marked.parse(md);</script></body></html>"
+      },
+      "position": [
+        1440,
+        320
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
