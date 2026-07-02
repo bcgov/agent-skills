@@ -25,17 +25,20 @@ Instead, keep the original working code in the legacy repository and add a depre
 1. **Trace & Understand**: Review the original Bash/JavaScript action to understand its inputs, outputs, and side-effects.
 2. **Port to Node.js**: Re-implement the action logic inside a new directory in the `bcgov/actions` monorepo using Node.js (v24). Write `index.js`, `action.yml`, and `README.md`.
 3. **Test in Monorepo**: Add GitHub Actions integration tests for the new action in the monorepo's workflows.
-4. **Add Deprecation Warning to Legacy Repo**: Do NOT remove the original code. Add a deprecation notice appropriate to the action type:
-   - **Node actions** (`using: node24`): Create a `pre.js` file that emits a `::warning::` workflow command, and add `pre: "pre.js"` to `action.yml`. The `pre` step runs flat in the UI (no nesting). Use raw `process.stdout.write()` — do not depend on `@actions/core` since `pre.js` runs outside the ncc bundle.
+4. **Add Deprecation Warning to Legacy Repo**: Do NOT remove the original code. Add a deprecation notice directly into the main execution path to guarantee it runs everywhere (including the repo's own integration tests and local calls):
+   - **Node actions** (`using: node24`): Inject the warning directly into the top of the main entry point:
+     - For JavaScript actions, prepend `console.log("::warning::This Action has moved to bcgov/actions/<name>...")` at the top of `index.js`.
+     - For TypeScript actions, prepend `info("::warning::This Action has moved to bcgov/actions/<name>...")` at the top of `src/main.ts` so it compiles into `dist/index.js` during the release workflow.
+     - Do NOT use the `pre: "pre.js"` hook. The runner silently ignores `pre` steps during local testing (`uses: ./`), hiding the warning and emitting an unsupported feature warning annotation instead.
    - **Composite actions** (`using: composite`): Prepend a warning step to the existing `action.yml`:
-     ```yaml
+     ````yaml
      - name: Migration Warning
        shell: bash
        run: |
          echo "::warning::This Action has moved to bcgov/actions/<name>. Please update your workflow."
-     ```
+     ````
 5. **Replace Legacy README**: Replace the entire README with a minimal deprecation redirect. Strip all original documentation — this forces users to the monorepo for help, which accelerates migration. Use this template:
-   ```markdown
+   ````markdown
    # <Action Name> (Moved)
 
    > [!IMPORTANT]
@@ -44,10 +47,10 @@ Instead, keep the original working code in the legacy repository and add a depre
    > Development and maintenance of this action are now centralized in the main [bcgov/actions](https://github.com/bcgov/actions) repository under the [<action-dir>](https://github.com/bcgov/actions/tree/main/<action-dir>) folder.
    >
    > Please update your workflows to point to the new location:
-   > ```yaml
+   > ````yaml
    > - uses: bcgov/actions/<action-dir>@vX.Y.Z
-   > ```
-   ```
+   > ````
+   ````
 6. **Archive**: Once the deprecation warning and README redirect are in place, archive the legacy repository. Archived repos still resolve for `uses:` references — downstream workflows keep working with the last known good code. Teams migrate when they want updates.
 
 ## Rules
@@ -59,11 +62,11 @@ Instead, keep the original working code in the legacy repository and add a depre
 - Always use explicit `unset GITHUB_TOKEN` before running `gh` commands in the terminal if token issues arise.
 - Never run commands without testing them locally. Stop on the first error.
 - Never downgrade strict TypeScript flags when writing node equivalents.
-- The `pre` field in `action.yml` only executes for remote action references (`uses: org/repo@tag`), not local (`uses: ./`). This is expected — the action's own CI tests won't show the warning, but downstream consumers will.
+- **Always ensure warnings run during main execution.** Never use `pre` or `post` hooks in `action.yml` for warnings, as these are ignored during local test runs.
 
 ## Examples
-- "Migrate action-pr-description-add to the monorepo" → Re-implement in `bcgov/actions/pr-description-add`, add tests, then in the legacy repo: add `pre.js` deprecation warning + `pre: "pre.js"` to `action.yml`. Do NOT replace the codebase with a wrapper.
-- "Deprecate the old repo" → Add deprecation warning, replace README with redirect notice, archive the repository.
+- "Migrate action-pr-description-add to the monorepo" → Re-implement in `bcgov/actions/pr-description-add`, add tests, then in the legacy repo: add the warning directly inside `src/main.ts` so it is compiled into `dist/index.js` on release. Do NOT use `pre.js` or `pre: "pre.js"`. Do NOT replace the codebase with a wrapper.
+- "Deprecate the old repo" → Add deprecation warning directly to main execution, replace README with redirect notice, archive the repository.
 
 ## Edge Cases
 - If the original action uses `runs: using: 'docker'`, ensure the new Node implementation can replicate the containerized dependencies or rewrite them using standard GitHub Actions toolkit methods.
