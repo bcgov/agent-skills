@@ -29,8 +29,8 @@ Use the `gh` CLI to enable native auto-merge and status checks on the repository
 
 ### 2. Renovate Configuration
 Modify or create `renovate.json` (or `renovate.json5`) at the repository root.
-- Inject the centralized BC Gov preset: `"extends": ["local>bcgov/renovate-config:maintenanceAutomerge"]`.
-- Ensure native Renovate `automerge: true` is enabled for minor/patch updates if not already covered by the preset.
+- Ensure the repository inherits from the centralized BC Gov preset: `"extends": ["github>bcgov/renovate-config"]` (or a specific version tag). 
+- *Note*: The `bcgov/renovate-config` preset automatically enables `automerge: true` for safe minor and patch updates, so you do not need to add any custom local auto-merge rules.
 
 ### 3. CI/CD Deployment Pipeline Upgrades
 Analyze `.github/workflows/` and standardize the deployment pipeline. Teams are explicitly moving away from `workflow_dispatch` gates.
