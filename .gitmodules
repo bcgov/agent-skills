@@ -1,0 +1,3 @@
+[submodule "skills/old-coder"]
+	path = skills/old-coder
+	url = https://github.com/AmazingAng/old-coder
