@@ -57,6 +57,7 @@ All dimension definitions and scoring details are in [REFERENCE.md](./references
 - **Unverified vs Not Met**: When a data source (GitHub API, `gh` CLI) is unavailable, mark as **Unverified** — not "Not Met." Do not fabricate findings.
 - **Renovate Preset Tracing**: Trace all `extends` entries, fetch referenced preset repos, merge with local overrides, report effective settings.
 - **Cross-Reference**: For OpenShift manifest remediation, defer to [openshift-deployment SKILL](../openshift-deployment/SKILL.md).
+- **NEVER COMMIT OR PUSH THE REPORT**: The `MATURITY_REPORT.md` file often contains sensitive security gaps and compliance failures that should not be published or shared publicly. It must remain an uncommitted local file. Do NOT run `git add`, `git commit`, or create a Pull Request containing this report.
 
 ## Output Format
 
