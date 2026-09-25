@@ -47,7 +47,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6   # first-party → major tag is fine
+      - uses: actions/checkout@v6   # actions/* → major tag is allowed
         with:
           fetch-depth: 0            # full history to diff against base branch
 
@@ -246,9 +246,9 @@ Two files. Together they bump every action / runtime and auto-merge low-risk PRs
 ```yaml
 version: 2
 updates:
-  # GitHub Actions used by the workflows in .github/workflows. We pin
-  # third-party actions to a commit SHA with the version in a comment;
-  # Dependabot understands that pattern and will keep bumping the SHA.
+  # GitHub Actions used by the workflows in .github/workflows. actions/*,
+  # github/*, and docker/* may use a major tag. Every other owner is pinned
+  # to a commit SHA with the version in a comment; Dependabot bumps that SHA.
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -365,15 +365,16 @@ Anything you don't list is implicitly **denied** when you supply *any* `permissi
 
 | Class                                      | Pin format                                | Example                                                                                |
 | ------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------- |
-| First-party (`actions/*`)                  | Major tag                                 | `uses: actions/checkout@v6`                                                            |
-| First-party (`github/*`)                   | Major tag                                 | `uses: github/codeql-action/init@v3`                                                   |
-| Third-party with stable release cadence    | Commit SHA + version comment              | `uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0`           |
-| Third-party with only tags (no SHA pin)    | Fork to BC Gov org, pin fork by SHA       | `uses: bcgov/forked-action@<sha> # forked from upstream@1.2.3`                         |
+| `actions/*`                                | Major tag                                 | `uses: actions/checkout@v6`                                                            |
+| `github/*`                                 | Major tag                                 | `uses: github/codeql-action/init@v3`                                                   |
+| `docker/*` (GitHub org, not `docker://`)   | Major tag                                 | `uses: docker/login-action@v3`                                                         |
+| Every other owner                          | Full 40-character SHA + version comment   | `uses: bcgov/actions/workflow-results@<sha> # v0.7.0`                                  |
+| Owner that publishes only a movable tag    | Fork, then pin the fork by SHA            | `uses: bcgov/forked-action@<sha> # forked from upstream@1.2.3`                         |
 | Container actions (`docker://`)            | Image digest                              | `uses: docker://ghcr.io/owner/img@sha256:abc...`                                       |
 | Local actions (`./`)                       | Path only                                 | `uses: ./.github/actions/internal-helper`                                              |
-| Reusable workflows (`org/repo/.../wf@ref`) | Same rule as the action: major tag or SHA | `uses: bcgov/shared-workflows/.github/workflows/lint.yml@v2`                           |
+| Reusable workflows (`org/repo/.../wf@ref`) | Same owner rule as actions                | `uses: bcgov/shared-workflows/.github/workflows/lint.yml@<sha> # v2`                   |
 
-Dependabot understands both styles. If you SHA-pin without the `# v8.2.0` comment, Dependabot still works but the diff is unreviewable — keep the comment.
+The tag allow-list is exactly `actions/*`, `github/*`, and `docker/*`. `bcgov/*`, `astral-sh/*`, `grafana/*`, `azure/*`, and `aws-actions/*` are SHA-pinned. Dependabot understands both styles. If you SHA-pin without the `# v0.7.0` comment, Dependabot still works but the diff is unreviewable — keep the comment. A `docker://` reference is an image, not a `docker/*` action; pin it by digest.
 
 ---
 
@@ -399,7 +400,7 @@ Mirror this same shape across BC Gov repos so contributors get a consistent expe
 
 | Attack                                                                                                    | Defence                                                                  |
 | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Action tag hijack** — attacker compromises an upstream action's release tag and ships an exfil payload  | SHA-pin third-party actions; let Dependabot bump SHAs through review.    |
+| **Action tag hijack** — attacker compromises an upstream action's release tag and ships an exfil payload  | SHA-pin every owner except `actions/*`, `github/*`, and `docker/*`; Dependabot bumps those SHAs through review. |
 | **Fork PR token exfil** — fork PR's workflow run reads `secrets.*` from the base repo                     | `fork-gate` job; `secrets` are not passed to fork-PR runs by default.    |
 | **Script injection via PR title / branch name / issue body**                                              | Pass attacker input through `env:`, quote `"$VAR"` in shell.             |
 | **`pull_request_target` abuse** — fork PR triggers a privileged workflow that runs the PR's code          | Never checkout + execute the PR head SHA in `pull_request_target`. Actor-gate the job.       |
@@ -502,7 +503,7 @@ jobs:
 
 The three `secrets.*` values above are stored in repo / org / environment secrets purely as **configuration** — they're just GUIDs and an Entra app registration ID. The actual trust is established by a [Federated Identity Credential](https://learn.microsoft.com/entra/workload-id/workload-identity-federation-create-trust) on the Entra app (or User-Assigned Managed Identity), whose `subject` claim pins exactly which workflow can mint a token for it.
 
-`azure/login` is owned by Microsoft, not GitHub (`actions/*` / `github/*`), so it falls under §6's "third-party with stable release cadence" rule — SHA-pin with a `# v3.0.0` (or `# v3`) comment so Dependabot can still propose bumps as reviewable diffs.
+`azure/login` is outside the `actions/*`, `github/*`, and `docker/*` tag allow-list in §6, so SHA-pin it with a `# v3.0.0` comment so Dependabot can still propose bumps as reviewable diffs.
 
 ### AWS (`aws-actions/configure-aws-credentials`)
 
@@ -542,7 +543,7 @@ jobs:
 
 **Why this shape**:
 
-- `aws-actions/*` is AWS-owned, not first-party `actions/*` or `github/*`, so it falls under "third-party with stable release cadence" in §6 — SHA-pin with a `# v6` (or full `# v6.2.0`) comment so Dependabot can still propose bumps as reviewable diffs.
+- `aws-actions/*` is outside the `actions/*`, `github/*`, and `docker/*` tag allow-list in §6 — SHA-pin with a `# v6` comment so Dependabot can still propose bumps as reviewable diffs.
 - `role-session-name: ${{ inputs.environment_name }}-deployment` shows up in CloudTrail as the assumed-role session identifier — a per-environment name (`prod-deployment`, `test-deployment`) makes "who ran what against which account?" answerable from CloudTrail alone, without cross-referencing GitHub run IDs.
 - `secrets.AWS_DEPLOY_ROLE_ARN` keeps the role ARN out of the workflow file. ARNs aren't sensitive — `vars.AWS_DEPLOY_ROLE_ARN` works too — but parameterising lets the same reusable workflow be called from multiple repos / environments, each binding to a different IAM role.
 - `env.AWS_REGION` at job scope means subsequent `aws …` CLI steps inherit the region automatically — no risk of one step targeting `ca-central-1` and the next defaulting to `us-east-1`.
