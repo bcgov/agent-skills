@@ -14,12 +14,10 @@ name: PR
 #      file without touching branch protection.
 #
 # Action pinning policy:
-#   * First-party actions owned by GitHub (actions/*) are pinned to a major
-#     version tag — GitHub guarantees those tags forward-only. Easier to read,
-#     Dependabot still bumps majors.
-#   * Third-party actions are pinned to an immutable commit SHA with the
-#     human-readable version in a trailing comment, so a tag hijack cannot
-#     silently swap the action's code under us. Dependabot bumps these too.
+#   * actions/*, github/*, and docker/* may use a major version tag.
+#   * Every other owner, including bcgov/*, is pinned to a full 40-character
+#     commit SHA with the version in a trailing comment, so a tag move cannot
+#     swap the action's code. Dependabot bumps both styles.
 
 on:
   pull_request:
