@@ -1,5 +1,10 @@
 # agent-skills
 
+> [!IMPORTANT]
+> **This catalogue has moved to [bcgov/agent-marketplace](https://github.com/bcgov/agent-marketplace).**
+> Browse and install skills from the [agent marketplace](https://bcgov.github.io/agent-marketplace/).
+> This repository is retiring and will be archived.
+
 **A shared, reusable catalogue of BC Government agent skill profiles.** Write a
 good pattern once, and every team across BC Gov can build on it.
 
