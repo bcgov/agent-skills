@@ -1,3 +1,7 @@
+# Consolidation
+
+This application has been consolidated into [agent-marketplace](https://github.com/bcgov/agent-marketplace).  Please go there instead!
+
 # agent-skills
 
 **A shared, reusable catalogue of BC Government agent skill profiles.** Write a
